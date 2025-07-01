@@ -30,6 +30,8 @@ export default function Profile() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -106,6 +108,69 @@ export default function Profile() {
     },
   });
 
+  // Photo upload functionality
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Photo must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error", 
+          description: "Please select a valid image file",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setPhotoFile(file);
+    }
+  };
+
+  const uploadPhoto = async () => {
+    if (!photoFile) return;
+    
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', photoFile);
+      formData.append('userId', user?.id?.toString() || '');
+      
+      const response = await apiRequest('POST', `/api/users/${user?.id}/photo`, formData);
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Success",
+          description: "Profile photo updated successfully!",
+        });
+        setPhotoFile(null);
+        // Refresh user data to get new photo URL
+        if (user?.id) {
+          const updatedUser = await apiRequest('GET', `/api/users/${user.id}`);
+          const userData = await updatedUser.json();
+          setUserData(userData);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload photo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const onSubmit = (data: ProfileFormData) => {
     updateMutation.mutate(data);
   };
@@ -157,6 +222,68 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Profile Photo Section */}
+            <div>
+              <label className="text-sm font-medium text-gray-500">Profile Photo</label>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {userData?.photoUrl ? (
+                    <img src={userData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label htmlFor="photo-upload">
+                      <Button variant="outline" size="sm" asChild>
+                        <span className="cursor-pointer">
+                          <Upload className="w-4 h-4 mr-2" />
+                          Select Photo
+                        </span>
+                      </Button>
+                    </label>
+                    {photoFile && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={uploadPhoto}
+                          disabled={uploadingPhoto}
+                        >
+                          {uploadingPhoto ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : (
+                            <Upload className="w-4 h-4 mr-2" />
+                          )}
+                          Upload
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setPhotoFile(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  {photoFile && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)}KB)
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Max 5MB. JPG, PNG supported.</p>
+                </div>
+              </div>
+            </div>
+            
             <div>
               <label className="text-sm font-medium text-gray-500">Full Name</label>
               <p className="text-lg font-medium">
