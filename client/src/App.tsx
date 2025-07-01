@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Menu } from "@/components/Menu";
+import { BottomTabBar } from "@/components/BottomTabBar";
+import { MoreDrawer } from "@/components/MoreDrawer";
 import Dashboard from "@/pages/dashboard";
 import Shifts from "@/pages/shifts";
 import Staff from "@/pages/staff";
@@ -22,8 +24,11 @@ import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
 import NotFound from "@/pages/not-found";
+import { useState } from "react";
 
 function Router() {
+  const [isMoreDrawerOpen, setIsMoreDrawerOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Menu />
@@ -50,6 +55,13 @@ function Router() {
           </Switch>
         </div>
       </main>
+      
+      {/* Mobile Navigation */}
+      <BottomTabBar onMoreClick={() => setIsMoreDrawerOpen(true)} />
+      <MoreDrawer 
+        isOpen={isMoreDrawerOpen} 
+        onClose={() => setIsMoreDrawerOpen(false)} 
+      />
     </div>
   );
 }

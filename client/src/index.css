@@ -58,3 +58,15 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 }
+
+@layer utilities {
+  /* Mobile safe area utilities for bottom navigation */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Focus styles for mobile navigation */
+  .mobile-nav-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+}
