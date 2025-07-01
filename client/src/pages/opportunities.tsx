@@ -115,7 +115,7 @@ export default function Opportunities() {
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <DollarSign className="w-5 h-5 text-yellow-600" />
               </div>
-              <divClassName="ml-3">
+              <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Applications</p>
                 <p className="text-lg font-semibold text-gray-900">3</p>
               </div>

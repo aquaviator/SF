@@ -181,7 +181,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role as "owner" | "staff",
+      isActive: insertUser.isActive ?? true
+    };
     this.users.set(id, user);
     return user;
   }
@@ -190,7 +195,12 @@ export class MemStorage implements IStorage {
     const existingUser = this.users.get(id);
     if (!existingUser) return undefined;
     
-    const updatedUser: User = { ...insertUser, id };
+    const updatedUser: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role as "owner" | "staff",
+      isActive: insertUser.isActive ?? true
+    };
     this.users.set(id, updatedUser);
     return updatedUser;
   }
@@ -222,7 +232,13 @@ export class MemStorage implements IStorage {
 
   async createShift(insertShift: InsertShift): Promise<Shift> {
     const id = this.currentShiftId++;
-    const shift: Shift = { ...insertShift, id };
+    const shift: Shift = { 
+      ...insertShift, 
+      id,
+      status: insertShift.status as "open" | "assigned" | "confirmed" | "conflict",
+      assignedTo: insertShift.assignedTo ?? null,
+      notes: insertShift.notes ?? null
+    };
     this.shifts.set(id, shift);
     return shift;
   }
@@ -231,7 +247,13 @@ export class MemStorage implements IStorage {
     const existingShift = this.shifts.get(id);
     if (!existingShift) return undefined;
     
-    const updatedShift: Shift = { ...insertShift, id };
+    const updatedShift: Shift = { 
+      ...insertShift, 
+      id,
+      status: insertShift.status as "open" | "assigned" | "confirmed" | "conflict",
+      assignedTo: insertShift.assignedTo ?? null,
+      notes: insertShift.notes ?? null
+    };
     this.shifts.set(id, updatedShift);
     return updatedShift;
   }
@@ -253,7 +275,12 @@ export class MemStorage implements IStorage {
 
   async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {
     const id = this.currentOpportunityId++;
-    const opportunity: Opportunity = { ...insertOpportunity, id };
+    const opportunity: Opportunity = { 
+      ...insertOpportunity, 
+      id,
+      isActive: insertOpportunity.isActive ?? true,
+      requirements: insertOpportunity.requirements ?? null
+    };
     this.opportunities.set(id, opportunity);
     return opportunity;
   }
@@ -262,7 +289,12 @@ export class MemStorage implements IStorage {
     const existingOpportunity = this.opportunities.get(id);
     if (!existingOpportunity) return undefined;
     
-    const updatedOpportunity: Opportunity = { ...insertOpportunity, id };
+    const updatedOpportunity: Opportunity = { 
+      ...insertOpportunity, 
+      id,
+      isActive: insertOpportunity.isActive ?? true,
+      requirements: insertOpportunity.requirements ?? null
+    };
     this.opportunities.set(id, updatedOpportunity);
     return updatedOpportunity;
   }
@@ -284,7 +316,13 @@ export class MemStorage implements IStorage {
 
   async createSwapRequest(insertSwapRequest: InsertSwapRequest): Promise<SwapRequest> {
     const id = this.currentSwapRequestId++;
-    const swapRequest: SwapRequest = { ...insertSwapRequest, id };
+    const swapRequest: SwapRequest = { 
+      ...insertSwapRequest, 
+      id,
+      status: insertSwapRequest.status as "pending" | "approved" | "rejected",
+      targetShiftId: insertSwapRequest.targetShiftId ?? null,
+      reason: insertSwapRequest.reason ?? null
+    };
     this.swapRequests.set(id, swapRequest);
     return swapRequest;
   }
@@ -293,7 +331,13 @@ export class MemStorage implements IStorage {
     const existingSwapRequest = this.swapRequests.get(id);
     if (!existingSwapRequest) return undefined;
     
-    const updatedSwapRequest: SwapRequest = { ...insertSwapRequest, id };
+    const updatedSwapRequest: SwapRequest = { 
+      ...insertSwapRequest, 
+      id,
+      status: insertSwapRequest.status as "pending" | "approved" | "rejected",
+      targetShiftId: insertSwapRequest.targetShiftId ?? null,
+      reason: insertSwapRequest.reason ?? null
+    };
     this.swapRequests.set(id, updatedSwapRequest);
     return updatedSwapRequest;
   }
