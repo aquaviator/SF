@@ -1,7 +1,8 @@
 {
-  "*.{ts,tsx,js,jsx}": [
+  "client/src/**/*.{ts,tsx}": [
     "eslint --fix",
-    "prettier --write"
+    "prettier --write",
+    "jest --bail --findRelatedTests --passWithNoTests"
   ],
   "*.{json,css,md}": [
     "prettier --write"
