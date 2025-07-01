@@ -14,6 +14,13 @@ import SwapRequests from "@/pages/swap-requests";
 import Assignments from "@/pages/assignments";
 import HolidayRequests from "@/pages/holiday-requests";
 import Profile from "@/pages/profile";
+import OwnerDashboard from "@/pages/owner-dashboard";
+import Scheduling from "@/pages/scheduling";
+import Workforce from "@/pages/workforce";
+import BusinessSettings from "@/pages/business-settings";
+import Policies from "@/pages/policies";
+import Analytics from "@/pages/analytics";
+import Subscription from "@/pages/subscription";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +39,13 @@ function Router() {
             <Route path="/assignments" component={Assignments} />
             <Route path="/holiday-requests" component={HolidayRequests} />
             <Route path="/profile" component={Profile} />
+            <Route path="/owner/dashboard" component={OwnerDashboard} />
+            <Route path="/owner/scheduling" component={Scheduling} />
+            <Route path="/owner/workforce" component={Workforce} />
+            <Route path="/owner/settings" component={BusinessSettings} />
+            <Route path="/owner/policies" component={Policies} />
+            <Route path="/owner/analytics" component={Analytics} />
+            <Route path="/owner/subscription" component={Subscription} />
             <Route component={NotFound} />
           </Switch>
         </div>
