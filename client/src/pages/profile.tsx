@@ -35,11 +35,15 @@ export default function Profile() {
     if (user?.id) {
       apiRequest('GET', `/api/users/${user.id}`)
         .then(response => response.json())
-        .then(data => setUserData(data as UserType))
+        .then(data => {
+          console.log('Profile data loaded:', data);
+          setUserData(data as UserType);
+        })
         .catch(error => {
+          console.error('Profile fetch error:', error);
           toast({
             title: "Error",
-            description: "Failed to load profile data",
+            description: `Failed to load profile data: ${error.message}`,
             variant: "destructive",
           });
         })

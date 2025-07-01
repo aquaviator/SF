@@ -622,7 +622,7 @@ export default function Policies() {
                           />
                         </FormControl>
                         <p className="text-sm text-gray-500">
-                          Available variables: {"{"}staff_name{"}"}, {"{"}shift_details{"}"}, {"{"}business_name{"}"}
+                          Available variables: staff_name, shift_details, business_name (wrap in double braces)
                         </p>
                         <FormMessage />
                       </FormItem>
