@@ -9,7 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, User, Mail, Loader2 } from "lucide-react";
+import { Edit, User, Mail, Loader2, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -34,6 +34,7 @@ export default function Profile() {
   useEffect(() => {
     if (user?.id) {
       apiRequest('GET', `/api/users/${user.id}`)
+        .then(response => response.json())
         .then(data => setUserData(data as UserType))
         .catch(error => {
           toast({
@@ -155,21 +156,21 @@ export default function Profile() {
             <div>
               <label className="text-sm font-medium text-gray-500">Full Name</label>
               <p className="text-lg font-medium">
-                {profileData?.firstName} {profileData?.lastName}
+                {userData?.firstName} {userData?.lastName}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Email</label>
               <div className="flex items-center mt-1">
                 <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                <p>{profileData?.email}</p>
+                <p>{userData?.email}</p>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Role</label>
               <div className="mt-1">
                 <Badge variant="secondary">
-                  {profileData?.role === "staff" ? "Staff Member" : "Owner"}
+                  {userData?.role === "staff" ? "Staff Member" : "Owner"}
                 </Badge>
               </div>
             </div>
@@ -189,15 +190,15 @@ export default function Profile() {
               <div className="flex items-center mt-1">
                 <User className="w-4 h-4 mr-2 text-gray-400" />
                 <Badge variant="outline" className="capitalize">
-                  {profileData?.role}
+                  {userData?.role}
                 </Badge>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Status</label>
               <div className="flex items-center mt-1">
-                <Badge variant={profileData?.isActive ? "default" : "secondary"}>
-                  {profileData?.isActive ? "Active" : "Inactive"}
+                <Badge variant={userData?.isActive ? "default" : "secondary"}>
+                  {userData?.isActive ? "Active" : "Inactive"}
                 </Badge>
               </div>
             </div>

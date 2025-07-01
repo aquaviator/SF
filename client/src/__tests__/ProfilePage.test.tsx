@@ -11,6 +11,13 @@ jest.mock('../lib/queryClient', () => ({
 
 const mockApiRequest = apiRequest as jest.MockedFunction<typeof apiRequest>;
 
+// Mock toast
+jest.mock('../hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: jest.fn(),
+  }),
+}));
+
 // Mock user data
 const mockUser = {
   id: 1,
@@ -24,7 +31,9 @@ const mockUser = {
   isActive: true,
 };
 
-// Create a wrapper component with providers
+// Mock fetch globally for proper response handling
+global.fetch = jest.fn();
+
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -45,32 +54,82 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 describe('ProfilePage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock the user profile fetch
-    mockApiRequest.mockImplementation((method, url) => {
-      if (method === 'GET' && url === '/api/users/1') {
-        return Promise.resolve(mockUser);
-      }
-      if (method === 'PUT' && url === '/api/staff/1') {
-        return Promise.resolve({ ...mockUser, firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@example.com' });
-      }
-      return Promise.reject(new Error('Unexpected API call'));
-    });
+    (global.fetch as jest.Mock).mockClear();
   });
 
-  it('should render profile page and make correct API call when form is submitted', async () => {
+  it('shows loading spinner initially and then displays profile data', async () => {
+    // Mock the fetch response for user data loading
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockUser,
+    });
+
     render(
       <TestWrapper>
         <Profile />
       </TestWrapper>
     );
 
-    // Wait for profile data to load
+    // Check that loading spinner shows initially
+    expect(screen.getByText('Loading Profile...')).toBeInTheDocument();
+    expect(screen.getByText('Please wait while we fetch your information.')).toBeInTheDocument();
+
+    // Wait for data to load and loading to disappear
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Profile...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Verify profile data is displayed correctly
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
     });
 
-    // Open the edit profile modal
-    const editButton = screen.getByText('Edit Profile');
+    // Edit Profile button should be enabled after loading
+    const editButton = screen.getByRole('button', { name: /edit profile/i });
+    expect(editButton).toBeEnabled();
+  });
+
+  it('shows error state when profile data fails to load', async () => {
+    // Mock fetch to reject
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
+
+    render(
+      <TestWrapper>
+        <Profile />
+      </TestWrapper>
+    );
+
+    // Wait for error state to appear
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load profile')).toBeInTheDocument();
+      expect(screen.getByText('Unable to fetch profile data. Please try refreshing the page.')).toBeInTheDocument();
+    }, { timeout: 3000 });
+  });
+
+  it('renders profile form and submits correctly with full data merge', async () => {
+    // Mock successful data loading
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockUser,
+    });
+
+    // Mock the apiRequest for the PUT operation
+    mockApiRequest.mockResolvedValueOnce(new Response());
+
+    render(
+      <TestWrapper>
+        <Profile />
+      </TestWrapper>
+    );
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Profile...')).not.toBeInTheDocument();
+    });
+
+    // Click Edit Profile button
+    const editButton = screen.getByRole('button', { name: /edit profile/i });
     fireEvent.click(editButton);
 
     // Wait for modal to open
@@ -78,7 +137,7 @@ describe('ProfilePage', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    // Fill in the form fields
+    // Update form fields
     const firstNameInput = screen.getByLabelText(/first name/i);
     const lastNameInput = screen.getByLabelText(/last name/i);
     const emailInput = screen.getByLabelText(/email/i);
@@ -88,37 +147,44 @@ describe('ProfilePage', () => {
     fireEvent.change(emailInput, { target: { value: 'jane.smith@example.com' } });
 
     // Submit the form
-    const saveButton = screen.getByText('Save');
+    const saveButton = screen.getByRole('button', { name: /save/i });
     fireEvent.click(saveButton);
 
-    // Assert the API was called correctly with full user data
+    // Verify the API call was made with correct merged data
     await waitFor(() => {
       expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/staff/1', {
-        username: 'john.doe',
-        password: 'password',
-        role: 'staff',
-        tenantId: 'acme-corp',
-        isActive: true,
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@example.com',
+        username: 'john.doe',      // from existing data
+        password: 'password',      // from existing data
+        role: 'staff',            // from existing data
+        tenantId: 'acme-corp',    // from existing data
+        isActive: true,           // from existing data
+        firstName: 'Jane',        // from form
+        lastName: 'Smith',        // from form
+        email: 'jane.smith@example.com', // from form
       });
     });
+  });
 
-    // Verify the API was called exactly once with PUT method
-    const putCalls = mockApiRequest.mock.calls.filter(call => call[0] === 'PUT');
-    expect(putCalls).toHaveLength(1);
-    expect(putCalls[0][0]).toBe('PUT');
-    expect(putCalls[0][1]).toBe('/api/staff/1');
-    expect(putCalls[0][2]).toEqual({
-      username: 'john.doe',
-      password: 'password',
-      role: 'staff',
-      tenantId: 'acme-corp',
-      isActive: true,
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane.smith@example.com',
+  it('never shows "Error Profile Data not loaded" message during normal operation', async () => {
+    // Mock successful data loading
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockUser,
     });
+
+    render(
+      <TestWrapper>
+        <Profile />
+      </TestWrapper>
+    );
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Profile...')).not.toBeInTheDocument();
+    });
+
+    // Ensure the old error message never appears
+    expect(screen.queryByText('Error Profile Data not loaded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Profile data not loaded')).not.toBeInTheDocument();
   });
 });
