@@ -76,3 +76,45 @@ export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
 export type SwapRequest = typeof swapRequests.$inferSelect;
 export type InsertSwapRequest = z.infer<typeof insertSwapRequestSchema>;
+
+// Assignments table
+export const assignments = pgTable("assignments", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  shiftId: integer("shift_id").notNull(),
+  assignedTo: integer("assigned_to").notNull(),
+  assignedBy: integer("assigned_by").notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, declined
+  notes: text("notes"),
+});
+
+// Holiday requests table
+export const holidayRequests = pgTable("holiday_requests", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  requesterId: integer("requester_id").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  reason: text("reason"),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAssignmentSchema = createInsertSchema(assignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertHolidayRequestSchema = createInsertSchema(holidayRequests).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
+export type HolidayRequest = typeof holidayRequests.$inferSelect;
+export type InsertHolidayRequest = z.infer<typeof insertHolidayRequestSchema>;

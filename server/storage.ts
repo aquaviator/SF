@@ -1,4 +1,4 @@
-import { users, shifts, opportunities, swapRequests, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest } from "@shared/schema";
+import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest } from "@shared/schema";
 
 export interface IStorage {
   // User operations
@@ -30,6 +30,20 @@ export interface IStorage {
   createSwapRequest(swapRequest: InsertSwapRequest): Promise<SwapRequest>;
   updateSwapRequest(id: number, swapRequest: InsertSwapRequest): Promise<SwapRequest | undefined>;
   deleteSwapRequest(id: number): Promise<boolean>;
+
+  // Assignment operations
+  getAssignment(id: number): Promise<Assignment | undefined>;
+  getAssignmentsByTenant(tenantId: string): Promise<Assignment[]>;
+  createAssignment(assignment: InsertAssignment): Promise<Assignment>;
+  updateAssignment(id: number, assignment: InsertAssignment): Promise<Assignment | undefined>;
+  deleteAssignment(id: number): Promise<boolean>;
+
+  // Holiday request operations
+  getHolidayRequest(id: number): Promise<HolidayRequest | undefined>;
+  getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]>;
+  createHolidayRequest(holidayRequest: InsertHolidayRequest): Promise<HolidayRequest>;
+  updateHolidayRequest(id: number, holidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined>;
+  deleteHolidayRequest(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
