@@ -50,7 +50,7 @@ export default function Shifts() {
       startTime: "",
       endTime: "",
       role: "",
-      assignedTo: "",
+      assignedTo: "unassigned",
       notes: "",
     },
   });
@@ -73,7 +73,7 @@ export default function Shifts() {
           startTime: "",
           endTime: "",
           role: "",
-          assignedTo: "",
+          assignedTo: "unassigned",
           notes: "",
         });
       }

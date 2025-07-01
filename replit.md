@@ -126,6 +126,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 
 ## Changelog
 - July 01, 2025. Initial setup
+- July 01, 2025. Fixed Select form validation issues and added comprehensive tests:
+  - Fixed empty value SelectItems in Shifts and Swap Requests forms
+  - Added SelectForms.test.tsx to validate all Select components have non-empty values
+  - Added SmokeTests.test.tsx for all page components with console error detection
+  - Added FormValidation.test.tsx with comprehensive form behavior testing
+  - Updated form default values to prevent controlled/uncontrolled component warnings
+  - Fixed form submission logic to handle new placeholder values properly
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

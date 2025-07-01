@@ -44,7 +44,7 @@ export default function SwapRequests() {
     resolver: zodResolver(swapRequestFormSchema),
     defaultValues: {
       originalShiftId: "",
-      targetShiftId: "",
+      targetShiftId: "open",
       reason: "",
       status: "pending",
     },
@@ -63,7 +63,7 @@ export default function SwapRequests() {
       } else {
         form.reset({
           originalShiftId: "",
-          targetShiftId: "",
+          targetShiftId: "open",
           reason: "",
           status: "pending",
         });
