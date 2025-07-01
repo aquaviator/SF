@@ -10,6 +10,10 @@ import Shifts from "@/pages/shifts";
 import Staff from "@/pages/staff";
 import MyShifts from "@/pages/my-shifts";
 import Opportunities from "@/pages/opportunities";
+import SwapRequests from "@/pages/swap-requests";
+import Assignments from "@/pages/assignments";
+import HolidayRequests from "@/pages/holiday-requests";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,9 +28,10 @@ function Router() {
             <Route path="/staff" component={Staff} />
             <Route path="/my-shifts" component={MyShifts} />
             <Route path="/opportunities" component={Opportunities} />
-            <Route path="/swaps" component={() => <div>Swap Requests - Coming Soon</div>} />
-            <Route path="/reports" component={() => <div>Reports - Coming Soon</div>} />
-            <Route path="/profile" component={() => <div>Profile - Coming Soon</div>} />
+            <Route path="/swap-requests" component={SwapRequests} />
+            <Route path="/assignments" component={Assignments} />
+            <Route path="/holiday-requests" component={HolidayRequests} />
+            <Route path="/profile" component={Profile} />
             <Route component={NotFound} />
           </Switch>
         </div>
