@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Assignment } from "@shared/schema";
+import type { Assignment, InsertAssignment } from "@shared/schema";
 
 const assignmentFormSchema = z.object({
   shiftId: z.string().min(1, "Shift is required"),
@@ -73,19 +73,19 @@ export default function Assignments() {
 
   const onSubmit = (data: AssignmentFormData) => {
     const submitData = {
-      ...data,
       tenantId,
       shiftId: parseInt(data.shiftId),
       assignedTo: parseInt(data.assignedTo),
       assignedBy: parseInt(user?.id || "1"),
-      status: "pending" as const,
+      status: "pending",
       notes: data.notes || null,
     };
 
     if (editingItem) {
-      handleSubmit({ ...submitData, id: editingItem.id } as Assignment);
+      handleSubmit({ ...editingItem, ...submitData });
     } else {
-      handleSubmit(submitData);
+      // For new items, we add a placeholder assignedAt that will be overridden by the server
+      handleSubmit({ ...submitData, assignedAt: new Date() });
     }
   };
 
