@@ -4,7 +4,7 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": ".cache/tsbuildinfo",
-    "rootDir": "client/src",
+
     "outDir": "dist-ts",
     "noEmit": true,
     "module": "ESNext",
