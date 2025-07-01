@@ -110,7 +110,7 @@ describe('ProfilePage', () => {
 
   it('renders profile form and submits correctly with full data merge', async () => {
     // Mock successful data loading
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockUser,
     });
