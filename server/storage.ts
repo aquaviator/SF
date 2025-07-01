@@ -265,7 +265,9 @@ export class MemStorage implements IStorage {
       id,
       status: insertShift.status as "open" | "assigned" | "confirmed" | "conflict",
       assignedTo: insertShift.assignedTo ?? null,
-      notes: insertShift.notes ?? null
+      notes: insertShift.notes ?? null,
+      description: insertShift.description || "",
+      location: insertShift.location || ""
     };
     this.shifts.set(id, shift);
     return shift;
@@ -280,7 +282,9 @@ export class MemStorage implements IStorage {
       id,
       status: insertShift.status as "open" | "assigned" | "confirmed" | "conflict",
       assignedTo: insertShift.assignedTo ?? null,
-      notes: insertShift.notes ?? null
+      notes: insertShift.notes ?? null,
+      description: insertShift.description || "",
+      location: insertShift.location || ""
     };
     this.shifts.set(id, updatedShift);
     return updatedShift;

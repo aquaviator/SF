@@ -18,6 +18,8 @@ const shiftFormSchema = z.object({
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
   role: z.string().min(1, "Role is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
   assignedTo: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -50,6 +52,8 @@ export default function Shifts() {
       startTime: "",
       endTime: "",
       role: "",
+      description: "",
+      location: "",
       assignedTo: "unassigned",
       notes: "",
     },
@@ -244,6 +248,34 @@ export default function Shifts() {
                     <SelectItem value="Maintenance">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input placeholder="Brief description of shift duties" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="Shift location" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

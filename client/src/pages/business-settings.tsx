@@ -224,11 +224,7 @@ export default function BusinessSettings() {
   // Business Profile Mutation
   const profileMutation = useMutation({
     mutationFn: async (data: BusinessProfileFormData) => {
-      return await apiRequest({
-        url: `/api/business-profile`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/business-profile`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile", tenantId] });

@@ -204,7 +204,7 @@ export default function Scheduling() {
       key: "status",
       header: "Status",
       cell: (shift) => (
-        <Badge variant={shift.status === "published" ? "default" : "secondary"}>
+        <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
           {shift.status}
         </Badge>
       ),
