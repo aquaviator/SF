@@ -1,5 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { User, Shift } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,22 +45,31 @@ interface RecentActivity {
 export default function OwnerDashboard() {
   const { tenantId } = useAuth();
 
-  // Fetch dashboard metrics
-  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
-    queryKey: ["/api/dashboard/metrics", tenantId],
-    queryFn: async () => {
-      // Mock data for now
-      return {
-        totalStaff: 12,
-        activeShifts: 8,
-        pendingRequests: 5,
-        completionRate: 94.2,
-      };
-    },
+  // Fetch real staff data for metrics
+  const { data: staffData = [], isLoading: metricsStaffLoading } = useQuery<User[]>({
+    queryKey: ["/api/staff", tenantId],
   });
 
-  // Fetch staff status
-  const { data: staffStatus = [], isLoading: staffLoading } = useQuery<StaffStatus[]>({
+  // Fetch real shift data for metrics
+  const { data: shiftsData = [], isLoading: metricsShiftsLoading } = useQuery<Shift[]>({
+    queryKey: ["/api/shifts", tenantId],
+  });
+
+  // Calculate real metrics from API data
+  const metrics: DashboardMetrics = {
+    totalStaff: staffData.length,
+    activeShifts: shiftsData.filter(shift => 
+      shift.status === 'active' || shift.status === 'published'
+    ).length,
+    pendingRequests: 5, // TODO: Implement swap requests API
+    completionRate: shiftsData.length > 0 ? 
+      (shiftsData.filter(shift => shift.status === 'completed').length / shiftsData.length) * 100 : 0,
+  };
+
+  const metricsLoading = metricsStaffLoading || metricsShiftsLoading;
+
+  // Fetch staff status  
+  const { data: staffStatus = [], isLoading: statusLoading } = useQuery<StaffStatus[]>({
     queryKey: ["/api/dashboard/staff-status", tenantId],
     queryFn: async () => {
       // Mock data for now
