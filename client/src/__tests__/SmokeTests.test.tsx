@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../contexts/AuthContext';
 import Dashboard from '../pages/dashboard';
@@ -11,8 +12,8 @@ import SwapRequests from '../pages/swap-requests';
 import NotFound from '../pages/not-found';
 
 // Mock the API module
-jest.mock('../lib/queryClient', () => ({
-  apiRequest: jest.fn(),
+vi.mock('../lib/queryClient', () => ({
+  apiRequest: vi.fn(),
   queryClient: new QueryClient({
     defaultOptions: {
       queries: {
@@ -47,7 +48,7 @@ describe('Smoke Tests - All Pages Render Without Errors', () => {
   let consoleLogs: string[] = [];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     consoleLogs = [];
     
     // Mock API responses

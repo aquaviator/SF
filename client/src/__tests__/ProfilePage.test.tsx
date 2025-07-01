@@ -174,7 +174,7 @@ describe('ProfilePage', () => {
 
   it('never shows "Error Profile Data not loaded" message during normal operation', async () => {
     // Mock successful data loading
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    (global.fetch as vi.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockUser,
     });

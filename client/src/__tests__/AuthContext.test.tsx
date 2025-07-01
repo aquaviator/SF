@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 const TestComponent = () => {
@@ -43,7 +44,7 @@ describe("AuthContext", () => {
   });
 
   it("throws error when used outside provider", () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     
     expect(() => {
       render(<TestComponent />);

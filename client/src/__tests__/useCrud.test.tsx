@@ -1,17 +1,18 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCrud } from "../hooks/useCrud";
 
 // Mock the toast hook
-jest.mock("../hooks/use-toast", () => ({
+vi.mock("../hooks/use-toast", () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 interface TestItem {
   id: number;
@@ -65,8 +66,8 @@ const renderWithQuery = (component: React.ReactNode) => {
 
 describe("useCrud", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (fetch as jest.Mock).mockResolvedValue({
+    vi.clearAllMocks();
+    (fetch as vi.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([]),
     });
@@ -92,7 +93,7 @@ describe("useCrud", () => {
   });
 
   it("handles delete confirmation", () => {
-    const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderWithQuery(<TestComponent />);
 
     fireEvent.click(screen.getByText("Delete"));

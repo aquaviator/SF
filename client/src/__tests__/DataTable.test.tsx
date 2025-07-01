@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DataTable, Column } from "../components/DataTable";
 
 interface TestData {
@@ -61,7 +62,7 @@ describe("DataTable", () => {
   });
 
   it("shows add button when onAdd provided", () => {
-    const onAdd = jest.fn();
+    const onAdd = vi.fn();
     
     render(
       <DataTable

@@ -1,13 +1,15 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SwapRequests from '../pages/swap-requests';
 import { AuthProvider } from '../contexts/AuthContext';
 
 // Mock the API module
-jest.mock('../lib/queryClient', () => ({
-  apiRequest: jest.fn(),
+vi.mock('../lib/queryClient', () => ({
+  apiRequest: vi.fn(),
   queryClient: new QueryClient({
     defaultOptions: {
       queries: {
@@ -38,7 +40,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 describe('SwapRequests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders swap requests page', async () => {

@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Dashboard from "../pages/dashboard";
 import { AuthProvider } from "../contexts/AuthContext";
 

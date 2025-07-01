@@ -1,9 +1,10 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useForm } from "react-hook-form";
 import { ModalForm } from "../components/ModalForm";
 
-const TestModalForm = ({ isOpen = true, onSubmit = jest.fn() }) => {
+const TestModalForm = ({ isOpen = true, onSubmit = vi.fn() }) => {
   const form = useForm({
     defaultValues: {
       name: "",
@@ -14,7 +15,7 @@ const TestModalForm = ({ isOpen = true, onSubmit = jest.fn() }) => {
   return (
     <ModalForm
       isOpen={isOpen}
-      onClose={jest.fn()}
+      onClose={vi.fn()}
       title="Test Modal"
       form={form}
       onSubmit={onSubmit}
@@ -46,10 +47,10 @@ describe("ModalForm", () => {
       return (
         <ModalForm
           isOpen={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
           title="Test Modal"
           form={form}
-          onSubmit={jest.fn()}
+          onSubmit={vi.fn()}
           isLoading={true}
         >
           <div>Content</div>

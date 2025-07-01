@@ -1,10 +1,11 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from 'vitest';
 import { Menu } from "../components/Menu";
 import { AuthProvider } from "../contexts/AuthContext";
 
 // Mock wouter
-jest.mock("wouter", () => ({
+vi.mock("wouter", () => ({
   Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   ),

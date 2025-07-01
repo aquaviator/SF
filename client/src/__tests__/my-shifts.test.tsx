@@ -1,12 +1,14 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MyShifts from '../pages/my-shifts';
 import { AuthProvider } from '../contexts/AuthContext';
 
 // Mock the fetch function
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // Test wrapper with required providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -29,10 +31,10 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 describe('My Shifts Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Mock fetch responses
-    (fetch as jest.Mock).mockResolvedValue({
+    (fetch as vi.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([
         {
@@ -145,7 +147,7 @@ describe('My Shifts Page', () => {
   });
 
   it('shows empty state when no shifts', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
+    (fetch as vi.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([]),
     });
@@ -163,7 +165,7 @@ describe('My Shifts Page', () => {
   });
 
   it('handles fetch error gracefully', async () => {
-    (fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+    (fetch as vi.Mock).mockRejectedValue(new Error('Network error'));
 
     render(
       <TestWrapper>

@@ -1,18 +1,19 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Shifts from "../pages/shifts";
 import { AuthProvider } from "../contexts/AuthContext";
 
 // Mock the toast hook
-jest.mock("../hooks/use-toast", () => ({
+vi.mock("../hooks/use-toast", () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 const renderWithProviders = (component: React.ReactNode) => {
   const queryClient = new QueryClient({
@@ -33,8 +34,8 @@ const renderWithProviders = (component: React.ReactNode) => {
 
 describe("Shifts", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (fetch as jest.Mock).mockResolvedValue({
+    vi.clearAllMocks();
+    (fetch as vi.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([]),
     });
