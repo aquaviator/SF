@@ -2,9 +2,9 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { UseFormReturn } from "react-hook-form";
+import { UseFormReturn, FieldValues } from "react-hook-form";
 
-interface ModalFormProps<T = any> {
+interface ModalFormProps<T extends FieldValues = FieldValues> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -15,7 +15,7 @@ interface ModalFormProps<T = any> {
   isLoading?: boolean;
 }
 
-export function ModalForm<T = any>({
+export function ModalForm<T extends FieldValues = FieldValues>({
   isOpen,
   onClose,
   title,

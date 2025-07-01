@@ -20,7 +20,7 @@ vi.mock("../hooks/use-toast", () => ({
 
 import { apiRequest } from "../lib/queryClient";
 
-const mockApiRequest = apiRequest as vi.MockedFunction<typeof apiRequest>;
+const mockApiRequest = apiRequest as any;
 
 const mockUser = {
   id: 1,
