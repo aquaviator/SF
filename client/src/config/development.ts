@@ -3,6 +3,7 @@ import { Config } from "./default";
 export const developmentConfig: Partial<Config> = {
   api: {
     baseUrl: "http://localhost:5000",
+    timeout: 5000,
   },
   firebase: {
     apiKey: "dev-api-key",
