@@ -248,11 +248,7 @@ export default function Subscription() {
   // Billing Mutation
   const billingMutation = useMutation({
     mutationFn: async (data: BillingFormData) => {
-      return await apiRequest({
-        url: `/api/subscription/billing`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/subscription/billing`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription", tenantId] });
@@ -268,11 +264,7 @@ export default function Subscription() {
   // Plan Change Mutation
   const planChangeMutation = useMutation({
     mutationFn: async (planId: string) => {
-      return await apiRequest({
-        url: `/api/subscription/change-plan`,
-        method: "POST",
-        body: JSON.stringify({ planId, tenantId }),
-      });
+      return await apiRequest("POST", `/api/subscription/change-plan`, { planId, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription", tenantId] });
@@ -286,11 +278,7 @@ export default function Subscription() {
   // Trial Extension Mutation
   const trialExtensionMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest({
-        url: `/api/subscription/extend-trial`,
-        method: "POST",
-        body: JSON.stringify({ tenantId }),
-      });
+      return await apiRequest("POST", `/api/subscription/extend-trial`, { tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription", tenantId] });

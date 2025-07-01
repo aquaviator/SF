@@ -242,11 +242,7 @@ export default function Policies() {
   // Notification Settings Mutation
   const notificationMutation = useMutation({
     mutationFn: async (data: NotificationSettingsFormData) => {
-      return await apiRequest({
-        url: `/api/notification-settings`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/notification-settings`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notification-settings", tenantId] });
@@ -331,10 +327,7 @@ export default function Policies() {
 
   const handleDeletePolicy = async (policy: ShiftPolicy) => {
     try {
-      await apiRequest({
-        url: `/api/shift-policies/${policy.id}`,
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/shift-policies/${policy.id}`);
       queryClient.invalidateQueries({ queryKey: ["/api/shift-policies", tenantId] });
       toast({ title: "Shift policy deleted successfully" });
     } catch (error) {
@@ -629,7 +622,7 @@ export default function Policies() {
                           />
                         </FormControl>
                         <p className="text-sm text-gray-500">
-                          Available variables: {{staff_name}}, {{shift_details}}, {{business_name}}
+                          Available variables: {"{"}staff_name{"}"}, {"{"}shift_details{"}"}, {"{"}business_name{"}"}
                         </p>
                         <FormMessage />
                       </FormItem>
