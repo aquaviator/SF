@@ -101,7 +101,7 @@ export function DataTable<T extends { id: string | number }>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((item) => (
+                {data && Array.isArray(data) && data.map((item) => (
                   <TableRow key={item.id}>
                     {columns.map((column, index) => (
                       <TableCell key={index}>
