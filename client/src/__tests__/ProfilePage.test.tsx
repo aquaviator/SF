@@ -91,9 +91,14 @@ describe('ProfilePage', () => {
     const saveButton = screen.getByText('Save');
     fireEvent.click(saveButton);
 
-    // Assert the API was called correctly
+    // Assert the API was called correctly with full user data
     await waitFor(() => {
       expect(mockApiRequest).toHaveBeenCalledWith('PUT', '/api/staff/1', {
+        username: 'john.doe',
+        password: 'password',
+        role: 'staff',
+        tenantId: 'acme-corp',
+        isActive: true,
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane.smith@example.com',
@@ -106,6 +111,11 @@ describe('ProfilePage', () => {
     expect(putCalls[0][0]).toBe('PUT');
     expect(putCalls[0][1]).toBe('/api/staff/1');
     expect(putCalls[0][2]).toEqual({
+      username: 'john.doe',
+      password: 'password',
+      role: 'staff',
+      tenantId: 'acme-corp',
+      isActive: true,
       firstName: 'Jane',
       lastName: 'Smith',
       email: 'jane.smith@example.com',

@@ -63,10 +63,21 @@ export default function Profile() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      return apiRequest("PUT", `/api/staff/${user?.id}`, {
-        ...data,
-        tenantId,
-      });
+      if (!profileData) throw new Error("Profile data not loaded");
+      
+      // Merge form data with existing profile data to send all required fields
+      const fullUpdateData = {
+        username: profileData.username,
+        password: profileData.password,
+        role: profileData.role,
+        tenantId: profileData.tenantId,
+        isActive: profileData.isActive,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+      };
+      
+      return apiRequest("PUT", `/api/staff/${user?.id}`, fullUpdateData);
     },
     onSuccess: () => {
       toast({
