@@ -106,6 +106,20 @@ export const holidayRequests = pgTable("holiday_requests", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Schedule templates table
+export const scheduleTemplates = pgTable("schedule_templates", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  shifts: text("shifts").array().notNull(), // Array of shift IDs or shift data
+  recurrence: text("recurrence").notNull(), // weekly, monthly, custom
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertAssignmentSchema = createInsertSchema(assignments).omit({
   id: true,
   assignedAt: true,
@@ -116,7 +130,15 @@ export const insertHolidayRequestSchema = createInsertSchema(holidayRequests).om
   createdAt: true,
 });
 
+export const insertScheduleTemplateSchema = createInsertSchema(scheduleTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
 export type InsertHolidayRequest = z.infer<typeof insertHolidayRequestSchema>;
+export type ScheduleTemplate = typeof scheduleTemplates.$inferSelect;
+export type InsertScheduleTemplate = z.infer<typeof insertScheduleTemplateSchema>;

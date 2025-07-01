@@ -1,4 +1,4 @@
-import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest } from "@shared/schema";
+import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate } from "@shared/schema";
 
 export interface IStorage {
   // User operations
@@ -44,6 +44,13 @@ export interface IStorage {
   createHolidayRequest(holidayRequest: InsertHolidayRequest): Promise<HolidayRequest>;
   updateHolidayRequest(id: number, holidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined>;
   deleteHolidayRequest(id: number): Promise<boolean>;
+
+  // Schedule template operations
+  getScheduleTemplate(id: number): Promise<ScheduleTemplate | undefined>;
+  getScheduleTemplatesByTenant(tenantId: string): Promise<ScheduleTemplate[]>;
+  createScheduleTemplate(template: InsertScheduleTemplate): Promise<ScheduleTemplate>;
+  updateScheduleTemplate(id: number, template: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined>;
+  deleteScheduleTemplate(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -53,12 +60,14 @@ export class MemStorage implements IStorage {
   private swapRequests: Map<number, SwapRequest>;
   private assignments: Map<number, Assignment>;
   private holidayRequests: Map<number, HolidayRequest>;
+  private scheduleTemplates: Map<number, ScheduleTemplate>;
   private currentUserId: number;
   private currentShiftId: number;
   private currentOpportunityId: number;
   private currentSwapRequestId: number;
   private currentAssignmentId: number;
   private currentHolidayRequestId: number;
+  private currentScheduleTemplateId: number;
 
   constructor() {
     this.users = new Map();
@@ -67,12 +76,14 @@ export class MemStorage implements IStorage {
     this.swapRequests = new Map();
     this.assignments = new Map();
     this.holidayRequests = new Map();
+    this.scheduleTemplates = new Map();
     this.currentUserId = 1;
     this.currentShiftId = 1;
     this.currentOpportunityId = 1;
     this.currentSwapRequestId = 1;
     this.currentAssignmentId = 1;
     this.currentHolidayRequestId = 1;
+    this.currentScheduleTemplateId = 1;
 
     // Initialize with sample data
     this.initializeSampleData();
