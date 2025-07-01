@@ -238,6 +238,19 @@ export default function Analytics() {
     );
   };
 
+  const getStatusBadge = (status: Report["status"]) => {
+    const variants = {
+      ready: "bg-green-100 text-green-800",
+      processing: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+    };
+    return (
+      <Badge className={`text-xs ${variants[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
+    );
+  };
+
   // Report columns for DataTable
   const reportColumns: Column<Report>[] = [
     {
@@ -436,17 +449,19 @@ export default function Analytics() {
                 <CardTitle>Labor Cost vs Budget</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={laborCostData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="cost" fill="#8884d8" name="Actual Cost" />
-                    <Bar dataKey="budget" fill="#82ca9d" name="Budget" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div role="img" aria-label="Bar chart showing labor costs versus budget by month">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={laborCostData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="cost" fill="#8884d8" name="Actual Cost" />
+                      <Bar dataKey="budget" fill="#82ca9d" name="Budget" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -456,25 +471,27 @@ export default function Analytics() {
                 <CardTitle>Department Fill Rates</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={fillRateData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ department, fillRate }) => `${department}: ${fillRate}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="fillRate"
-                    >
-                      {fillRateData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div role="img" aria-label="Pie chart showing fill rates by department">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={fillRateData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ department, fillRate }) => `${department}: ${fillRate}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="fillRate"
+                      >
+                        {fillRateData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
