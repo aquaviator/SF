@@ -44,8 +44,12 @@ try {
 
   // Copy CSS
   console.log('📄 Copying CSS...');
-  copyFileSync('client/src/index.css', 'dist/public/index.css');
-  console.log('✅ CSS copied');
+  if (existsSync('client/src/index.css')) {
+    copyFileSync('client/src/index.css', 'dist/public/index.css');
+    console.log('✅ CSS copied');
+  } else {
+    console.log('ℹ️ No CSS file to copy');
+  }
 
   // Copy HTML template
   if (existsSync('client/index.html')) {
