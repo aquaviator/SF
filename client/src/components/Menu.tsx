@@ -14,12 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  path: string;
-}
+// Navigation item structure for menu configuration
 
 const navigationConfig = {
   owner: [

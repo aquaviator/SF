@@ -12,7 +12,7 @@ const TestForm = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
     },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: { name: string; email: string }) => {
     console.log("Form submitted:", data);
   };
 

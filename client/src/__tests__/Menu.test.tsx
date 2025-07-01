@@ -12,7 +12,7 @@ vi.mock("wouter", () => ({
   useLocation: () => ["/"],
 }));
 
-const renderWithAuth = (role: "owner" | "staff" = "owner") => {
+const renderWithAuth = (_role: "owner" | "staff" = "owner") => {
   const TestWrapper = ({ children }: { children: React.ReactNode }) => (
     <AuthProvider>
       {children}

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Assignment, InsertAssignment } from "@shared/schema";
+import type { Assignment } from "@shared/schema";
 
 const assignmentFormSchema = z.object({
   shiftId: z.string().min(1, "Shift is required"),
