@@ -196,6 +196,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/opportunities/:id/apply", async (req, res) => {
+    try {
+      const tenantId = req.headers.tenantid as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const opportunity = await storage.getOpportunity(id);
+      if (!opportunity) {
+        return res.status(404).json({ message: "Opportunity not found" });
+      }
+      
+      // For now, just return success - could implement actual application logic
+      res.json({ message: "Successfully applied to opportunity", opportunityId: id });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to apply to opportunity" });
+    }
+  });
+
   // Swap requests routes
   app.get("/api/swap-requests", async (req, res) => {
     try {
