@@ -51,20 +51,28 @@ export class MemStorage implements IStorage {
   private shifts: Map<number, Shift>;
   private opportunities: Map<number, Opportunity>;
   private swapRequests: Map<number, SwapRequest>;
+  private assignments: Map<number, Assignment>;
+  private holidayRequests: Map<number, HolidayRequest>;
   private currentUserId: number;
   private currentShiftId: number;
   private currentOpportunityId: number;
   private currentSwapRequestId: number;
+  private currentAssignmentId: number;
+  private currentHolidayRequestId: number;
 
   constructor() {
     this.users = new Map();
     this.shifts = new Map();
     this.opportunities = new Map();
     this.swapRequests = new Map();
+    this.assignments = new Map();
+    this.holidayRequests = new Map();
     this.currentUserId = 1;
     this.currentShiftId = 1;
     this.currentOpportunityId = 1;
     this.currentSwapRequestId = 1;
+    this.currentAssignmentId = 1;
+    this.currentHolidayRequestId = 1;
 
     // Initialize with sample data
     this.initializeSampleData();
@@ -358,6 +366,82 @@ export class MemStorage implements IStorage {
 
   async deleteSwapRequest(id: number): Promise<boolean> {
     return this.swapRequests.delete(id);
+  }
+
+  // Assignment operations
+  async getAssignment(id: number): Promise<Assignment | undefined> {
+    return this.assignments.get(id);
+  }
+
+  async getAssignmentsByTenant(tenantId: string): Promise<Assignment[]> {
+    return Array.from(this.assignments.values()).filter(
+      assignment => assignment.tenantId === tenantId
+    );
+  }
+
+  async createAssignment(insertAssignment: InsertAssignment): Promise<Assignment> {
+    const id = this.currentAssignmentId++;
+    const assignment: Assignment = { 
+      id,
+      ...insertAssignment,
+      assignedAt: new Date(),
+    };
+    this.assignments.set(id, assignment);
+    return assignment;
+  }
+
+  async updateAssignment(id: number, insertAssignment: InsertAssignment): Promise<Assignment | undefined> {
+    const existingAssignment = this.assignments.get(id);
+    if (!existingAssignment) return undefined;
+    
+    const updatedAssignment: Assignment = { 
+      ...existingAssignment,
+      ...insertAssignment,
+    };
+    this.assignments.set(id, updatedAssignment);
+    return updatedAssignment;
+  }
+
+  async deleteAssignment(id: number): Promise<boolean> {
+    return this.assignments.delete(id);
+  }
+
+  // Holiday request operations
+  async getHolidayRequest(id: number): Promise<HolidayRequest | undefined> {
+    return this.holidayRequests.get(id);
+  }
+
+  async getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]> {
+    return Array.from(this.holidayRequests.values()).filter(
+      request => request.tenantId === tenantId
+    );
+  }
+
+  async createHolidayRequest(insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest> {
+    const id = this.currentHolidayRequestId++;
+    const holidayRequest: HolidayRequest = { 
+      id,
+      ...insertHolidayRequest,
+      createdAt: new Date(),
+    };
+    this.holidayRequests.set(id, holidayRequest);
+    return holidayRequest;
+  }
+
+  async updateHolidayRequest(id: number, insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined> {
+    const existingRequest = this.holidayRequests.get(id);
+    if (!existingRequest) return undefined;
+    
+    const updatedRequest: HolidayRequest = { 
+      ...existingRequest,
+      ...insertHolidayRequest,
+    };
+    this.holidayRequests.set(id, updatedRequest);
+    return updatedRequest;
+  }
+
+  async deleteHolidayRequest(id: number): Promise<boolean> {
+    return this.holidayRequests.delete(id);
   }
 }
 
