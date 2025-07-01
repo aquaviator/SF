@@ -18,8 +18,7 @@ export default defineConfig({
     },
     server: {
       deps: {
-        inline: ['@tanstack/react-query'],
-        external: ['lucide-react','recharts','d3','lodash']
+        inline: ['@tanstack/react-query']
       }
     }
   }
