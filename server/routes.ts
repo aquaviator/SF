@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema } from "@shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -17,6 +17,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(shifts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch shifts" });
+    }
+  });
+
+  app.get("/api/my-shifts", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      const shifts = await storage.getShiftsByUser(tenantId, parseInt(userId));
+      res.json(shifts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user shifts" });
     }
   });
 
@@ -163,6 +179,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create opportunity" });
+    }
+  });
+
+  // Swap requests routes
+  app.get("/api/swap-requests", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const swapRequests = await storage.getSwapRequestsByTenant(tenantId);
+      res.json(swapRequests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch swap requests" });
+    }
+  });
+
+  app.post("/api/swap-requests", async (req, res) => {
+    try {
+      const validatedData = insertSwapRequestSchema.parse(req.body);
+      const swapRequest = await storage.createSwapRequest(validatedData);
+      res.status(201).json(swapRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create swap request" });
+    }
+  });
+
+  app.put("/api/swap-requests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertSwapRequestSchema.parse(req.body);
+      const swapRequest = await storage.updateSwapRequest(id, validatedData);
+      if (!swapRequest) {
+        return res.status(404).json({ message: "Swap request not found" });
+      }
+      res.json(swapRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update swap request" });
+    }
+  });
+
+  app.delete("/api/swap-requests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteSwapRequest(id);
+      if (!success) {
+        return res.status(404).json({ message: "Swap request not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete swap request" });
     }
   });
 
