@@ -1,0 +1,62 @@
+Agent Shifts, since `vite.config.ts` and `package.json` are off‐limits, let’s bypass Vite and script our own build & lint pipelines. Please do the following:
+
+1. **Create an Esbuild Build Script**  
+   - At `scripts/build.js`, write a Node script that:
+     - Bundles the server:
+       ```js
+       // dist/server.js
+       await esbuild.build({
+         entryPoints: ['server/index.ts'],
+         bundle: true,
+         platform: 'node',
+         format: 'esm',
+         outfile: 'dist/server.js',
+         external: ['lucide-react','recharts','d3','lodash']
+       });
+       ```
+     - Bundles the client:
+       ```js
+       // dist/public/main.js
+       await esbuild.build({
+         entryPoints: ['client/src/main.tsx'],
+         bundle: true,
+         platform: 'browser',
+         format: 'esm',
+         outfile: 'dist/public/main.js',
+         loader: { '.tsx':'tsx' },
+         define: { 'process.env.NODE_ENV':'"production"' },
+         external: ['lucide-react','recharts','d3','lodash']
+       });
+       ```
+     - Copies `client/src/index.css` to `dist/public/index.css`.
+
+2. **Create a Lint Script**  
+   - At `scripts/lint.sh`, add:
+     ```bash
+     #!/usr/bin/env bash
+     echo "Running ESLint..."
+     npx eslint client/src --ext .ts,.tsx --max-warnings 0
+     ```
+
+3. **Document in README**  
+   - Under “Build & Lint”, add steps:
+     ```
+     node scripts/build.js   # bundles server & client
+     bash scripts/lint.sh    # runs ESLint
+     ```
+
+4. **Run and Report**  
+   - Execute:
+     ```bash
+     node scripts/build.js
+     bash scripts/lint.sh
+     npx tsc --noEmit
+     ```
+   - Provide the **raw** stdout/stderr of each command.
+
+Please confirm:
+- **Esbuild** server & client bundles complete without errors (each <2 s)  
+- **Lint script** reports 0 errors/warnings  
+- **TypeScript** check passes cleanly  
+
+Reply with the full logs so we can declare ✅ PIPELINE READY without touching forbidden files.```
