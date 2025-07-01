@@ -1,0 +1,53 @@
+Agent Shifts, we’ve eliminated nearly all TypeScript errors but now the build and test pipelines are blocked by two deep configuration issues. Let’s resolve them in one focused pass:
+
+1. **Fix API JSON Routing**  
+   - In your Express setup (`server/index.ts`), ensure that **all** `/api/*` routes are registered **before** any static file or SPA catch-all middleware.  
+   - Add a JSON-only catch for missing API endpoints:
+     ```ts
+     app.use('/api/*', (req, res) => {
+       res.status(404).json({ message: 'API route not found' });
+     });
+     ```
+   - Verify via browser or curl that GET `/api/staff/1` now returns JSON, not HTML.
+
+2. **Stabilize Vite Build**  
+   - In `vite.config.ts`, disable any catch-all serving of `index.html` during build. For example:
+     ```js
+     export default defineConfig({
+       build: {
+         target: 'es2018',
+         minify: false,
+         outDir: path.resolve(__dirname, 'dist/public'),
+         emptyOutDir: true
+       },
+       server: {
+         hmr: { overlay: false },
+         fs: { strict: true, deny: ['**/.*'] }
+       },
+       plugins: [react()],
+     });
+     ```
+   - Remove or disable any plugin that redirects unknown routes to the SPA during the build.
+
+3. **Resolve Jest Hanging**  
+   - In `jest.config.js`, ensure transforms and mocks are correct:
+     ```js
+     export default {
+       preset: 'ts-jest',
+       testEnvironment: 'jsdom',
+       setupFilesAfterEnv: ['<rootDir>/client/src/setupTests.ts'],
+       transform: { '^.+\\.(ts|tsx)$': 'ts-jest' },
+       moduleNameMapper: {
+         '\\.(css|scss)$': 'identity-obj-proxy',
+         '^@/(.*)$': '<rootDir>/client/src/$1',
+         '^@shared/(.*)$': '<rootDir>/shared/$1'
+       },
+       testTimeout: 30000,
+       maxWorkers: 1,
+       resetMocks: true,
+     };
+     ```
+   - In `setupTests.ts`, mock any remaining browser APIs (e.g. `window.matchMedia`, `ResizeObserver`).
+
+4. **Full Verification**  
+   Run:
