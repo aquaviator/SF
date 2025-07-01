@@ -56,6 +56,12 @@ describe('ProfilePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (global.fetch as any).mockClear();
+    
+    // Setup default apiRequest mock to return a Promise
+    mockApiRequest.mockResolvedValue(new Response(JSON.stringify(mockUser), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    }));
   });
 
   it('shows loading spinner initially and then displays profile data', async () => {
