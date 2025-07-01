@@ -477,6 +477,46 @@ export class MemStorage implements IStorage {
   async deleteHolidayRequest(id: number): Promise<boolean> {
     return this.holidayRequests.delete(id);
   }
+
+  // Schedule template operations
+  async getScheduleTemplate(id: number): Promise<ScheduleTemplate | undefined> {
+    return this.scheduleTemplates.get(id);
+  }
+
+  async getScheduleTemplatesByTenant(tenantId: string): Promise<ScheduleTemplate[]> {
+    return Array.from(this.scheduleTemplates.values()).filter(
+      template => template.tenantId === tenantId
+    );
+  }
+
+  async createScheduleTemplate(insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate> {
+    const id = this.currentScheduleTemplateId++;
+    const template: ScheduleTemplate = { 
+      id, 
+      ...insertTemplate,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.scheduleTemplates.set(id, template);
+    return template;
+  }
+
+  async updateScheduleTemplate(id: number, insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined> {
+    const existingTemplate = this.scheduleTemplates.get(id);
+    if (!existingTemplate) return undefined;
+    
+    const updatedTemplate: ScheduleTemplate = { 
+      ...existingTemplate,
+      ...insertTemplate,
+      updatedAt: new Date(),
+    };
+    this.scheduleTemplates.set(id, updatedTemplate);
+    return updatedTemplate;
+  }
+
+  async deleteScheduleTemplate(id: number): Promise<boolean> {
+    return this.scheduleTemplates.delete(id);
+  }
 }
 
 export const storage = new MemStorage();

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema } from "@shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -271,6 +271,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete swap request" });
+    }
+  });
+
+  // Schedule Templates routes
+  app.get("/api/schedule-templates", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const templates = await storage.getScheduleTemplatesByTenant(tenantId);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch schedule templates" });
+    }
+  });
+
+  app.post("/api/schedule-templates", async (req, res) => {
+    try {
+      const result = insertScheduleTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid template data", errors: result.error.issues });
+      }
+      
+      const template = await storage.createScheduleTemplate(result.data);
+      res.status(201).json(template);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create schedule template" });
+    }
+  });
+
+  app.put("/api/schedule-templates/:id", async (req, res) => {
+    try {
+      const result = insertScheduleTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid template data", errors: result.error.issues });
+      }
+      
+      const id = parseInt(req.params.id);
+      const template = await storage.updateScheduleTemplate(id, result.data);
+      if (!template) {
+        return res.status(404).json({ message: "Schedule template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update schedule template" });
+    }
+  });
+
+  app.delete("/api/schedule-templates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteScheduleTemplate(id);
+      if (!success) {
+        return res.status(404).json({ message: "Schedule template not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete schedule template" });
     }
   });
 
