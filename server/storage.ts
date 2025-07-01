@@ -383,7 +383,12 @@ export class MemStorage implements IStorage {
     const id = this.currentAssignmentId++;
     const assignment: Assignment = { 
       id,
-      ...insertAssignment,
+      tenantId: insertAssignment.tenantId,
+      shiftId: insertAssignment.shiftId,
+      assignedTo: insertAssignment.assignedTo,
+      assignedBy: insertAssignment.assignedBy,
+      status: insertAssignment.status || "pending",
+      notes: insertAssignment.notes || null,
       assignedAt: new Date(),
     };
     this.assignments.set(id, assignment);
@@ -422,6 +427,11 @@ export class MemStorage implements IStorage {
     const holidayRequest: HolidayRequest = { 
       id,
       ...insertHolidayRequest,
+      status: insertHolidayRequest.status || "pending",
+      reason: insertHolidayRequest.reason || null,
+      reviewedBy: insertHolidayRequest.reviewedBy || null,
+      reviewedAt: insertHolidayRequest.reviewedAt || null,
+      reviewNotes: insertHolidayRequest.reviewNotes || null,
       createdAt: new Date(),
     };
     this.holidayRequests.set(id, holidayRequest);

@@ -26,12 +26,9 @@ export default function Opportunities() {
 
   const applyMutation = useMutation({
     mutationFn: async (opportunityId: number) => {
-      return apiRequest(`/api/opportunities/${opportunityId}/apply`, {
-        method: "POST",
-        body: JSON.stringify({
-          tenantId,
-          userId: parseInt(user?.id || "1"),
-        }),
+      return apiRequest("POST", `/api/opportunities/${opportunityId}/apply`, {
+        tenantId,
+        userId: parseInt(user?.id || "1"),
       });
     },
     onSuccess: () => {
