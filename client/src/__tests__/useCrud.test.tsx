@@ -13,6 +13,11 @@ jest.mock("../hooks/use-toast", () => ({
 // Mock fetch
 global.fetch = jest.fn();
 
+interface TestItem {
+  id: number;
+  name: string;
+}
+
 const TestComponent = () => {
   const {
     data,
@@ -24,7 +29,7 @@ const TestComponent = () => {
     closeModal,
     handleSubmit,
     handleDelete,
-  } = useCrud({
+  } = useCrud<TestItem>({
     queryKey: ["/api/test"],
     endpoint: "/api/test",
   });

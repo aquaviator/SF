@@ -80,9 +80,9 @@ export default function HolidayRequests() {
     };
 
     if (editingItem) {
-      handleSubmit({ ...submitData, id: editingItem.id } as HolidayRequest);
+      handleSubmit({ ...submitData, id: editingItem.id, createdAt: editingItem.createdAt } as HolidayRequest);
     } else {
-      handleSubmit(submitData);
+      handleSubmit({ ...submitData, createdAt: new Date() });
     }
   };
 
