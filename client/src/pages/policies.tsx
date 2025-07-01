@@ -18,11 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   Bell, 
-  FileText, 
-  Settings, 
-  Mail,
-  Clock,
-  AlertTriangle
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";

@@ -19,10 +19,7 @@ import {
   Building2, 
   Users, 
   Clock, 
-  Settings, 
-  Upload, 
-  Shield,
-  MapPin
+  Shield
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";

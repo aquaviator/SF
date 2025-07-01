@@ -17,12 +17,8 @@ import {
   CreditCard, 
   Download, 
   Star, 
-  Users,
-  Calendar,
   CheckCircle,
-  AlertTriangle,
-  TrendingUp,
-  Clock
+  TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
