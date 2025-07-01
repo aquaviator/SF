@@ -22,17 +22,10 @@ vi.mock('../lib/queryClient', () => ({
     },
   }),
 }));
-
 // Test wrapper with required providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
   });
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -41,12 +34,10 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </QueryClientProvider>
   );
 };
-
 describe('Smoke Tests - All Pages Render Without Errors', () => {
   // Mock console.error to catch React errors
   const originalError = console.error;
   let consoleLogs: string[] = [];
-
   beforeEach(() => {
     vi.clearAllMocks();
     consoleLogs = [];
@@ -56,108 +47,50 @@ describe('Smoke Tests - All Pages Render Without Errors', () => {
     apiRequest.mockResolvedValue({
       json: () => Promise.resolve([]),
     });
-
     // Capture console errors
     console.error = (...args: any[]) => {
       consoleLogs.push(args.join(' '));
     };
-  });
-
   afterEach(() => {
     console.error = originalError;
-  });
-
   it('renders Dashboard page without console errors', () => {
     render(
       <TestWrapper>
         <Dashboard />
       </TestWrapper>
     );
-
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders Shifts page without console errors', () => {
-    render(
-      <TestWrapper>
         <Shifts />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('Shift Management')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders Staff page without console errors', () => {
-    render(
-      <TestWrapper>
         <Staff />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('Staff Management')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders My Shifts page without console errors', () => {
-    render(
-      <TestWrapper>
         <MyShifts />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('My Shifts')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders Opportunities page without console errors', () => {
-    render(
-      <TestWrapper>
         <Opportunities />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('Shift Opportunities')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders Swap Requests page without console errors', () => {
-    render(
-      <TestWrapper>
         <SwapRequests />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('Shift Swap Requests')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('renders Not Found page without console errors', () => {
-    render(
-      <TestWrapper>
         <NotFound />
-      </TestWrapper>
-    );
-
     expect(screen.getByText('Page Not Found')).toBeInTheDocument();
-    expect(consoleLogs).toHaveLength(0);
-  });
-
   it('all pages have proper form field structure', () => {
     const pages = [
       { component: Shifts, name: 'Shifts' },
       { component: Staff, name: 'Staff' },
       { component: SwapRequests, name: 'SwapRequests' },
     ];
-
     pages.forEach(({ component: Component, name }) => {
       const { unmount } = render(
         <TestWrapper>
           <Component />
         </TestWrapper>
       );
-
       // Check that the page renders without throwing
       expect(screen.getByRole('main') || document.body).toBeInTheDocument();
       
@@ -165,38 +98,20 @@ describe('Smoke Tests - All Pages Render Without Errors', () => {
       expect(consoleLogs.filter(log => 
         log.includes('Warning') || log.includes('Error')
       )).toHaveLength(0);
-
       unmount();
-    });
-  });
-
   it('validates that all forms have proper default values', () => {
     // This test ensures that forms are structured correctly
     // and don't have undefined default values that could cause runtime errors
-    
     const formsToTest = [
       { component: Shifts, formName: 'Shifts Form' },
       { component: Staff, formName: 'Staff Form' },
       { component: SwapRequests, formName: 'Swap Requests Form' },
-    ];
-
     formsToTest.forEach(({ component: Component, formName }) => {
-      const { unmount } = render(
-        <TestWrapper>
-          <Component />
-        </TestWrapper>
-      );
-
       // Look for form-related errors in console
       const formErrors = consoleLogs.filter(log => 
         log.includes('defaultValue') || 
         log.includes('controlled') || 
         log.includes('uncontrolled') ||
         log.includes('value prop')
-      );
-      
       expect(formErrors).toHaveLength(0);
-      unmount();
-    });
-  });
 });

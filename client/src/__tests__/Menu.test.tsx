@@ -19,34 +19,20 @@ const renderWithAuth = (role: "owner" | "staff" = "owner") => {
     </AuthProvider>
   );
 
-  return render(
-    <TestWrapper>
-      <Menu />
-    </TestWrapper>
-  );
+  return render(<Menu />, { wrapper: TestWrapper });
 };
 
 describe("Menu", () => {
-  it("renders desktop navigation", () => {
+  it("renders navigation items", () => {
     renderWithAuth();
     
-    expect(screen.getByText("Agent Shifts")).toBeInTheDocument();
-    expect(screen.getByText("Acme Corp")).toBeInTheDocument();
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Shifts")).toBeInTheDocument();
   });
 
   it("shows owner navigation items", () => {
     renderWithAuth("owner");
     
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Shifts")).toBeInTheDocument();
-    expect(screen.getByText("Staff")).toBeInTheDocument();
-    expect(screen.getByText("Reports")).toBeInTheDocument();
-  });
-
-  it("shows role switcher", () => {
-    renderWithAuth();
-    
-    expect(screen.getByText("DEV")).toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 });

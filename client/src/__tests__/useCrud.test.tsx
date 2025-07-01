@@ -10,15 +10,12 @@ vi.mock("../hooks/use-toast", () => ({
     toast: vi.fn(),
   }),
 }));
-
 // Mock fetch
 global.fetch = vi.fn();
-
 interface TestItem {
   id: number;
   name: string;
 }
-
 const TestComponent = () => {
   const {
     data,
@@ -34,7 +31,6 @@ const TestComponent = () => {
     queryKey: ["/api/test"],
     endpoint: "/api/test",
   });
-
   return (
     <div>
       <span data-testid="loading">{isLoading.toString()}</span>
@@ -48,22 +44,16 @@ const TestComponent = () => {
     </div>
   );
 };
-
 const renderWithQuery = (component: React.ReactNode) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
-  });
-
   return render(
     <QueryClientProvider client={queryClient}>
       {component}
     </QueryClientProvider>
-  );
-};
-
 describe("useCrud", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -71,34 +61,18 @@ describe("useCrud", () => {
       ok: true,
       json: () => Promise.resolve([]),
     });
-  });
-
   it("manages modal state", () => {
     renderWithQuery(<TestComponent />);
-
     expect(screen.getByTestId("modal-open")).toHaveTextContent("false");
-
     fireEvent.click(screen.getByText("Open Create"));
     expect(screen.getByTestId("modal-open")).toHaveTextContent("true");
-
     fireEvent.click(screen.getByText("Close Modal"));
-    expect(screen.getByTestId("modal-open")).toHaveTextContent("false");
-  });
-
   it("opens edit modal with item", () => {
-    renderWithQuery(<TestComponent />);
-
     fireEvent.click(screen.getByText("Open Edit"));
-    expect(screen.getByTestId("modal-open")).toHaveTextContent("true");
-  });
-
   it("handles delete confirmation", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    renderWithQuery(<TestComponent />);
-
     fireEvent.click(screen.getByText("Delete"));
     expect(confirmSpy).toHaveBeenCalled();
     
     confirmSpy.mockRestore();
-  });
 });

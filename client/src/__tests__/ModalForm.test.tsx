@@ -11,7 +11,6 @@ const TestModalForm = ({ isOpen = true, onSubmit = vi.fn() }) => {
       email: "",
     },
   });
-
   return (
     <ModalForm
       isOpen={isOpen}
@@ -24,7 +23,6 @@ const TestModalForm = ({ isOpen = true, onSubmit = vi.fn() }) => {
     </ModalForm>
   );
 };
-
 describe("ModalForm", () => {
   it("renders when open", () => {
     render(<TestModalForm />);
@@ -33,14 +31,9 @@ describe("ModalForm", () => {
     expect(screen.getByText("Test Form Content")).toBeInTheDocument();
     expect(screen.getByText("Save")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
-  });
-
   it("does not render when closed", () => {
     render(<TestModalForm isOpen={false} />);
-    
     expect(screen.queryByText("Test Modal")).not.toBeInTheDocument();
-  });
-
   it("shows loading state", () => {
     const TestLoadingModal = () => {
       const form = useForm();
@@ -57,9 +50,6 @@ describe("ModalForm", () => {
         </ModalForm>
       );
     };
-
     render(<TestLoadingModal />);
-    
     expect(screen.getByText("Saving...")).toBeInTheDocument();
-  });
 });

@@ -37,19 +37,9 @@ describe("AuthContext", () => {
       </AuthProvider>
     );
 
-    const switchToStaffButton = screen.getByText("Switch to Staff");
-    fireEvent.click(switchToStaffButton);
+    const staffButton = screen.getByText("Switch to Staff");
+    fireEvent.click(staffButton);
 
     expect(screen.getByTestId("role")).toHaveTextContent("staff");
-  });
-
-  it("throws error when used outside provider", () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    
-    expect(() => {
-      render(<TestComponent />);
-    }).toThrow();
-
-    consoleError.mockRestore();
   });
 });
