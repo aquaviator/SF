@@ -40,7 +40,7 @@ export default function Shifts() {
     handleDelete,
   } = useCrud<Shift>({
     queryKey: ["/api/shifts", tenantId],
-    endpoint: "/api/shifts",
+    endpoint: `/api/shifts?tenantId=${tenantId}`,
   });
 
   const form = useForm<ShiftFormData>({
@@ -85,8 +85,9 @@ export default function Shifts() {
       ...data,
       tenantId,
       assignedTo: data.assignedTo ? parseInt(data.assignedTo) : null,
-      status: data.assignedTo ? "assigned" : "open",
+      status: (data.assignedTo ? "assigned" : "open") as "open" | "assigned" | "confirmed" | "conflict",
       createdBy: 1, // Stubbed user ID
+      notes: data.notes || null,
     };
 
     if (editingItem) {

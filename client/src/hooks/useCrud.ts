@@ -25,7 +25,10 @@ export function useCrud<T extends { id: string | number }>({
   const { data, isLoading, error } = useQuery<T[]>({
     queryKey,
     queryFn: async () => {
-      const response = await apiRequest("GET", endpoint);
+      // Extract tenant ID from query key if present
+      const tenantId = queryKey.find(key => typeof key === 'string' && key.startsWith('acme-'));
+      const url = tenantId ? `${endpoint}?tenantId=${tenantId}` : endpoint;
+      const response = await apiRequest("GET", url);
       return response.json();
     },
   });

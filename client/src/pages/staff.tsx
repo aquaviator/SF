@@ -40,7 +40,7 @@ export default function Staff() {
     handleDelete,
   } = useCrud<User>({
     queryKey: ["/api/staff", tenantId],
-    endpoint: "/api/staff",
+    endpoint: `/api/staff?tenantId=${tenantId}`,
   });
 
   const form = useForm<StaffFormData>({
