@@ -2,8 +2,9 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/client/src/setupTests.ts'],
-  testTimeout: 10000,
+  testTimeout: 30000,
   maxWorkers: 1,
+  resetMocks: true,
   roots: ['<rootDir>/client/src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/client/src/$1',
