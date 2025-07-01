@@ -1,20 +1,21 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { vi } from 'vitest';
 import Profile from '../pages/profile';
 import { AuthProvider } from '../contexts/AuthContext';
 import { apiRequest } from '../lib/queryClient';
 
 // Mock the apiRequest function
-jest.mock('../lib/queryClient', () => ({
-  apiRequest: jest.fn(),
+vi.mock('../lib/queryClient', () => ({
+  apiRequest: vi.fn(),
 }));
 
-const mockApiRequest = apiRequest as jest.MockedFunction<typeof apiRequest>;
+const mockApiRequest = apiRequest as any;
 
 // Mock toast
-jest.mock('../hooks/use-toast', () => ({
+vi.mock('../hooks/use-toast', () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
@@ -32,7 +33,7 @@ const mockUser = {
 };
 
 // Mock fetch globally for proper response handling
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
@@ -53,13 +54,13 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 
 describe('ProfilePage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
+    vi.clearAllMocks();
+    (global.fetch as any).mockClear();
   });
 
   it('shows loading spinner initially and then displays profile data', async () => {
     // Mock the fetch response for user data loading
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockUser,
     });
@@ -92,7 +93,7 @@ describe('ProfilePage', () => {
 
   it('shows error state when profile data fails to load', async () => {
     // Mock fetch to reject
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch'));
+    (global.fetch as any).mockRejectedValueOnce(new Error('Failed to fetch'));
 
     render(
       <TestWrapper>

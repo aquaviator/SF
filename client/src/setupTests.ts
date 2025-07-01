@@ -1,40 +1,41 @@
 import "@testing-library/jest-dom";
+import { vi } from 'vitest';
 
 // Mock global fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // Mock window.confirm
-global.confirm = jest.fn(() => true);
+global.confirm = vi.fn(() => true);
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });
 
 // Mock ResizeObserver
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
 }));
 
 // Setup default mocks
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   
   // Reset fetch mock to return a basic response
-  (global.fetch as jest.Mock).mockResolvedValue({
+  (global.fetch as any).mockResolvedValue({
     ok: true,
-    json: jest.fn().mockResolvedValue({}),
+    json: vi.fn().mockResolvedValue({}),
   });
 });
