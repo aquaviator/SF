@@ -1,15 +1,19 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataTable, Column } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, MapPin, Clock, DollarSign } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Opportunity } from "@shared/schema";
 
 export default function Opportunities() {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: opportunities, isLoading } = useQuery<Opportunity[]>({
     queryKey: ["/api/opportunities", tenantId],
@@ -20,9 +24,34 @@ export default function Opportunities() {
     },
   });
 
+  const applyMutation = useMutation({
+    mutationFn: async (opportunityId: number) => {
+      return apiRequest(`/api/opportunities/${opportunityId}/apply`, {
+        method: "POST",
+        body: JSON.stringify({
+          tenantId,
+          userId: parseInt(user?.id || "1"),
+        }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Application submitted successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities", tenantId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to apply for opportunity",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleApply = (opportunity: Opportunity) => {
-    // TODO: Implement apply logic
-    console.log("Applying for opportunity:", opportunity.id);
+    applyMutation.mutate(opportunity.id);
   };
 
   const columns: Column<Opportunity>[] = [
@@ -58,9 +87,9 @@ export default function Opportunities() {
         <Button
           size="sm"
           onClick={() => handleApply(opportunity)}
-          disabled={!opportunity.isActive}
+          disabled={!opportunity.isActive || applyMutation.isPending}
         >
-          Apply
+          {applyMutation.isPending ? "Applying..." : "Apply"}
         </Button>
       ),
     },
