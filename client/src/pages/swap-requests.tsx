@@ -13,8 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { SwapRequest } from "@shared/schema";
 
 const swapRequestFormSchema = z.object({
-  shiftId: z.string().min(1, "Shift is required"),
-  requestedShiftId: z.string().min(1, "Requested shift is required"),
+  originalShiftId: z.string().min(1, "Original shift is required"),
+  targetShiftId: z.string().optional(),
   reason: z.string().optional(),
 });
 
@@ -28,22 +28,20 @@ export default function SwapRequests() {
     isLoading,
     isModalOpen,
     editingItem,
-    isSubmitting,
-    openCreateModal,
-    openEditModal,
     closeModal,
-    handleSubmit,
+    openEditModal,
     handleDelete,
+    handleSubmit,
   } = useCrud<SwapRequest>({
-    queryKey: ["/api/swap-requests", tenantId],
-    endpoint: `/api/swap-requests?tenantId=${tenantId}`,
+    queryKey: ["swapRequests", tenantId],
+    endpoint: "/api/swap-requests",
   });
 
   const form = useForm<SwapRequestFormData>({
     resolver: zodResolver(swapRequestFormSchema),
     defaultValues: {
-      shiftId: "",
-      requestedShiftId: "",
+      originalShiftId: "",
+      targetShiftId: "",
       reason: "",
     },
   });
@@ -53,14 +51,14 @@ export default function SwapRequests() {
     if (isModalOpen) {
       if (editingItem) {
         form.reset({
-          shiftId: editingItem.shiftId.toString(),
-          requestedShiftId: editingItem.requestedShiftId.toString(),
+          originalShiftId: editingItem.originalShiftId.toString(),
+          targetShiftId: editingItem.targetShiftId?.toString() || "",
           reason: editingItem.reason || "",
         });
       } else {
         form.reset({
-          shiftId: "",
-          requestedShiftId: "",
+          originalShiftId: "",
+          targetShiftId: "",
           reason: "",
         });
       }
@@ -69,17 +67,16 @@ export default function SwapRequests() {
 
   const onSubmit = (data: SwapRequestFormData) => {
     const submitData = {
-      ...data,
       tenantId,
       requesterId: parseInt(user?.id || "1"),
-      shiftId: parseInt(data.shiftId),
-      requestedShiftId: parseInt(data.requestedShiftId),
+      originalShiftId: parseInt(data.originalShiftId),
+      targetShiftId: data.targetShiftId ? parseInt(data.targetShiftId) : null,
       status: "pending" as const,
       reason: data.reason || null,
     };
 
     if (editingItem) {
-      handleSubmit({ ...submitData, id: editingItem.id, createdAt: editingItem.createdAt } as SwapRequest);
+      handleSubmit({ ...submitData, id: editingItem.id } as SwapRequest);
     } else {
       handleSubmit(submitData);
     }
@@ -94,105 +91,77 @@ export default function SwapRequests() {
     
     return (
       <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status}
       </Badge>
     );
   };
 
   const columns: Column<SwapRequest>[] = [
     {
-      key: "shiftId",
-      header: "Current Shift",
-      cell: (request) => (
-        <div className="text-sm text-gray-900">
-          Shift #{request.shiftId}
-        </div>
-      ),
+      key: "originalShiftId",
+      header: "Original Shift",
+      cell: (swapRequest) => `Shift #${swapRequest.originalShiftId}`,
     },
     {
-      key: "requestedShiftId", 
-      header: "Requested Shift",
-      cell: (request) => (
-        <div className="text-sm text-gray-900">
-          Shift #{request.requestedShiftId}
-        </div>
-      ),
+      key: "targetShiftId",
+      header: "Target Shift", 
+      cell: (swapRequest) => swapRequest.targetShiftId ? `Shift #${swapRequest.targetShiftId}` : "Any available",
     },
     {
       key: "reason",
       header: "Reason",
-      cell: (request) => (
-        <div className="text-sm text-gray-600 max-w-xs truncate">
-          {request.reason || "No reason provided"}
-        </div>
-      ),
+      cell: (swapRequest) => swapRequest.reason || "No reason provided",
     },
     {
       key: "status",
       header: "Status",
-      cell: (request) => getStatusBadge(request.status),
-    },
-    {
-      key: "createdAt",
-      header: "Requested",
-      cell: (request) => (
-        <div className="text-sm text-gray-600">
-          {new Date(request.createdAt).toLocaleDateString()}
-        </div>
-      ),
+      cell: (swapRequest) => getStatusBadge(swapRequest.status),
     },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Swap Requests</h2>
-        <p className="text-gray-600">Request to swap shifts with other team members</p>
+        <h1 className="text-3xl font-bold tracking-tight">Swap Requests</h1>
+        <p className="text-muted-foreground">
+          Request to swap your shifts with colleagues
+        </p>
       </div>
 
       <DataTable
         data={swapRequests}
         columns={columns}
         title="Swap Requests"
-        onAdd={openCreateModal}
         onEdit={openEditModal}
         onDelete={handleDelete}
-        addLabel="Request Swap"
         isLoading={isLoading}
-        emptyState={
-          <div className="text-center py-8">
-            <p className="text-gray-500">No swap requests</p>
-            <p className="text-sm text-gray-400">Create a request to swap shifts with colleagues</p>
-          </div>
-        }
       />
 
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
-        title={editingItem ? "Edit Swap Request" : "Request Shift Swap"}
+        title={editingItem ? "Edit Swap Request" : "Create Swap Request"}
         form={form}
         onSubmit={onSubmit}
-        submitLabel={editingItem ? "Update Request" : "Submit Request"}
-        isLoading={isSubmitting}
       >
         <div className="space-y-4">
           <FormField
             control={form.control}
-            name="shiftId"
+            name="originalShiftId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Your Current Shift</FormLabel>
+                <FormLabel>Original Shift</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your shift to swap" />
+                      <SelectValue placeholder="Select original shift" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="1">Customer Service - Dec 16, 9:00 AM</SelectItem>
-                    <SelectItem value="2">Security - Dec 16, 5:00 PM</SelectItem>
-                    <SelectItem value="4">Maintenance - Dec 17, 2:00 PM</SelectItem>
+                    <SelectItem value="1">Morning Shift - 8:00 AM</SelectItem>
+                    <SelectItem value="2">Afternoon Shift - 2:00 PM</SelectItem>
+                    <SelectItem value="3">Evening Shift - 6:00 PM</SelectItem>
+                    <SelectItem value="4">Night Shift - 10:00 PM</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -202,20 +171,22 @@ export default function SwapRequests() {
 
           <FormField
             control={form.control}
-            name="requestedShiftId"
+            name="targetShiftId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Shift You Want</FormLabel>
+                <FormLabel>Target Shift (Optional)</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select desired shift" />
+                      <SelectValue placeholder="Select target shift or leave empty for any" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="3">Cleaning - Dec 17, 6:00 AM</SelectItem>
-                    <SelectItem value="5">Reception - Dec 18, 8:00 AM</SelectItem>
-                    <SelectItem value="6">Night Security - Dec 18, 11:00 PM</SelectItem>
+                    <SelectItem value="">Any available shift</SelectItem>
+                    <SelectItem value="1">Morning Shift - 8:00 AM</SelectItem>
+                    <SelectItem value="2">Afternoon Shift - 2:00 PM</SelectItem>
+                    <SelectItem value="3">Evening Shift - 6:00 PM</SelectItem>
+                    <SelectItem value="4">Night Shift - 10:00 PM</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -230,7 +201,10 @@ export default function SwapRequests() {
               <FormItem>
                 <FormLabel>Reason (Optional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Why do you want to swap these shifts?" {...field} />
+                  <Textarea
+                    placeholder="Explain why you need to swap this shift..."
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

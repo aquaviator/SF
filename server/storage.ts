@@ -426,9 +426,12 @@ export class MemStorage implements IStorage {
     const id = this.currentHolidayRequestId++;
     const holidayRequest: HolidayRequest = { 
       id,
-      ...insertHolidayRequest,
-      status: insertHolidayRequest.status || "pending",
+      tenantId: insertHolidayRequest.tenantId,
+      requesterId: insertHolidayRequest.requesterId,
+      startDate: insertHolidayRequest.startDate,
+      endDate: insertHolidayRequest.endDate,
       reason: insertHolidayRequest.reason || null,
+      status: insertHolidayRequest.status || "pending",
       reviewedBy: insertHolidayRequest.reviewedBy || null,
       reviewedAt: insertHolidayRequest.reviewedAt || null,
       reviewNotes: insertHolidayRequest.reviewNotes || null,
