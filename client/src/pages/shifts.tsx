@@ -84,8 +84,8 @@ export default function Shifts() {
     const submitData = {
       ...data,
       tenantId,
-      assignedTo: data.assignedTo ? parseInt(data.assignedTo) : null,
-      status: (data.assignedTo ? "assigned" : "open") as "open" | "assigned" | "confirmed" | "conflict",
+      assignedTo: data.assignedTo && data.assignedTo !== "unassigned" ? parseInt(data.assignedTo) : null,
+      status: (data.assignedTo && data.assignedTo !== "unassigned" ? "assigned" : "open") as "open" | "assigned" | "confirmed" | "conflict",
       createdBy: 1, // Stubbed user ID
       notes: data.notes || null,
     };
@@ -262,7 +262,7 @@ export default function Shifts() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Leave Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Leave Unassigned</SelectItem>
                     <SelectItem value="1">Sarah Anderson</SelectItem>
                     <SelectItem value="2">Mike Johnson</SelectItem>
                     <SelectItem value="3">Emily Davis</SelectItem>

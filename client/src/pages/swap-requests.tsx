@@ -77,7 +77,7 @@ export default function SwapRequests() {
       tenantId,
       requesterId: parseInt(user?.id || "1"),
       originalShiftId: parseInt(data.originalShiftId),
-      targetShiftId: data.targetShiftId ? parseInt(data.targetShiftId) : null,
+      targetShiftId: data.targetShiftId && data.targetShiftId !== "open" ? parseInt(data.targetShiftId) : null,
       reason: data.reason || null,
       status: "pending" as const,
     };
@@ -208,7 +208,7 @@ export default function SwapRequests() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Open request (any shift)</SelectItem>
+                    <SelectItem value="open">Open request (any shift)</SelectItem>
                     <SelectItem value="4">Customer Service - Dec 18, 9:00 AM</SelectItem>
                     <SelectItem value="5">Security - Dec 18, 5:00 PM</SelectItem>
                     <SelectItem value="6">Cleaning - Dec 19, 6:00 AM</SelectItem>
