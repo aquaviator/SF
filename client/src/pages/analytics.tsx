@@ -1,0 +1,572 @@
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTable, Column } from "@/components/DataTable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  BarChart, 
+  Bar, 
+  LineChart, 
+  Line, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from "recharts";
+import { 
+  BarChart3, 
+  Download, 
+  FileText, 
+  DollarSign,
+  Clock,
+  TrendingUp,
+  Users,
+  Calendar,
+  Filter
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface LaborCostData {
+  month: string;
+  cost: number;
+  budget: number;
+}
+
+interface FillRateData {
+  department: string;
+  fillRate: number;
+  target: number;
+}
+
+interface TimeSpendData {
+  week: string;
+  scheduled: number;
+  actual: number;
+  overtime: number;
+}
+
+interface Report {
+  id: number;
+  name: string;
+  type: string;
+  generatedAt: Date;
+  status: "ready" | "processing" | "failed";
+  downloadUrl?: string;
+}
+
+interface ActivityLog {
+  id: number;
+  timestamp: Date;
+  action: string;
+  user: string;
+  details: string;
+  impact: "low" | "medium" | "high";
+}
+
+export default function Analytics() {
+  const { tenantId } = useAuth();
+  const [timeRange, setTimeRange] = React.useState("last-30-days");
+  const [activityFilter, setActivityFilter] = React.useState("all");
+
+  // Labor Cost Data
+  const { data: laborCostData = [] } = useQuery<LaborCostData[]>({
+    queryKey: ["/api/analytics/labor-cost", tenantId, timeRange],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        { month: "Jan", cost: 12500, budget: 15000 },
+        { month: "Feb", cost: 13200, budget: 15000 },
+        { month: "Mar", cost: 14800, budget: 15000 },
+        { month: "Apr", cost: 16200, budget: 15000 },
+        { month: "May", cost: 14500, budget: 15000 },
+        { month: "Jun", cost: 15800, budget: 15000 },
+      ];
+    },
+  });
+
+  // Fill Rate Data
+  const { data: fillRateData = [] } = useQuery<FillRateData[]>({
+    queryKey: ["/api/analytics/fill-rate", tenantId, timeRange],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        { department: "Customer Service", fillRate: 95, target: 90 },
+        { department: "Security", fillRate: 88, target: 85 },
+        { department: "Maintenance", fillRate: 92, target: 90 },
+        { department: "Administration", fillRate: 78, target: 80 },
+      ];
+    },
+  });
+
+  // Time vs Spend Data
+  const { data: timeSpendData = [] } = useQuery<TimeSpendData[]>({
+    queryKey: ["/api/analytics/time-spend", tenantId, timeRange],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        { week: "Week 1", scheduled: 320, actual: 315, overtime: 8 },
+        { week: "Week 2", scheduled: 320, actual: 328, overtime: 12 },
+        { week: "Week 3", scheduled: 320, actual: 310, overtime: 5 },
+        { week: "Week 4", scheduled: 320, actual: 335, overtime: 18 },
+      ];
+    },
+  });
+
+  // Reports Data
+  const { data: reports = [] } = useQuery<Report[]>({
+    queryKey: ["/api/reports", tenantId],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        {
+          id: 1,
+          name: "Monthly Labor Cost Report",
+          type: "Labor Cost",
+          generatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          status: "ready",
+          downloadUrl: "/reports/labor-cost-monthly.pdf",
+        },
+        {
+          id: 2,
+          name: "Weekly Fill Rate Analysis",
+          type: "Fill Rate",
+          generatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+          status: "ready",
+          downloadUrl: "/reports/fill-rate-weekly.csv",
+        },
+        {
+          id: 3,
+          name: "Overtime Hours Summary",
+          type: "Time Tracking",
+          generatedAt: new Date(Date.now() - 1000 * 60 * 30),
+          status: "processing",
+        },
+        {
+          id: 4,
+          name: "Staff Performance Metrics",
+          type: "Performance",
+          generatedAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
+          status: "failed",
+        },
+      ];
+    },
+  });
+
+  // Activity Log Data
+  const { data: activityLogs = [] } = useQuery<ActivityLog[]>({
+    queryKey: ["/api/analytics/activity-log", tenantId, activityFilter],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        {
+          id: 1,
+          timestamp: new Date(Date.now() - 1000 * 60 * 15),
+          action: "Shift Created",
+          user: "Manager",
+          details: "Evening shift created for Customer Service",
+          impact: "medium",
+        },
+        {
+          id: 2,
+          timestamp: new Date(Date.now() - 1000 * 60 * 45),
+          action: "Staff Assigned",
+          user: "HR Team",
+          details: "Sarah Anderson assigned to Security shift",
+          impact: "low",
+        },
+        {
+          id: 3,
+          timestamp: new Date(Date.now() - 1000 * 60 * 90),
+          action: "Swap Approved",
+          user: "Manager",
+          details: "Shift swap between Mike Johnson and Emily Davis",
+          impact: "medium",
+        },
+        {
+          id: 4,
+          timestamp: new Date(Date.now() - 1000 * 60 * 120),
+          action: "Policy Updated",
+          user: "Admin",
+          details: "Strike point policy modified for Emergency category",
+          impact: "high",
+        },
+        {
+          id: 5,
+          timestamp: new Date(Date.now() - 1000 * 60 * 180),
+          action: "Holiday Approved",
+          user: "HR Team",
+          details: "David Wilson's holiday request approved",
+          impact: "low",
+        },
+      ];
+    },
+  });
+
+  const getImpactBadge = (impact: ActivityLog["impact"]) => {
+    const variants = {
+      low: "bg-green-100 text-green-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      high: "bg-red-100 text-red-800",
+    };
+
+    return (
+      <Badge className={variants[impact]}>
+        {impact.charAt(0).toUpperCase() + impact.slice(1)}
+      </Badge>
+    );
+  };
+
+  const getStatusBadge = (status: Report["status"]) => {
+    const variants = {
+      ready: "bg-green-100 text-green-800",
+      processing: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+    };
+
+    const labels = {
+      ready: "Ready",
+      processing: "Processing",
+      failed: "Failed",
+    };
+
+    return (
+      <Badge className={variants[status]}>
+        {labels[status]}
+      </Badge>
+    );
+  };
+
+  const reportColumns: Column<Report>[] = [
+    {
+      key: "name",
+      header: "Report",
+      cell: (report) => (
+        <div>
+          <p className="font-medium text-sm">{report.name}</p>
+          <p className="text-xs text-gray-500">{report.type}</p>
+        </div>
+      ),
+    },
+    {
+      key: "generatedAt",
+      header: "Generated",
+      cell: (report) => (
+        <span className="text-sm">
+          {report.generatedAt.toLocaleDateString()} {report.generatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (report) => getStatusBadge(report.status),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (report) => (
+        <div className="flex gap-2">
+          {report.status === "ready" && report.downloadUrl && (
+            <>
+              <Button size="sm" variant="outline">
+                <Download className="w-3 h-3 mr-1" />
+                CSV
+              </Button>
+              <Button size="sm" variant="outline">
+                <Download className="w-3 h-3 mr-1" />
+                PDF
+              </Button>
+            </>
+          )}
+          {report.status === "processing" && (
+            <Button size="sm" variant="ghost" disabled>
+              Processing...
+            </Button>
+          )}
+          {report.status === "failed" && (
+            <Button size="sm" variant="outline">
+              Retry
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const activityColumns: Column<ActivityLog>[] = [
+    {
+      key: "timestamp",
+      header: "Time",
+      cell: (activity) => (
+        <span className="text-sm">
+          {activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
+    },
+    {
+      key: "action",
+      header: "Action",
+      cell: (activity) => (
+        <div>
+          <p className="font-medium text-sm">{activity.action}</p>
+          <p className="text-xs text-gray-500">{activity.details}</p>
+        </div>
+      ),
+    },
+    {
+      key: "user",
+      header: "User",
+      cell: (activity) => <span className="text-sm">{activity.user}</span>,
+    },
+    {
+      key: "impact",
+      header: "Impact",
+      cell: (activity) => getImpactBadge(activity.impact),
+    },
+  ];
+
+  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c'];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics</h2>
+          <p className="text-gray-600">Insights and reports for your workforce management</p>
+        </div>
+        <div className="flex gap-2">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select time range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="last-7-days">Last 7 days</SelectItem>
+              <SelectItem value="last-30-days">Last 30 days</SelectItem>
+              <SelectItem value="last-90-days">Last 90 days</SelectItem>
+              <SelectItem value="last-year">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export All
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="charts" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="charts" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Charts
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Reports
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Activity Log
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="charts" className="space-y-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Labor Cost</p>
+                    <p className="text-2xl font-bold">$15,800</p>
+                    <p className="text-xs text-green-600">+5.3% vs target</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg Fill Rate</p>
+                    <p className="text-2xl font-bold">88.3%</p>
+                    <p className="text-xs text-green-600">+2.1% vs last month</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
+                    <p className="text-2xl font-bold">43h</p>
+                    <p className="text-xs text-red-600">+12% vs last week</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active Staff</p>
+                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-xs text-blue-600">All departments</p>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Labor Cost Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Labor Cost vs Budget</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={laborCostData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="cost" fill="#8884d8" name="Actual Cost" />
+                    <Bar dataKey="budget" fill="#82ca9d" name="Budget" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Fill Rate Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Department Fill Rates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={fillRateData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ department, fillRate }) => `${department}: ${fillRate}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="fillRate"
+                    >
+                      {fillRateData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Time vs Spend Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Time Tracking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={timeSpendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="scheduled" stroke="#8884d8" name="Scheduled Hours" />
+                  <Line type="monotone" dataKey="actual" stroke="#82ca9d" name="Actual Hours" />
+                  <Line type="monotone" dataKey="overtime" stroke="#ffc658" name="Overtime Hours" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Generated Reports</h3>
+            <Button>
+              <FileText className="w-4 h-4 mr-2" />
+              Generate New Report
+            </Button>
+          </div>
+
+          <DataTable
+            data={reports}
+            columns={reportColumns}
+            title=""
+            isLoading={false}
+            emptyState={
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No reports generated</p>
+                <p className="text-sm text-gray-400">Generate your first report to get started</p>
+              </div>
+            }
+          />
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Activity Log</h3>
+            <div className="flex gap-2">
+              <Select value={activityFilter} onValueChange={setActivityFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by impact" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Activities</SelectItem>
+                  <SelectItem value="high">High Impact</SelectItem>
+                  <SelectItem value="medium">Medium Impact</SelectItem>
+                  <SelectItem value="low">Low Impact</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline">
+                <Filter className="w-4 h-4 mr-2" />
+                More Filters
+              </Button>
+            </div>
+          </div>
+
+          <DataTable
+            data={activityLogs}
+            columns={activityColumns}
+            title=""
+            isLoading={false}
+            emptyState={
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No activity logged</p>
+                <p className="text-sm text-gray-400">Activity will appear here as actions are performed</p>
+              </div>
+            }
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
