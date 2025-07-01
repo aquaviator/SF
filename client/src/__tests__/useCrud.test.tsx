@@ -10,7 +10,7 @@ interface TestItem {
 }
 
 const TestComponent = () => {
-  const _crud = useCrud<TestItem>({
+  useCrud<TestItem>({
     queryKey: ["test-items"],
     endpoint: "/api/test-items",
   });
