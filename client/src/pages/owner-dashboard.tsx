@@ -16,7 +16,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import type { User, Shift, Assignment, SwapRequest } from "@shared/schema";
+// Schema types for dashboard data
 
 interface DashboardMetrics {
   totalStaff: number;

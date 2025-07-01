@@ -182,7 +182,7 @@ export default function Policies() {
   });
 
   // Fetch Notification Settings
-  const { data: notificationSettings, isLoading: notificationLoading } = useQuery<NotificationSettings>({
+  const { data: notificationSettings, isLoading: _notificationLoading } = useQuery<NotificationSettings>({
     queryKey: ["/api/notification-settings", tenantId],
     queryFn: async () => {
       // Mock data for now

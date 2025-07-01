@@ -455,7 +455,7 @@ export default function Subscription() {
                             {subscription.trialDaysRemaining} days left in trial
                           </p>
                           <Button size="sm" variant="outline" onClick={handleExtendTrial} className="mt-2">
-                            <Clock className="w-3 h-3 mr-1" />
+                            <TrendingUp className="w-3 h-3 mr-1" />
                             Extend Trial
                           </Button>
                         </div>

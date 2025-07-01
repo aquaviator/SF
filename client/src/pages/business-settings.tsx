@@ -159,7 +159,7 @@ export default function BusinessSettings() {
   });
 
   // Fetch Business Profile
-  const { data: businessProfile, isLoading: profileLoading } = useQuery<BusinessProfile>({
+  const { data: businessProfile, isLoading: _profileLoading } = useQuery<BusinessProfile>({
     queryKey: ["/api/business-profile", tenantId],
     queryFn: async () => {
       // Mock data for now
@@ -214,7 +214,7 @@ export default function BusinessSettings() {
   });
 
   // Fetch Operating Hours
-  const { data: operatingHours, isLoading: hoursLoading } = useQuery<OperatingHours>({
+  const { data: _operatingHours, isLoading: _hoursLoading } = useQuery<OperatingHours>({
     queryKey: ["/api/operating-hours", tenantId],
   });
 
