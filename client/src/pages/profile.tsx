@@ -1,17 +1,15 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModalForm } from "@/components/ModalForm";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, User, Mail, Clock, Calendar } from "lucide-react";
+import { Edit, User, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -30,16 +28,23 @@ export default function Profile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [userData, setUserData] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const { data: profileData, isLoading } = useQuery<UserType>({
-    queryKey: ["/api/profile", user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/users/${user?.id}?tenantId=${tenantId}`);
-      if (!response.ok) throw new Error("Failed to fetch profile");
-      return response.json();
-    },
-    enabled: !!user?.id,
-  });
+  useEffect(() => {
+    if (user?.id) {
+      apiRequest('GET', `/api/users/${user.id}`)
+        .then(data => setUserData(data as UserType))
+        .catch(error => {
+          toast({
+            title: "Error",
+            description: "Failed to load profile data",
+            variant: "destructive",
+          });
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [user?.id, toast]);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -50,28 +55,28 @@ export default function Profile() {
     },
   });
 
-  // Reset form when profile data loads
-  React.useEffect(() => {
-    if (profileData) {
+  // Reset form when user data loads
+  useEffect(() => {
+    if (userData) {
       form.reset({
-        firstName: profileData.firstName || "",
-        lastName: profileData.lastName || "",
-        email: profileData.email,
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email,
       });
     }
-  }, [profileData, form]);
+  }, [userData, form]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      if (!profileData) throw new Error("Profile data not loaded");
+      if (!userData) throw new Error("User data not loaded");
       
-      // Merge form data with existing profile data to send all required fields
+      // Merge form data with existing user data to send all required fields
       const fullUpdateData = {
-        username: profileData.username,
-        password: profileData.password,
-        role: profileData.role,
-        tenantId: profileData.tenantId,
-        isActive: profileData.isActive,
+        username: userData.username,
+        password: userData.password,
+        role: userData.role,
+        tenantId: userData.tenantId,
+        isActive: userData.isActive,
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -100,8 +105,29 @@ export default function Profile() {
     updateMutation.mutate(data);
   };
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64">Loading profile...</div>;
+  // Show loading spinner until data is ready
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-4">Loading Profile...</h2>
+          <p className="text-gray-600">Please wait while we fetch your information.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if failed to load profile
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">Failed to load profile</h2>
+          <p className="text-gray-600">Unable to fetch profile data. Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
