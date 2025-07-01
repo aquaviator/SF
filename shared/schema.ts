@@ -23,6 +23,8 @@ export const shifts = pgTable("shifts", {
   startTime: text("start_time").notNull(),
   endTime: text("end_time").notNull(),
   role: text("role").notNull(),
+  description: text("description").notNull(),
+  location: text("location").notNull(),
   assignedTo: integer("assigned_to"),
   status: text("status").notNull().$type<"open" | "assigned" | "confirmed" | "conflict">(),
   notes: text("notes"),

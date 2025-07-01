@@ -38,6 +38,7 @@ const staffFormSchema = z.object({
 type StaffFormData = z.infer<typeof staffFormSchema>;
 
 interface PerformanceMetric {
+  id: number;
   staffId: number;
   name: string;
   attendance: number;
@@ -49,6 +50,7 @@ interface PerformanceMetric {
 }
 
 interface HolidayEntitlement {
+  id: number;
   staffId: number;
   name: string;
   totalDays: number;
@@ -130,6 +132,7 @@ export default function Workforce() {
   // Mock performance data
   const performanceData: PerformanceMetric[] = [
     {
+      id: 1,
       staffId: 2,
       name: "Sarah Anderson",
       attendance: 98,
@@ -140,6 +143,7 @@ export default function Workforce() {
       shiftsCompleted: 20,
     },
     {
+      id: 2,
       staffId: 3,
       name: "Mike Johnson",
       attendance: 94,
@@ -150,6 +154,7 @@ export default function Workforce() {
       shiftsCompleted: 18,
     },
     {
+      id: 3,
       staffId: 4,
       name: "Emily Davis",
       attendance: 96,
@@ -164,6 +169,7 @@ export default function Workforce() {
   // Mock holiday entitlements
   const holidayData: HolidayEntitlement[] = [
     {
+      id: 1,
       staffId: 2,
       name: "Sarah Anderson",
       totalDays: 25,
@@ -172,6 +178,7 @@ export default function Workforce() {
       remainingDays: 14,
     },
     {
+      id: 2,
       staffId: 3,
       name: "Mike Johnson",
       totalDays: 25,
@@ -180,6 +187,7 @@ export default function Workforce() {
       remainingDays: 13,
     },
     {
+      id: 3,
       staffId: 4,
       name: "Emily Davis",
       totalDays: 20,

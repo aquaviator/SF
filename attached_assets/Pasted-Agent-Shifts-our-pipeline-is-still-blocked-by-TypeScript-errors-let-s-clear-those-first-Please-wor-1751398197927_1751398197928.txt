@@ -1,0 +1,38 @@
+Agent Shifts, our pipeline is still blocked by TypeScript errors—let’s clear those first. Please work through steps 1–5 in order, verifying each one before moving on:
+
+1. **Fix DataTable Generic Constraints**  
+   - In `client/src/pages/workforce.tsx`, adjust the `DataTable<PerformanceMetric>` (and any other uses) so that the `columns` prop only references keys of `PerformanceMetric`. If needed, extend `PerformanceMetric` or narrow your column definitions to resolve the generic type conflicts.
+
+2. **Add Missing Shift Schema Fields**  
+   - In your shared schema (`shared/schema.ts`), add `description: string` and `location: string` to the `Shift` type (and Zod schema).  
+   - In `client/src/pages/scheduling.tsx`, ensure you pass and render these new fields in your forms and table.
+
+3. **Resolve Owner Module Form Submission Errors**  
+   - For each Owner page reporting “Expected 2–3 arguments” on `useMutation`, update the calls to supply both the mutation function and options object.  
+   - Check `business-settings.tsx`, `policies.tsx`, `subscription.tsx`, etc., and fix their `useMutation` invocations.
+
+4. **Address useCrud Test Type Constraints**  
+   - In `src/__tests__/useCrud.test.tsx`, update the `TestItem` interface or your test generics so they satisfy the hook’s type signature (`{ id: string | number }`).  
+   - Ensure the test compiles and runs without errors.
+
+5. **Verify TypeScript Compilation & Smoke Test**  
+   - Run:
+     ```
+     npm run check
+     ```
+     Confirm **0 TypeScript errors**.  
+   - Then run a single smoke test to confirm Jest now starts:
+     ```
+     npx jest --testPathPattern=ProfilePage.test.tsx --silent
+     ```
+     It should complete under 10s.
+
+**Reporting**  
+After completing these steps, provide:
+
+- A brief checklist showing each step ✅ or ❌  
+- Confirmation that `npm run check` passes cleanly  
+- The output of the smoke test  
+- Your plan for investigating the Jest hanging issue next
+
+Once TypeScript is green and one smoke test runs, we’ll tackle ESLint and full Jest stabilization.```
