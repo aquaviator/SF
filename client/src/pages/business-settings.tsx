@@ -238,11 +238,7 @@ export default function BusinessSettings() {
   // Job Role Mutations
   const roleCreateMutation = useMutation({
     mutationFn: async (data: JobRoleFormData) => {
-      return await apiRequest({
-        url: `/api/job-roles`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/job-roles`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
@@ -258,11 +254,7 @@ export default function BusinessSettings() {
 
   const roleUpdateMutation = useMutation({
     mutationFn: async (data: JobRole) => {
-      return await apiRequest({
-        url: `/api/job-roles/${data.id}`,
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PATCH", `/api/job-roles/${data.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
@@ -279,11 +271,7 @@ export default function BusinessSettings() {
   // Operating Hours Mutation
   const hoursMutation = useMutation({
     mutationFn: async (data: OperatingHoursFormData) => {
-      return await apiRequest({
-        url: `/api/operating-hours`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/operating-hours`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/operating-hours", tenantId] });
@@ -363,10 +351,7 @@ export default function BusinessSettings() {
 
   const handleDeleteRole = async (role: JobRole) => {
     try {
-      await apiRequest({
-        url: `/api/job-roles/${role.id}`,
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/job-roles/${role.id}`);
       queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
       toast({ title: "Job role deleted successfully" });
     } catch (error) {

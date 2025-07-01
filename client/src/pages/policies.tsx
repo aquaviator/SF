@@ -209,11 +209,7 @@ export default function Policies() {
   // Policy Mutations
   const policyCreateMutation = useMutation({
     mutationFn: async (data: ShiftPolicyFormData) => {
-      return await apiRequest({
-        url: `/api/shift-policies`,
-        method: "POST",
-        body: JSON.stringify({ ...data, tenantId }),
-      });
+      return await apiRequest("POST", `/api/shift-policies`, { ...data, tenantId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shift-policies", tenantId] });
@@ -229,11 +225,7 @@ export default function Policies() {
 
   const policyUpdateMutation = useMutation({
     mutationFn: async (data: ShiftPolicy) => {
-      return await apiRequest({
-        url: `/api/shift-policies/${data.id}`,
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PATCH", `/api/shift-policies/${data.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shift-policies", tenantId] });
