@@ -14,29 +14,27 @@ vi.mock('wouter', () => ({
   useLocation: () => ['/owner/dashboard'],
 }));
 
-// Mock AuthContext for testing different roles
-const mockAuthContext = {
-  role: 'owner' as const,
-  tenantId: 'test-tenant',
-  user: {
-    id: '1',
-    firstName: 'Test',
-    lastName: 'Owner',
-    email: 'owner@test.com'
-  },
-  switchRole: vi.fn(),
-  isAuthenticated: true
-};
+// Mock the AuthContext hook directly
+const mockUseAuth = vi.fn();
 
-const MockAuthProvider = ({ children, role }: { children: React.ReactNode; role: 'owner' | 'staff' }) => {
-  const contextValue = { ...mockAuthContext, role };
-  return (
-    <AuthProvider>
-      <div data-testid="mock-auth-provider" data-role={role}>
-        {children}
-      </div>
-    </AuthProvider>
-  );
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: mockUseAuth,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+const setupAuthMock = (role: 'owner' | 'staff') => {
+  mockUseAuth.mockReturnValue({
+    role: role,
+    tenantId: 'test-tenant',
+    user: {
+      id: '1',
+      firstName: 'Test',
+      lastName: role === 'owner' ? 'Owner' : 'Staff',
+      email: `${role}@test.com`
+    },
+    switchRole: vi.fn(),
+    isAuthenticated: true
+  });
 };
 
 describe('BottomTabBar', () => {
@@ -47,11 +45,8 @@ describe('BottomTabBar', () => {
   });
 
   it('renders owner navigation tabs correctly', () => {
-    render(
-      <MockAuthProvider role="owner">
-        <BottomTabBar onMoreClick={mockOnMoreClick} />
-      </MockAuthProvider>
-    );
+    setupAuthMock('owner');
+    render(<BottomTabBar onMoreClick={mockOnMoreClick} />);
 
     // Check owner-specific tabs
     expect(screen.getByLabelText('Navigate to owner dashboard')).toBeInTheDocument();
@@ -69,11 +64,8 @@ describe('BottomTabBar', () => {
   });
 
   it('renders staff navigation tabs correctly', () => {
-    render(
-      <MockAuthProvider role="staff">
-        <BottomTabBar onMoreClick={mockOnMoreClick} />
-      </MockAuthProvider>
-    );
+    setupAuthMock('staff');
+    render(<BottomTabBar onMoreClick={mockOnMoreClick} />);
 
     // Check staff-specific tabs
     expect(screen.getByLabelText('Navigate to staff dashboard')).toBeInTheDocument();
