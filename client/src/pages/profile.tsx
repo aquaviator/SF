@@ -21,8 +21,6 @@ const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  availability: z.string().optional(),
-  notes: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -49,8 +47,6 @@ export default function Profile() {
       firstName: "",
       lastName: "",
       email: "",
-      availability: "",
-      notes: "",
     },
   });
 
@@ -61,20 +57,15 @@ export default function Profile() {
         firstName: profileData.firstName || "",
         lastName: profileData.lastName || "",
         email: profileData.email,
-        availability: profileData.availability || "",
-        notes: profileData.notes || "",
       });
     }
   }, [profileData, form]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      return apiRequest(`/api/users/${user?.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          ...data,
-          tenantId,
-        }),
+      return apiRequest("PUT", `/api/staff/${user?.id}`, {
+        ...data,
+        tenantId,
       });
     },
     onSuccess: () => {
@@ -157,25 +148,20 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Availability</label>
-              <p className="mt-1">{profileData?.availability || "Not specified"}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Notes</label>
-              <p className="text-sm text-gray-600 mt-1">
-                {profileData?.notes || "No additional notes"}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Member Since</label>
+              <label className="text-sm font-medium text-gray-500">Role</label>
               <div className="flex items-center mt-1">
-                <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                <p className="text-sm">
-                  {profileData?.createdAt 
-                    ? new Date(profileData.createdAt).toLocaleDateString()
-                    : "Unknown"
-                  }
-                </p>
+                <User className="w-4 h-4 mr-2 text-gray-400" />
+                <Badge variant="outline" className="capitalize">
+                  {profileData?.role}
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Status</label>
+              <div className="flex items-center mt-1">
+                <Badge variant={profileData?.isActive ? "default" : "secondary"}>
+                  {profileData?.isActive ? "Active" : "Inactive"}
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -236,47 +222,7 @@ export default function Profile() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="availability"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Availability</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your availability" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="full-time">Full Time</SelectItem>
-                    <SelectItem value="part-time">Part Time</SelectItem>
-                    <SelectItem value="weekends">Weekends Only</SelectItem>
-                    <SelectItem value="flexible">Flexible</SelectItem>
-                    <SelectItem value="on-call">On Call</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Additional Notes (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Any additional information about your availability or preferences..." 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
       </ModalForm>
     </div>
