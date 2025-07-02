@@ -1057,7 +1057,7 @@ export default function BusinessSettingsPage() {
         title={editingDepartment ? "Edit Department" : "Add Department"}
         form={departmentForm}
         onSubmit={handleDepartmentSubmit}
-        isSubmitting={departmentMutation.isPending}
+        isLoading={departmentMutation.isPending}
       >
         <div className="space-y-4">
           <FormField
