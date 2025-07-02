@@ -126,6 +126,79 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Business profiles table
+export const businessProfiles = pgTable("business_profiles", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().unique(),
+  name: text("name").notNull(),
+  ownerName: text("owner_name"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  logoUrl: text("logo_url"),
+  ownerProfilePicture: text("owner_profile_picture"),
+  description: text("description"),
+  businessType: text("business_type"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Job roles table
+export const jobRoles = pgTable("job_roles", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  hourlyRate: text("hourly_rate"), // Using text to allow for flexible formatting like "$15.50"
+  responsibilities: text("responsibilities").array(),
+  requirements: text("requirements").array(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Locations table
+export const locations = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  address: text("address"),
+  capacity: integer("capacity"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Departments table
+export const departments = pgTable("departments", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  managerId: integer("manager_id"),
+  budget: text("budget"), // Using text for flexible budget formatting
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Operating hours table
+export const operatingHours = pgTable("operating_hours", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  dayOfWeek: text("day_of_week").notNull().$type<"monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday">(),
+  openTime: text("open_time"), // null means closed that day
+  closeTime: text("close_time"),
+  isOpen: boolean("is_open").notNull().default(true),
+  breakStartTime: text("break_start_time"),
+  breakEndTime: text("break_end_time"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertAssignmentSchema = createInsertSchema(assignments).omit({
   id: true,
   assignedAt: true,
@@ -142,9 +215,49 @@ export const insertScheduleTemplateSchema = createInsertSchema(scheduleTemplates
   updatedAt: true,
 });
 
+export const insertBusinessProfileSchema = createInsertSchema(businessProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJobRoleSchema = createInsertSchema(jobRoles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLocationSchema = createInsertSchema(locations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDepartmentSchema = createInsertSchema(departments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOperatingHoursSchema = createInsertSchema(operatingHours).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
 export type InsertHolidayRequest = z.infer<typeof insertHolidayRequestSchema>;
 export type ScheduleTemplate = typeof scheduleTemplates.$inferSelect;
 export type InsertScheduleTemplate = z.infer<typeof insertScheduleTemplateSchema>;
+export type BusinessProfile = typeof businessProfiles.$inferSelect;
+export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
+export type JobRole = typeof jobRoles.$inferSelect;
+export type InsertJobRole = z.infer<typeof insertJobRoleSchema>;
+export type Location = typeof locations.$inferSelect;
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type Department = typeof departments.$inferSelect;
+export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type OperatingHours = typeof operatingHours.$inferSelect;
+export type InsertOperatingHours = z.infer<typeof insertOperatingHoursSchema>;

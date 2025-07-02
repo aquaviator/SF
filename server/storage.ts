@@ -1,4 +1,4 @@
-import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate } from "@shared/schema";
+import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, businessProfiles, jobRoles, locations, departments, operatingHours, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, type BusinessProfile, type InsertBusinessProfile, type JobRole, type InsertJobRole, type Location, type InsertLocation, type Department, type InsertDepartment, type OperatingHours, type InsertOperatingHours } from "@shared/schema";
 
 export interface IStorage {
   // User operations
@@ -58,6 +58,40 @@ export interface IStorage {
   createTimeEntry(entry: any): Promise<any>;
   updateTimeEntry(id: number, entry: any): Promise<any | undefined>;
   getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]>;
+
+  // Business profile operations
+  getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined>;
+  createBusinessProfile(profile: InsertBusinessProfile): Promise<BusinessProfile>;
+  updateBusinessProfile(tenantId: string, profile: InsertBusinessProfile): Promise<BusinessProfile | undefined>;
+  deleteBusinessProfile(tenantId: string): Promise<boolean>;
+
+  // Job role operations
+  getJobRole(id: number): Promise<JobRole | undefined>;
+  getJobRolesByTenant(tenantId: string): Promise<JobRole[]>;
+  createJobRole(role: InsertJobRole): Promise<JobRole>;
+  updateJobRole(id: number, role: InsertJobRole): Promise<JobRole | undefined>;
+  deleteJobRole(id: number): Promise<boolean>;
+
+  // Location operations
+  getLocation(id: number): Promise<Location | undefined>;
+  getLocationsByTenant(tenantId: string): Promise<Location[]>;
+  createLocation(location: InsertLocation): Promise<Location>;
+  updateLocation(id: number, location: InsertLocation): Promise<Location | undefined>;
+  deleteLocation(id: number): Promise<boolean>;
+
+  // Department operations
+  getDepartment(id: number): Promise<Department | undefined>;
+  getDepartmentsByTenant(tenantId: string): Promise<Department[]>;
+  createDepartment(department: InsertDepartment): Promise<Department>;
+  updateDepartment(id: number, department: InsertDepartment): Promise<Department | undefined>;
+  deleteDepartment(id: number): Promise<boolean>;
+
+  // Operating hours operations
+  getOperatingHours(id: number): Promise<OperatingHours | undefined>;
+  getOperatingHoursByTenant(tenantId: string): Promise<OperatingHours[]>;
+  createOperatingHours(hours: InsertOperatingHours): Promise<OperatingHours>;
+  updateOperatingHours(id: number, hours: InsertOperatingHours): Promise<OperatingHours | undefined>;
+  deleteOperatingHours(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -69,6 +103,11 @@ export class MemStorage implements IStorage {
   private holidayRequests: Map<number, HolidayRequest>;
   private scheduleTemplates: Map<number, ScheduleTemplate>;
   private timeEntries: Map<number, any>;
+  private businessProfiles: Map<string, BusinessProfile>; // keyed by tenantId
+  private jobRoles: Map<number, JobRole>;
+  private locations: Map<number, Location>;
+  private departments: Map<number, Department>;
+  private operatingHours: Map<number, OperatingHours>;
   private currentUserId: number;
   private currentShiftId: number;
   private currentOpportunityId: number;
@@ -77,6 +116,10 @@ export class MemStorage implements IStorage {
   private currentHolidayRequestId: number;
   private currentScheduleTemplateId: number;
   private currentTimeEntryId: number;
+  private currentJobRoleId: number;
+  private currentLocationId: number;
+  private currentDepartmentId: number;
+  private currentOperatingHoursId: number;
 
   constructor() {
     this.users = new Map();
@@ -87,6 +130,11 @@ export class MemStorage implements IStorage {
     this.holidayRequests = new Map();
     this.scheduleTemplates = new Map();
     this.timeEntries = new Map();
+    this.businessProfiles = new Map();
+    this.jobRoles = new Map();
+    this.locations = new Map();
+    this.departments = new Map();
+    this.operatingHours = new Map();
     this.currentUserId = 1;
     this.currentShiftId = 1;
     this.currentOpportunityId = 1;
@@ -95,6 +143,10 @@ export class MemStorage implements IStorage {
     this.currentHolidayRequestId = 1;
     this.currentScheduleTemplateId = 1;
     this.currentTimeEntryId = 1;
+    this.currentJobRoleId = 1;
+    this.currentLocationId = 1;
+    this.currentDepartmentId = 1;
+    this.currentOperatingHoursId = 1;
 
     // Initialize with sample data
     this.initializeSampleData();
