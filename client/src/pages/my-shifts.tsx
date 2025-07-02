@@ -1,22 +1,124 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataTable, Column } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  CheckCircle, 
+  AlertCircle, 
+  FileText, 
+  Play, 
+  Pause,
+  TrendingUp,
+  Users,
+  Briefcase,
+  RefreshCw,
+  Loader2
+} from "lucide-react";
 import type { Shift } from "@shared/schema";
 
 export default function MyShifts() {
   const { tenantId, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  const { data: shifts, isLoading } = useQuery<Shift[]>({
+  // Fetch my shifts
+  const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
     queryKey: ["/api/my-shifts", tenantId, user?.id],
     queryFn: async () => {
       const response = await fetch(`/api/my-shifts?tenantId=${tenantId}&userId=${user?.id}`);
       if (!response.ok) throw new Error("Failed to fetch shifts");
       return response.json();
+    },
+  });
+
+  // Fetch my assignments
+  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["/api/assignments", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/assignments?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch assignments");
+      return response.json();
+    },
+  });
+
+  // Fetch my time entries for time tracking
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
+    queryKey: ["/api/time-entries", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch time entries");
+      return response.json();
+    },
+  });
+
+  // Fetch active time entry for clock-in status
+  const { data: activeTimeEntry } = useQuery({
+    queryKey: ["/api/time-entries/active", tenantId, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/time-entries/active?tenantId=${tenantId}&userId=${user.id}`);
+      if (!response.ok) throw new Error("Failed to fetch active time entry");
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch swap requests
+  const { data: swapRequests = [], isLoading: swapRequestsLoading } = useQuery({
+    queryKey: ["/api/swap-requests", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/swap-requests?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch swap requests");
+      return response.json();
+    },
+  });
+
+  // Clock-in mutation
+  const clockInMutation = useMutation({
+    mutationFn: async (data: { location?: string; shiftId?: number }) => {
+      return apiRequest("/api/time-entries", "POST", {
+        tenantId,
+        userId: user?.id,
+        clockInTime: new Date().toISOString(),
+        status: "clocked-in",
+        location: data.location || "",
+        shiftId: data.shiftId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      toast({ title: "Success", description: "Clocked in successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to clock in", variant: "destructive" });
+    },
+  });
+
+  // Clock-out mutation
+  const clockOutMutation = useMutation({
+    mutationFn: async (timeEntryId: number) => {
+      return apiRequest(`/api/time-entries/${timeEntryId}`, "PATCH", {
+        clockOutTime: new Date().toISOString(),
+        status: "clocked-out",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      toast({ title: "Success", description: "Clocked out successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to clock out", variant: "destructive" });
     },
   });
 
