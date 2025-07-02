@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, Column } from "@/components/DataTable";
+import { CalendarView } from "@/components/CalendarView";
 import { useCrud } from "@/hooks/useCrud";
 import { ModalForm } from "@/components/ModalForm";
 import { useForm } from "react-hook-form";
@@ -34,7 +35,9 @@ import {
   AlertCircle,
   Plus,
   Copy,
-  Loader2
+  Loader2,
+  List,
+  CalendarDays
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
@@ -78,6 +81,7 @@ export default function Scheduling() {
   const { tenantId, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [shiftView, setShiftView] = useState<"list" | "calendar">("list");
 
   // Shift Planner
   const {
@@ -435,23 +439,74 @@ export default function Scheduling() {
         </TabsList>
 
         <TabsContent value="planner" className="space-y-6">
-          <DataTable
-            data={shifts}
-            columns={shiftColumns}
-            title="Scheduled Shifts"
-            onAdd={openCreateShift}
-            onEdit={openEditShift}
-            onDelete={handleShiftDelete}
-            addLabel="Create Shift"
-            isLoading={shiftsLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">No shifts scheduled</p>
-                <p className="text-sm text-gray-400">Create your first shift to get started</p>
+          {/* View Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold">Scheduled Shifts</h2>
+              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                <Button
+                  variant={shiftView === "list" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setShiftView("list")}
+                  className="flex items-center gap-1"
+                >
+                  <List className="w-4 h-4" />
+                  List
+                </Button>
+                <Button
+                  variant={shiftView === "calendar" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setShiftView("calendar")}
+                  className="flex items-center gap-1"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Calendar
+                </Button>
               </div>
-            }
-          />
+            </div>
+            
+            {user?.role === "owner" && (
+              <Button onClick={openCreateShift} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Create Shift
+              </Button>
+            )}
+          </div>
+
+          {/* View Content */}
+          {shiftView === "list" ? (
+            <DataTable
+              data={shifts}
+              columns={shiftColumns}
+              onEdit={openEditShift}
+              onDelete={handleShiftDelete}
+              isLoading={shiftsLoading}
+              emptyState={
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">No shifts scheduled</p>
+                  <p className="text-sm text-gray-400">Create your first shift to get started</p>
+                </div>
+              }
+            />
+          ) : (
+            <CalendarView
+              shifts={shifts}
+              onCreateShift={(date) => {
+                // Set the date for the new shift and open modal
+                openCreateShift();
+              }}
+              onEditShift={openEditShift}
+              onDuplicateShift={(shift) => {
+                // Create a duplicate shift with today's date
+                const today = new Date().toISOString().split('T')[0];
+                const duplicatedShift = { ...shift, date: today, id: undefined };
+                openCreateShift();
+              }}
+              onDeleteShift={handleShiftDelete}
+              userRole={user?.role || "staff"}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">
