@@ -521,22 +521,22 @@ export default function BusinessSettingsPage() {
   const roleColumns: Column<JobRole>[] = [
     {
       header: "Title",
-      accessorKey: "title",
+      key: "title",
     },
     {
       header: "Description",
-      accessorKey: "description",
+      key: "description",
     },
     {
       header: "Hourly Rate",
-      accessorKey: "hourlyRate",
+      key: "hourlyRate",
     },
     {
       header: "Status",
-      accessorKey: "isActive",
-      cell: ({ getValue }) => (
-        <Badge variant={getValue() ? "default" : "secondary"}>
-          {getValue() ? "Active" : "Inactive"}
+      key: "isActive",
+      cell: (role) => (
+        <Badge variant={role.isActive ? "default" : "secondary"}>
+          {role.isActive ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -546,22 +546,22 @@ export default function BusinessSettingsPage() {
   const locationColumns: Column<Location>[] = [
     {
       header: "Name",
-      accessorKey: "name",
+      key: "name",
     },
     {
       header: "Address",
-      accessorKey: "address",
+      key: "address",
     },
     {
       header: "Capacity",
-      accessorKey: "capacity",
+      key: "capacity",
     },
     {
       header: "Status",
-      accessorKey: "isActive",
-      cell: ({ getValue }) => (
-        <Badge variant={getValue() ? "default" : "secondary"}>
-          {getValue() ? "Active" : "Inactive"}
+      key: "isActive",
+      cell: (location) => (
+        <Badge variant={location.isActive ? "default" : "secondary"}>
+          {location.isActive ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -571,22 +571,22 @@ export default function BusinessSettingsPage() {
   const departmentColumns: Column<Department>[] = [
     {
       header: "Name",
-      accessorKey: "name",
+      key: "name",
     },
     {
       header: "Description",
-      accessorKey: "description",
+      key: "description",
     },
     {
       header: "Budget",
-      accessorKey: "budget",
+      key: "budget",
     },
     {
       header: "Status",
-      accessorKey: "isActive",
-      cell: ({ getValue }) => (
-        <Badge variant={getValue() ? "default" : "secondary"}>
-          {getValue() ? "Active" : "Inactive"}
+      key: "isActive",
+      cell: (department) => (
+        <Badge variant={department.isActive ? "default" : "secondary"}>
+          {department.isActive ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -774,10 +774,12 @@ export default function BusinessSettingsPage() {
               <DataTable
                 data={jobRoles}
                 columns={roleColumns}
+                title="Job Roles"
                 isLoading={rolesLoading}
                 onAdd={() => openRoleModal()}
                 onEdit={(role) => openRoleModal(role)}
                 onDelete={(role) => deleteRoleMutation.mutate(role.id)}
+                addLabel="Add Job Role"
               />
             </CardContent>
           </Card>
@@ -795,10 +797,12 @@ export default function BusinessSettingsPage() {
               <DataTable
                 data={locations}
                 columns={locationColumns}
+                title="Locations"
                 isLoading={locationsLoading}
                 onAdd={() => openLocationModal()}
                 onEdit={(location) => openLocationModal(location)}
                 onDelete={(location) => deleteLocationMutation.mutate(location.id)}
+                addLabel="Add Location"
               />
             </CardContent>
           </Card>
@@ -816,10 +820,12 @@ export default function BusinessSettingsPage() {
               <DataTable
                 data={departments}
                 columns={departmentColumns}
+                title="Departments"
                 isLoading={departmentsLoading}
                 onAdd={() => openDepartmentModal()}
                 onEdit={(department) => openDepartmentModal(department)}
                 onDelete={(department) => deleteDepartmentMutation.mutate(department.id)}
+                addLabel="Add Department"
               />
             </CardContent>
           </Card>
@@ -881,7 +887,7 @@ export default function BusinessSettingsPage() {
         title={editingRole ? "Edit Job Role" : "Add Job Role"}
         form={roleForm}
         onSubmit={handleRoleSubmit}
-        isSubmitting={roleMutation.isPending}
+        isLoading={roleMutation.isPending}
       >
         <div className="space-y-4">
           <FormField
@@ -957,7 +963,7 @@ export default function BusinessSettingsPage() {
         title={editingLocation ? "Edit Location" : "Add Location"}
         form={locationForm}
         onSubmit={handleLocationSubmit}
-        isSubmitting={locationMutation.isPending}
+        isLoading={locationMutation.isPending}
       >
         <div className="space-y-4">
           <FormField
