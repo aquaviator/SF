@@ -933,7 +933,7 @@ export default function Scheduling() {
             role: formData.role,
             description: formData.description,
             location: formData.location,
-            assignedTo: formData.assignedTo ? parseInt(formData.assignedTo) : null,
+            assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
             status: "open" as const,
             assignmentType: "assigned" as const,
             requiredStaff: 1,
@@ -1044,7 +1044,7 @@ export default function Scheduling() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {staff.map((member: any) => (
                       <SelectItem key={member.id} value={member.id.toString()}>
                         {member.firstName} {member.lastName}
