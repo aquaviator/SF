@@ -125,7 +125,7 @@ export function CalendarView({
           <div className="grid grid-cols-7 gap-2">
             {calendarDays.map((day, index) => {
               if (day === null) {
-                return <div key={index} className="h-24" />;
+                return <div key={`empty-${index}`} className="h-24" />;
               }
 
               const dayShifts = getShiftsForDate(day);
@@ -136,7 +136,7 @@ export function CalendarView({
 
               return (
                 <div
-                  key={day}
+                  key={`day-${year}-${month}-${day}`}
                   className={`h-24 p-2 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
                     isToday ? 'bg-blue-50 border-blue-200' : 'border-gray-200'
                   }`}
@@ -169,7 +169,7 @@ export function CalendarView({
 
       {/* Day Detail Modal */}
       <Dialog open={dayModalOpen} onOpenChange={setDayModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby="day-modal-description">
           <DialogHeader>
             <DialogTitle>
               Shifts for {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
@@ -180,6 +180,9 @@ export function CalendarView({
               })}
             </DialogTitle>
           </DialogHeader>
+          <div id="day-modal-description" className="sr-only">
+            View and manage shifts scheduled for this date
+          </div>
 
           <div className="space-y-4">
             {userRole === 'owner' && (
@@ -204,8 +207,8 @@ export function CalendarView({
               </div>
             ) : (
               <div className="space-y-3">
-                {selectedDateShifts.map(shift => (
-                  <Card key={shift.id}>
+                {selectedDateShifts.map((shift, index) => (
+                  <Card key={`shift-${shift.id}-${index}`}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

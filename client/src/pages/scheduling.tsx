@@ -478,8 +478,11 @@ export default function Scheduling() {
             <DataTable
               data={shifts}
               columns={shiftColumns}
+              title="Scheduled Shifts"
+              onAdd={openCreateShift}
               onEdit={openEditShift}
               onDelete={handleShiftDelete}
+              addLabel="Create Shift"
               isLoading={shiftsLoading}
               emptyState={
                 <div className="text-center py-8">
@@ -493,17 +496,33 @@ export default function Scheduling() {
             <CalendarView
               shifts={shifts}
               onCreateShift={(date) => {
-                // Set the date for the new shift and open modal
+                // Pre-fill the shift form with the selected date
                 openCreateShift();
+                // TODO: Pass date to form when modal opens
               }}
-              onEditShift={openEditShift}
+              onEditShift={(shift) => {
+                openEditShift(shift);
+              }}
               onDuplicateShift={(shift) => {
-                // Create a duplicate shift with today's date
+                // Create a duplicate shift for today
                 const today = new Date().toISOString().split('T')[0];
-                const duplicatedShift = { ...shift, date: today, id: undefined };
+                const duplicatedShift = { 
+                  ...shift, 
+                  date: today,
+                  id: undefined,
+                  assignedTo: null,
+                  status: "open" as const
+                };
+                // Pass the duplicated shift data to create a new shift
                 openCreateShift();
+                // TODO: Pre-fill form with duplicated data
               }}
-              onDeleteShift={handleShiftDelete}
+              onDeleteShift={(shiftId) => {
+                const shift = shifts.find(s => s.id === shiftId);
+                if (shift) {
+                  handleShiftDelete(shift);
+                }
+              }}
               userRole={user?.role || "staff"}
             />
           )}
