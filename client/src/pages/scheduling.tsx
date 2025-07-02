@@ -128,7 +128,9 @@ export default function Scheduling() {
       tenantId: tenantId,
       name: "",
       description: "",
-      shifts: [],
+      positions: [],
+      assignmentType: "assigned",
+      requiredStaffPerPosition: 1,
       recurrence: "weekly",
       isActive: true,
       createdBy: user?.id || 1,
@@ -138,19 +140,27 @@ export default function Scheduling() {
   React.useEffect(() => {
     if (editingTemplate) {
       templateForm.reset({
+        tenantId: editingTemplate.tenantId,
         name: editingTemplate.name,
         description: editingTemplate.description || "",
-        shifts: editingTemplate.shifts || [],
+        positions: editingTemplate.positions || [],
+        assignmentType: editingTemplate.assignmentType,
+        requiredStaffPerPosition: editingTemplate.requiredStaffPerPosition,
         recurrence: editingTemplate.recurrence,
         isActive: editingTemplate.isActive,
+        createdBy: editingTemplate.createdBy,
       });
     } else {
       templateForm.reset({
+        tenantId: tenantId,
         name: "",
         description: "",
-        shifts: [],
+        positions: [],
+        assignmentType: "assigned",
+        requiredStaffPerPosition: 1,
         recurrence: "weekly",
         isActive: true,
+        createdBy: user?.id || 1,
       });
     }
   }, [editingTemplate, templateForm]);
@@ -690,26 +700,70 @@ export default function Scheduling() {
 
           <FormField
             control={templateForm.control}
-            name="recurrence"
+            name="assignmentType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Recurrence Pattern</FormLabel>
+                <FormLabel>Assignment Type</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder="Select assignment type" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="assigned">Assigned Staff</SelectItem>
+                    <SelectItem value="open_opportunity">Open Opportunity</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={templateForm.control}
+              name="requiredStaffPerPosition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Required Staff per Position</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      placeholder="1" 
+                      {...field} 
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={templateForm.control}
+              name="recurrence"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recurrence Pattern</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select recurrence" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={templateForm.control}

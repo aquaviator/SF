@@ -26,7 +26,11 @@ export const shifts = pgTable("shifts", {
   description: text("description").notNull(),
   location: text("location").notNull(),
   assignedTo: integer("assigned_to"),
-  status: text("status").notNull().$type<"open" | "assigned" | "confirmed" | "conflict">(),
+  status: text("status").notNull().$type<"open" | "assigned" | "pending_acceptance" | "confirmed" | "declined" | "conflict">(),
+  assignmentType: text("assignment_type").notNull().$type<"assigned" | "opportunity">().default("assigned"),
+  requiredStaff: integer("required_staff").notNull().default(1),
+  claimedBy: text("claimed_by").array(), // Array of user IDs who claimed this opportunity
+  templateId: integer("template_id"), // Reference to schedule template if created from template
   notes: text("notes"),
   createdBy: integer("created_by").notNull(),
 });
@@ -112,7 +116,9 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  shifts: text("shifts").array().notNull(), // Array of shift IDs or shift data
+  positions: text("positions").array().notNull(), // Array of position/role definitions
+  assignmentType: text("assignment_type").notNull().$type<"assigned" | "open_opportunity">(),
+  requiredStaffPerPosition: integer("required_staff_per_position").notNull().default(1),
   recurrence: text("recurrence").notNull(), // weekly, monthly, custom
   isActive: boolean("is_active").notNull().default(true),
   createdBy: integer("created_by").notNull(),
