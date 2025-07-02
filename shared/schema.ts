@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -116,11 +116,12 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  positions: text("positions").array().notNull(), // Array of position/role definitions
+  positions: text("positions").array().notNull(), // Array of position/role definitions (deprecated)
   assignmentType: text("assignment_type").notNull().$type<"assigned" | "open_opportunity">(),
-  requiredStaffPerPosition: integer("required_staff_per_position").notNull().default(1),
+  requiredStaffPerPosition: integer("required_staff_per_position").notNull().default(1), // deprecated
   recurrence: text("recurrence").notNull(), // weekly, monthly, custom
-  staffAssignments: text("staff_assignments"), // JSON: {position: string, staffIds: number[], slots: number}[]
+  staffAssignments: text("staff_assignments"), // JSON: {position: string, staffIds: number[], slots: number}[] (deprecated)
+  slots: jsonb("slots").notNull().default("[]"), // Array of {role: string, staffIds: number[], quantity: number}
   isActive: boolean("is_active").notNull().default(true),
   createdBy: integer("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

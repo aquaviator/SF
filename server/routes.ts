@@ -890,6 +890,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/subscription/change-plan", async (req, res) => {
+    try {
+      const { tenantId, planId } = req.body;
+      if (!tenantId || !planId) {
+        return res.status(400).json({ message: "Tenant ID and Plan ID are required" });
+      }
+      
+      const subscription = await storage.updateSubscription(tenantId, { planId });
+      res.json(subscription);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to change subscription plan" });
+    }
+  });
+
   app.get("/api/billing-info", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;

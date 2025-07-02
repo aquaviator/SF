@@ -1,0 +1,131 @@
+Context & Current Schema
+We’ve got a schedule_templates table whose structure today looks like this:
+
+id	tenant_id	name	description	positions	assignment_type	required_staff_per_position	recurrence	is_active	…
+4	acme-corp	Morning Service	Standard morning shift template	["Server","Chef"]	assigned	2	weekly	TRUE	
+5	acme-corp	Evening Shift	Dinner service template	["Server","Bartender","Chef"]	assigned	3	weekly	TRUE	
+6	beta-llc	Warehouse Day…	Standard warehouse operations	["Clerk","Supervisor"]	assigned	4	weekly	TRUE	
+7	acme-corp	wertgwertwert	wertwertwerrt	[]	assigned	3	weekly	TRUE	
+
+Requirements
+1. Schema Migration
+Add a new JSONB column slots (or position_slots) to store an array of objects:
+
+sql
+Copy
+Edit
+ALTER TABLE schedule_templates
+  ADD COLUMN slots JSONB NOT NULL DEFAULT '[]';
+Backfill from the existing positions + required_staff_per_position:
+
+js
+Copy
+Edit
+// pseudocode migration
+slots = positions.map(role => ({ role, staffIds: [] }));
+// if required_staff_per_position > 1, you may repeat entries or
+// keep staffIds empty and rely on quantity = required_staff_per_position
+Deprecate the old positions + required_staff_per_position usage in favor of slots, but keep them for backward compatibility if needed.
+
+2. API Endpoints
+GET /api/schedule-templates?tenantId=… → include slots in the response.
+
+POST /api/schedule-templates → accept payload:
+
+json
+Copy
+Edit
+{
+  "tenant_id":"acme-corp",
+  "name":"Morning Service",
+  "description":"…",
+  "recurrence":"weekly",
+  "is_active":true,
+  "slots":[
+    { "role":"Server", "staffIds":[2,3] },
+    { "role":"Chef",   "staffIds":[]      }
+  ]
+}
+PUT /api/schedule-templates/:id → update slots plus other fields.
+
+POST /api/schedule-templates/:id/use
+
+Behavior:
+
+For each slot entry:
+
+If staffIds non-empty, create that many assigned shift records.
+
+Let openCount = quantity − staffIds.length; create that many open_opportunity shifts.
+
+Return a summary:
+
+json
+Copy
+Edit
+{ "assignedCreated": X, "opportunitiesCreated": Y }
+3. Front-end Modal (Edit Template)
+Re-organize into four sections:
+
+Template Details
+
+Name, Description, Active toggle.
+
+Pattern Settings
+
+Recurrence Pattern (Weekly / Monthly / Custom).
+
+Position Slots Configuration
+
+A dynamic table where each row has:
+
+Role (text input or select).
+
+Quantity (number = total slots needed).
+
+Pre-assigned Staff (multi-select dropdown of staff; can pick 0…quantity).
+
+Open Slots (computed: quantity − staffIds.length).
+
+Actions:
+
+Duplicate row (clones role, quantity, staffIds).
+
+Remove row.
+
+“Add Position” button appends a new empty row.
+
+Quick Duplication
+
+A dropdown to “Duplicate Existing Shift”:
+
+Lists recent shifts by name/date.
+
+On selection, pre-populate slots:
+
+If the original shift’s staffId is already booked at that time, convert that slot into an open opportunity; otherwise pre-assign it.
+
+USE Button on the template list should call /api/schedule-templates/:id/use and show a toast:
+
+“✓ Created X assigned shifts and Y open opportunities from ‘Morning Service’.”
+
+Settings COG next to each template: wire up to open the edit modal above.
+
+4. Validation & UX
+Ensure 0 ≤ staffIds.length ≤ quantity.
+
+Prevent selecting the same staff twice in overlapping templates.
+
+Disable Save until all rows have a valid role and quantity ≥ staffIds.length.
+
+Show inline errors if validation fails.
+
+Please implement:
+
+Database migration (Drizzle or raw SQL).
+
+API contract updates (server-side handlers).
+
+Front-end form refactor (React + shadcn/ui): dynamic slots table, duplication logic, “USE” button wiring.
+
+With these changes we’ll have a fully functional, mixed pre-assignment + open-slot template system that you can both “Use” to generate real shifts and edit on the fly. Let me know when you have the migration and API endpoints sketched out and I can help review!
