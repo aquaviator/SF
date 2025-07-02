@@ -1077,4 +1077,438 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Initialize database connection
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
+
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+
+  async updateUser(id: number, insertUser: InsertUser): Promise<User | undefined> {
+    const result = await db.update(users).set(insertUser).where(eq(users.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getStaffByTenant(tenantId: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.tenantId, tenantId));
+  }
+
+  // Business profile operations
+  async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {
+    const result = await db.select().from(businessProfiles).where(eq(businessProfiles.tenantId, tenantId)).limit(1);
+    return result[0];
+  }
+
+  async createBusinessProfile(insertProfile: InsertBusinessProfile): Promise<BusinessProfile> {
+    const result = await db.insert(businessProfiles).values(insertProfile).returning();
+    return result[0];
+  }
+
+  async updateBusinessProfile(tenantId: string, insertProfile: InsertBusinessProfile): Promise<BusinessProfile | undefined> {
+    const result = await db.update(businessProfiles).set(insertProfile).where(eq(businessProfiles.tenantId, tenantId)).returning();
+    return result[0];
+  }
+
+  async deleteBusinessProfile(tenantId: string): Promise<boolean> {
+    const result = await db.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenantId));
+    return result.rowCount > 0;
+  }
+
+  // Job role operations
+  async getJobRole(id: number): Promise<JobRole | undefined> {
+    const result = await db.select().from(jobRoles).where(eq(jobRoles.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getJobRolesByTenant(tenantId: string): Promise<JobRole[]> {
+    return await db.select().from(jobRoles).where(eq(jobRoles.tenantId, tenantId));
+  }
+
+  async createJobRole(insertRole: InsertJobRole): Promise<JobRole> {
+    const result = await db.insert(jobRoles).values(insertRole).returning();
+    return result[0];
+  }
+
+  async updateJobRole(id: number, insertRole: InsertJobRole): Promise<JobRole | undefined> {
+    const result = await db.update(jobRoles).set(insertRole).where(eq(jobRoles.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteJobRole(id: number): Promise<boolean> {
+    const result = await db.delete(jobRoles).where(eq(jobRoles.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Location operations
+  async getLocation(id: number): Promise<Location | undefined> {
+    const result = await db.select().from(locations).where(eq(locations.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getLocationsByTenant(tenantId: string): Promise<Location[]> {
+    return await db.select().from(locations).where(eq(locations.tenantId, tenantId));
+  }
+
+  async createLocation(insertLocation: InsertLocation): Promise<Location> {
+    const result = await db.insert(locations).values(insertLocation).returning();
+    return result[0];
+  }
+
+  async updateLocation(id: number, insertLocation: InsertLocation): Promise<Location | undefined> {
+    const result = await db.update(locations).set(insertLocation).where(eq(locations.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteLocation(id: number): Promise<boolean> {
+    const result = await db.delete(locations).where(eq(locations.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Department operations
+  async getDepartment(id: number): Promise<Department | undefined> {
+    const result = await db.select().from(departments).where(eq(departments.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getDepartmentsByTenant(tenantId: string): Promise<Department[]> {
+    return await db.select().from(departments).where(eq(departments.tenantId, tenantId));
+  }
+
+  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
+    const result = await db.insert(departments).values(insertDepartment).returning();
+    return result[0];
+  }
+
+  async updateDepartment(id: number, insertDepartment: InsertDepartment): Promise<Department | undefined> {
+    const result = await db.update(departments).set(insertDepartment).where(eq(departments.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteDepartment(id: number): Promise<boolean> {
+    const result = await db.delete(departments).where(eq(departments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Operating hours operations
+  async getOperatingHours(id: number): Promise<OperatingHours | undefined> {
+    const result = await db.select().from(operatingHours).where(eq(operatingHours.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getOperatingHoursByTenant(tenantId: string): Promise<OperatingHours[]> {
+    return await db.select().from(operatingHours).where(eq(operatingHours.tenantId, tenantId));
+  }
+
+  async createOperatingHours(insertHours: InsertOperatingHours): Promise<OperatingHours> {
+    const result = await db.insert(operatingHours).values(insertHours).returning();
+    return result[0];
+  }
+
+  async updateOperatingHours(id: number, insertHours: InsertOperatingHours): Promise<OperatingHours | undefined> {
+    const result = await db.update(operatingHours).set(insertHours).where(eq(operatingHours.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteOperatingHours(id: number): Promise<boolean> {
+    const result = await db.delete(operatingHours).where(eq(operatingHours.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Shift operations
+  async getShift(id: number): Promise<Shift | undefined> {
+    const result = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getShiftsByTenant(tenantId: string): Promise<Shift[]> {
+    return await db.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+  }
+
+  async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
+    return await db.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+  }
+
+  async createShift(insertShift: InsertShift): Promise<Shift> {
+    const result = await db.insert(shifts).values(insertShift).returning();
+    return result[0];
+  }
+
+  async updateShift(id: number, insertShift: InsertShift): Promise<Shift | undefined> {
+    const result = await db.update(shifts).set(insertShift).where(eq(shifts.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteShift(id: number): Promise<boolean> {
+    const result = await db.delete(shifts).where(eq(shifts.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Opportunity operations
+  async getOpportunity(id: number): Promise<Opportunity | undefined> {
+    const result = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getOpportunitiesByTenant(tenantId: string): Promise<Opportunity[]> {
+    return await db.select().from(opportunities).where(eq(opportunities.tenantId, tenantId));
+  }
+
+  async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {
+    const result = await db.insert(opportunities).values(insertOpportunity).returning();
+    return result[0];
+  }
+
+  async updateOpportunity(id: number, insertOpportunity: InsertOpportunity): Promise<Opportunity | undefined> {
+    const result = await db.update(opportunities).set(insertOpportunity).where(eq(opportunities.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteOpportunity(id: number): Promise<boolean> {
+    const result = await db.delete(opportunities).where(eq(opportunities.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Swap request operations
+  async getSwapRequest(id: number): Promise<SwapRequest | undefined> {
+    const result = await db.select().from(swapRequests).where(eq(swapRequests.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getSwapRequestsByTenant(tenantId: string): Promise<SwapRequest[]> {
+    return await db.select().from(swapRequests).where(eq(swapRequests.tenantId, tenantId));
+  }
+
+  async createSwapRequest(insertSwapRequest: InsertSwapRequest): Promise<SwapRequest> {
+    const result = await db.insert(swapRequests).values(insertSwapRequest).returning();
+    return result[0];
+  }
+
+  async updateSwapRequest(id: number, insertSwapRequest: InsertSwapRequest): Promise<SwapRequest | undefined> {
+    const result = await db.update(swapRequests).set(insertSwapRequest).where(eq(swapRequests.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSwapRequest(id: number): Promise<boolean> {
+    const result = await db.delete(swapRequests).where(eq(swapRequests.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Assignment operations
+  async getAssignment(id: number): Promise<Assignment | undefined> {
+    const result = await db.select().from(assignments).where(eq(assignments.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAssignmentsByTenant(tenantId: string): Promise<Assignment[]> {
+    return await db.select().from(assignments).where(eq(assignments.tenantId, tenantId));
+  }
+
+  async createAssignment(insertAssignment: InsertAssignment): Promise<Assignment> {
+    const result = await db.insert(assignments).values(insertAssignment).returning();
+    return result[0];
+  }
+
+  async updateAssignment(id: number, insertAssignment: InsertAssignment): Promise<Assignment | undefined> {
+    const result = await db.update(assignments).set(insertAssignment).where(eq(assignments.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(assignments).where(eq(assignments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Holiday request operations
+  async getHolidayRequest(id: number): Promise<HolidayRequest | undefined> {
+    const result = await db.select().from(holidayRequests).where(eq(holidayRequests.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]> {
+    return await db.select().from(holidayRequests).where(eq(holidayRequests.tenantId, tenantId));
+  }
+
+  async createHolidayRequest(insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest> {
+    const result = await db.insert(holidayRequests).values(insertHolidayRequest).returning();
+    return result[0];
+  }
+
+  async updateHolidayRequest(id: number, insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined> {
+    const result = await db.update(holidayRequests).set(insertHolidayRequest).where(eq(holidayRequests.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteHolidayRequest(id: number): Promise<boolean> {
+    const result = await db.delete(holidayRequests).where(eq(holidayRequests.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Schedule template operations
+  async getScheduleTemplate(id: number): Promise<ScheduleTemplate | undefined> {
+    const result = await db.select().from(scheduleTemplates).where(eq(scheduleTemplates.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getScheduleTemplatesByTenant(tenantId: string): Promise<ScheduleTemplate[]> {
+    return await db.select().from(scheduleTemplates).where(eq(scheduleTemplates.tenantId, tenantId));
+  }
+
+  async createScheduleTemplate(insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate> {
+    const result = await db.insert(scheduleTemplates).values(insertTemplate).returning();
+    return result[0];
+  }
+
+  async updateScheduleTemplate(id: number, insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined> {
+    const result = await db.update(scheduleTemplates).set(insertTemplate).where(eq(scheduleTemplates.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteScheduleTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(scheduleTemplates).where(eq(scheduleTemplates.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Time entry operations (simplified for now - would need proper time entry schema)
+  async getActiveTimeEntry(tenantId: string, userId: number): Promise<any | undefined> {
+    // TODO: Implement proper time entry schema
+    return undefined;
+  }
+
+  async getTimeEntriesByTenant(tenantId: string): Promise<any[]> {
+    // TODO: Implement proper time entry schema
+    return [];
+  }
+
+  async createTimeEntry(insertEntry: any): Promise<any> {
+    // TODO: Implement proper time entry schema
+    return insertEntry;
+  }
+
+  async updateTimeEntry(id: number, insertEntry: any): Promise<any | undefined> {
+    // TODO: Implement proper time entry schema
+    return insertEntry;
+  }
+
+  async getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]> {
+    // TODO: Implement proper time entry schema
+    return [];
+  }
+}
+
+// Initialize database storage with sample data
+async function initializeDatabaseWithSampleData() {
+  const dbStorage = new DatabaseStorage();
+  
+  // Check if data already exists
+  const existingUsers = await dbStorage.getStaffByTenant("tenant1");
+  if (existingUsers.length > 0) {
+    console.log("Database already initialized with sample data");
+    return dbStorage;
+  }
+
+  console.log("Initializing database with sample data...");
+
+  // Create sample users
+  const owner = await dbStorage.createUser({
+    username: "john.doe@company.com",
+    password: "password123", // TODO: Hash passwords in production
+    email: "john.doe@company.com",
+    firstName: "John",
+    lastName: "Doe",
+    role: "owner",
+    tenantId: "tenant1"
+  });
+
+  const staff = await dbStorage.createUser({
+    username: "jane.smith@company.com", 
+    password: "password123", // TODO: Hash passwords in production
+    email: "jane.smith@company.com",
+    firstName: "Jane",
+    lastName: "Smith",
+    role: "staff",
+    tenantId: "tenant1"
+  });
+
+  // Create business profile
+  await dbStorage.createBusinessProfile({
+    tenantId: "tenant1",
+    name: "Acme Corporation",
+    address: "123 Business St, City, State 12345",
+    phone: "+1 (555) 123-4567",
+    email: "info@acmecorp.com",
+    website: "https://acmecorp.com",
+    industry: "Retail",
+    timezone: "America/New_York"
+  });
+
+  // Create job roles
+  const jobRoleData = [
+    { title: "Manager", description: "Store manager with full responsibilities", hourlyRate: "$25.00", tenantId: "tenant1" },
+    { title: "Shift Supervisor", description: "Supervises shift operations", hourlyRate: "$18.50", tenantId: "tenant1" },
+    { title: "Cashier", description: "Customer service and register operations", hourlyRate: "$15.00", tenantId: "tenant1" },
+    { title: "Stock Associate", description: "Inventory and stocking duties", hourlyRate: "$14.50", tenantId: "tenant1" }
+  ];
+
+  for (const role of jobRoleData) {
+    await dbStorage.createJobRole(role);
+  }
+
+  // Create locations
+  const locationData = [
+    { name: "Main Store", address: "123 Main St, City, State", tenantId: "tenant1" },
+    { name: "Warehouse", address: "456 Industrial Blvd, City, State", tenantId: "tenant1" },
+    { name: "Customer Service", address: "789 Service Ave, City, State", tenantId: "tenant1" }
+  ];
+
+  for (const location of locationData) {
+    await dbStorage.createLocation(location);
+  }
+
+  // Create departments
+  const departmentData = [
+    { name: "Sales", description: "Customer-facing sales operations", tenantId: "tenant1" },
+    { name: "Operations", description: "Backend operations and logistics", tenantId: "tenant1" },
+    { name: "Administration", description: "Administrative and support functions", tenantId: "tenant1" }
+  ];
+
+  for (const dept of departmentData) {
+    await dbStorage.createDepartment(dept);
+  }
+
+  // Create operating hours
+  const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  for (const day of daysOfWeek) {
+    await dbStorage.createOperatingHours({
+      tenantId: "tenant1",
+      dayOfWeek: day,
+      openTime: "06:00",
+      closeTime: "22:00",
+      isClosed: false
+    });
+  }
+
+  console.log("Database initialized with sample data successfully");
+  return dbStorage;
+}
+
+// Export initialized storage
+export const storage = await initializeDatabaseWithSampleData();
