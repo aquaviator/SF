@@ -1,4 +1,4 @@
-import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate } from "@shared/schema";
+import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, timeEntries, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, type TimeEntry, type InsertTimeEntry } from "@shared/schema";
 
 export interface IStorage {
   // User operations
