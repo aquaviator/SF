@@ -1,0 +1,61 @@
+Context:
+We have a React/TypeScript SaaS app with a unified, role-aware menu system (menus.ts).
+All navigation—mobile and desktop—should use these configs.
+Currently, the desktop layout shows the main page below the sidebar (not side-by-side), and there’s no visible role indicator for users (Owner/Staff).
+There are also navigation test files in place (Vitest), and all routes should exist and work (no 404s).
+
+Request:
+
+Layout Fix (Desktop):
+
+Update the main app layout so that on desktop (≥lg breakpoint), the SidebarNav is fixed to the left and the main content is to the right, using horizontal flex/grid.
+
+Sidebar width: e.g., w-64. Main area: flex-1.
+
+On mobile, keep bottom tab navigation as is.
+
+Role Indicator:
+
+Display the current user's name, avatar, and role badge (Owner or Staff) at the top of the sidebar (desktop) and in the More drawer (mobile).
+
+Use the authenticated user's profile data from context or state.
+
+Navigation Consistency & Testing:
+
+Ensure both mobile and desktop navigation render exactly the same menu items for each role, with no duplication or missing entries.
+
+All menu items should route to existing pages (no 404s).
+
+Fix any key duplication issues (e.g., duplicate /staff/my-shifts).
+
+Update or extend Vitest tests to verify:
+
+All menu links appear as expected for each role.
+
+All links are unique (keys, labels, routes).
+
+All pages linked from the menu render and do not return 404.
+
+The role indicator renders and is correct for both roles.
+
+Non-Regression:
+
+Do not regress any previously passing tests or break the build pipeline.
+
+If test changes are required, update only for legitimate menu/layout/role indicator changes.
+
+Report:
+
+When finished, summarize exactly what was changed (file list, logic, tests), what issues were fixed, and confirm that all tests pass with zero regressions.
+
+Summary Table:
+
+Area	What to Fix/Test
+Layout	Sidebar & main side-by-side on desktop
+Role Indicator	Show user+role in sidebar and More drawer
+Navigation	Unified, unique, all links working, all roles
+Testing	Menus, layout, indicators—all roles, no regressions
+Reporting	File list, issue fixes, test results
+
+Goal:
+Fix navigation and layout inconsistencies, add a clear role indicator, ensure robust Vitest test coverage for all menu systems, and report with zero regressions.

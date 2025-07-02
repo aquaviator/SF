@@ -13,9 +13,25 @@ interface MoreDrawerProps {
 }
 
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
-  const { role } = useAuth();
+  const { role, user, tenantId } = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
   const moreMenuItems = getMoreMenuForRole(role);
+
+  // Generate user initials for avatar
+  const getUserInitials = () => {
+    if (!user) return "U";
+    const firstInitial = user.firstName?.[0] || "";
+    const lastInitial = user.lastName?.[0] || "";
+    return (firstInitial + lastInitial).toUpperCase() || user.email?.[0]?.toUpperCase() || "U";
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return "User";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.email?.split('@')[0] || "User";
+  };
 
   // Focus trap and escape key handling
   useEffect(() => {
@@ -84,6 +100,37 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
           >
             <X className="w-5 h-5" />
           </Button>
+        </div>
+
+        {/* User Profile Section */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-medium">
+                {getUserInitials()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {getUserDisplayName()}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                  role === 'owner' 
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-green-100 text-green-800"
+                )}>
+                  {role === 'owner' ? 'Owner' : 'Staff'}
+                </span>
+                {tenantId && (
+                  <span className="text-xs text-gray-500 truncate">
+                    {tenantId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Content */}
