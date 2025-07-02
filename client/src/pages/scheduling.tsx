@@ -453,6 +453,9 @@ export default function Scheduling() {
             data={templates}
             columns={templateColumns}
             title="Shift Templates"
+            onAdd={openCreateTemplate}
+            onEdit={openEditTemplate}
+            onDelete={handleTemplateDelete}
             addLabel="Create Template"
             isLoading={templatesLoading}
             emptyState={
