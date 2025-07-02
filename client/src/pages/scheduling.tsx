@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -407,7 +408,7 @@ export default function Scheduling() {
       queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
       toast({ 
         title: "Success", 
-        description: `Generated ${data.count} shifts from template` 
+        description: `Generated ${data.length || data.count || 0} shifts from template` 
       });
       setUseTemplateModalOpen(false);
       setSelectedTemplate(null);
@@ -545,11 +546,22 @@ export default function Scheduling() {
       header: "Actions",
       cell: (template) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="outline">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              setSelectedTemplate(template);
+              setUseTemplateModalOpen(true);
+            }}
+          >
             <Copy className="w-3 h-3 mr-1" />
             Use
           </Button>
-          <Button size="sm" variant="ghost">
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => openEditTemplate(template)}
+          >
             <Settings className="w-3 h-3" />
           </Button>
         </div>
@@ -1184,6 +1196,96 @@ export default function Scheduling() {
         title="Delete Template"
         itemName={templateToDelete ? `template "${templateToDelete.name}"` : "this template"}
       />
+
+      {/* Use Template Modal */}
+      <Dialog open={useTemplateModalOpen} onOpenChange={setUseTemplateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Shifts from Template</DialogTitle>
+            <DialogDescription>
+              Use "{selectedTemplate?.name}" to create shifts for a date range
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const startDate = formData.get('startDate') as string;
+            const endDate = formData.get('endDate') as string;
+            
+            if (selectedTemplate && startDate && endDate) {
+              generateShiftsMutation.mutate({
+                templateId: selectedTemplate.id,
+                startDate,
+                endDate,
+              });
+            }
+          }}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="startDate" className="block text-sm font-medium mb-1">
+                    Start Date
+                  </label>
+                  <Input
+                    id="startDate"
+                    name="startDate"
+                    type="date"
+                    required
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endDate" className="block text-sm font-medium mb-1">
+                    End Date
+                  </label>
+                  <Input
+                    id="endDate"
+                    name="endDate"
+                    type="date"
+                    required
+                    defaultValue={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+              
+              {selectedTemplate && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-sm mb-2">Template Details</h4>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p><strong>Positions:</strong> {selectedTemplate.positions.join(', ')}</p>
+                    <p><strong>Staff per Position:</strong> {selectedTemplate.requiredStaffPerPosition}</p>
+                    <p><strong>Assignment Type:</strong> {selectedTemplate.assignmentType}</p>
+                    <p><strong>Recurrence:</strong> {selectedTemplate.recurrence}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setUseTemplateModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={generateShiftsMutation.isPending}
+              >
+                {generateShiftsMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Shifts'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Calendar Day Modal */}
       <CalendarDayModal
