@@ -95,6 +95,9 @@ export interface IStorage {
   createOperatingHours(hours: InsertOperatingHours): Promise<OperatingHours>;
   updateOperatingHours(id: number, hours: InsertOperatingHours): Promise<OperatingHours | undefined>;
   deleteOperatingHours(id: number): Promise<boolean>;
+
+  // Debug operations
+  clearAllData(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
