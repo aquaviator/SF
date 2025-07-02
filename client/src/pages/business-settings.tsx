@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { PlaceholderIndicator } from "@/components/ui/placeholder-indicator";
+import { NotImplementedModal } from "@/components/ui/not-implemented-modal";
 
 // Business Profile Schema
 const businessProfileSchema = z.object({
@@ -138,6 +140,11 @@ export default function BusinessSettings() {
   const { toast } = useToast();
   const [isRoleModalOpen, setIsRoleModalOpen] = React.useState(false);
   const [editingRole, setEditingRole] = React.useState<JobRole | null>(null);
+  const [notImplementedModal, setNotImplementedModal] = React.useState<{
+    isOpen: boolean;
+    feature: string;
+    description?: string;
+  }>({ isOpen: false, feature: "", description: "" });
 
   // Business Profile Form
   const profileForm = useForm<BusinessProfileFormData>({
