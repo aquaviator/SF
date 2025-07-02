@@ -26,7 +26,7 @@ export const shifts = pgTable("shifts", {
   description: text("description").notNull(),
   location: text("location").notNull(),
   assignedTo: integer("assigned_to"),
-  status: text("status").notNull().$type<"open" | "assigned" | "pending_acceptance" | "confirmed" | "declined" | "conflict">(),
+  status: text("status").notNull().$type<"open" | "claimed" | "assigned" | "confirmed" | "clocked_in" | "clocked_out" | "completed" | "declined" | "cancelled">(),
   assignmentType: text("assignment_type").notNull().$type<"assigned" | "opportunity">().default("assigned"),
   requiredStaff: integer("required_staff").notNull().default(1),
   claimedBy: text("claimed_by").array(), // Array of user IDs who claimed this opportunity

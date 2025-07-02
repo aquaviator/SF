@@ -397,14 +397,14 @@ export default function BusinessSettings() {
       header: "Permissions",
       cell: (role) => (
         <div className="flex flex-wrap gap-1">
-          {role.permissions.slice(0, 2).map((perm) => (
+          {(role.permissions || []).slice(0, 2).map((perm) => (
             <Badge key={perm} variant="secondary" className="text-xs">
               {perm.replace('_', ' ')}
             </Badge>
           ))}
-          {role.permissions.length > 2 && (
+          {(role.permissions || []).length > 2 && (
             <Badge variant="secondary" className="text-xs">
-              +{role.permissions.length - 2} more
+              +{(role.permissions || []).length - 2} more
             </Badge>
           )}
         </div>

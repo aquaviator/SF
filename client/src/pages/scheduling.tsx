@@ -127,7 +127,7 @@ export default function Scheduling() {
       location: shift.location,
       description: shift.description + " (Copy)",
       assignmentType: shift.assignmentType,
-      assignedTo: null, // Reset assignment for duplicate
+      assignedTo: undefined, // Reset assignment for duplicate
       status: "open",
       requiredStaff: shift.requiredStaff,
       createdBy: user?.id || 1,

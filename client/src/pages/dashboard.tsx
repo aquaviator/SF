@@ -92,7 +92,7 @@ export default function Dashboard() {
     const thisWeekShifts = shifts.filter(shift => isThisWeek(parseISO(shift.date)));
     const assignedShifts = shifts.filter(shift => shift.assignedTo);
     const pendingShifts = shifts.filter(shift => !shift.assignedTo || shift.status === "open");
-    const conflictShifts = shifts.filter(shift => shift.status === "conflict");
+    const cancelledShifts = shifts.filter(shift => shift.status === "cancelled");
 
     return [
       {
@@ -117,8 +117,8 @@ export default function Dashboard() {
         trend: { value: 3, isPositive: false }
       },
       {
-        title: "Urgent",
-        value: conflictShifts.length,
+        title: "Cancelled",
+        value: cancelledShifts.length,
         icon: AlertTriangle,
         color: "bg-red-100 text-red-600",
         trend: { value: 2, isPositive: false }
