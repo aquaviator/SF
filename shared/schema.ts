@@ -199,6 +199,19 @@ export const operatingHours = pgTable("operating_hours", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Shift policies table
+export const shiftPolicies = pgTable("shift_policies", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  value: text("value").notNull(),
+  unit: text("unit").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertAssignmentSchema = createInsertSchema(assignments).omit({
   id: true,
   assignedAt: true,
@@ -245,6 +258,12 @@ export const insertOperatingHoursSchema = createInsertSchema(operatingHours).omi
   updatedAt: true,
 });
 
+export const insertShiftPolicySchema = createInsertSchema(shiftPolicies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
@@ -261,3 +280,5 @@ export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
 export type OperatingHours = typeof operatingHours.$inferSelect;
 export type InsertOperatingHours = z.infer<typeof insertOperatingHoursSchema>;
+export type ShiftPolicy = typeof shiftPolicies.$inferSelect;
+export type InsertShiftPolicy = z.infer<typeof insertShiftPolicySchema>;
