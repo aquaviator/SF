@@ -87,30 +87,30 @@ export default function Scheduling() {
     }
   });
 
-  // Data queries
+  // Data queries - only run when tenantId is available
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery({
-    queryKey: ["/api/shifts", tenantId],
-    queryFn: () => apiRequest(`/api/shifts?tenantId=${tenantId}`)
+    queryKey: [`/api/shifts?tenantId=${tenantId}`],
+    enabled: !!tenantId
   });
 
   const { data: templates = [], isLoading: templatesLoading } = useQuery({
-    queryKey: ["/api/schedule-templates", tenantId],
-    queryFn: () => apiRequest(`/api/schedule-templates?tenantId=${tenantId}`)
+    queryKey: [`/api/schedule-templates?tenantId=${tenantId}`],
+    enabled: !!tenantId
   });
 
   const { data: jobRoles = [] } = useQuery({
-    queryKey: ["/api/job-roles", tenantId],
-    queryFn: () => apiRequest(`/api/job-roles?tenantId=${tenantId}`)
+    queryKey: [`/api/job-roles?tenantId=${tenantId}`],
+    enabled: !!tenantId
   });
 
   const { data: staff = [] } = useQuery({
-    queryKey: ["/api/staff", tenantId],
-    queryFn: () => apiRequest(`/api/staff?tenantId=${tenantId}`)
+    queryKey: [`/api/staff?tenantId=${tenantId}`],
+    enabled: !!tenantId
   });
 
   const { data: locations = [] } = useQuery({
-    queryKey: ["/api/locations", tenantId],
-    queryFn: () => apiRequest(`/api/locations?tenantId=${tenantId}`)
+    queryKey: [`/api/locations?tenantId=${tenantId}`],
+    enabled: !!tenantId
   });
 
   // Template management functions
@@ -151,16 +151,20 @@ export default function Scheduling() {
       };
 
       if (editingTemplate) {
-        await apiRequest(`/api/schedule-templates/${editingTemplate.id}`, {
+        const response = await fetch(`/api/schedule-templates/${editingTemplate.id}`, {
           method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(templateData)
         });
+        if (!response.ok) throw new Error("Failed to update template");
         toast({ title: "Template updated successfully" });
       } else {
-        await apiRequest("/api/schedule-templates", {
+        const response = await fetch("/api/schedule-templates", {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(templateData)
         });
+        if (!response.ok) throw new Error("Failed to create template");
         toast({ title: "Template created successfully" });
       }
 
@@ -209,20 +213,19 @@ export default function Scheduling() {
   };
 
   const shiftColumns: Column<Shift>[] = [
-    { header: "Date", accessorKey: "date" },
-    { header: "Role", accessorKey: "role" },
-    { header: "Time", accessorKey: "startTime" },
-    { header: "Location", accessorKey: "location" },
-    { header: "Status", accessorKey: "status" },
+    { header: "Date", cell: (shift) => shift.date },
+    { header: "Role", cell: (shift) => shift.role },
+    { header: "Time", cell: (shift) => shift.startTime },
+    { header: "Location", cell: (shift) => shift.location },
+    { header: "Status", cell: (shift) => shift.status },
   ];
 
   const templateColumns: Column<ScheduleTemplate>[] = [
-    { header: "Name", accessorKey: "name" },
-    { header: "Recurrence", accessorKey: "recurrence" },
+    { header: "Name", cell: (template) => template.name },
+    { header: "Recurrence", cell: (template) => template.recurrence },
     { 
       header: "Roles", 
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => {
-        const template = row.original;
+      cell: (template) => {
         if (template.slots && Array.isArray(template.slots)) {
           return template.slots.map((slot: any) => slot.role).join(", ");
         }
@@ -231,18 +234,18 @@ export default function Scheduling() {
     },
     { 
       header: "Status", 
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => 
-        row.original.isActive ? 
+      cell: (template) => 
+        template.isActive ? 
           <Badge variant="default">Active</Badge> : 
           <Badge variant="secondary">Inactive</Badge>
     },
     {
       header: "Actions",
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => (
+      cell: (template) => (
         <div className="flex items-center space-x-2">
           <Button
             size="sm"
-            onClick={() => handleUseTemplate(row.original.id)}
+            onClick={() => handleUseTemplate(template.id)}
             disabled={useTemplateMutation.isPending}
           >
             {useTemplateMutation.isPending ? "Using..." : "Use"}
@@ -251,7 +254,7 @@ export default function Scheduling() {
             size="sm"
             variant="outline"
             onClick={() => {
-              setEditingTemplate(row.original);
+              setEditingTemplate(template);
               setTemplateModalOpen(true);
             }}
           >
@@ -468,9 +471,9 @@ export default function Scheduling() {
                                 <SelectValue placeholder="Select role" />
                               </SelectTrigger>
                               <SelectContent>
-                                {jobRoles.map((role: any) => (
-                                  <SelectItem key={role.id} value={role.title}>
-                                    {role.title}
+                                {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
+                                  <SelectItem key={role.id} value={role.title || `role-${role.id}`}>
+                                    {role.title || `Role ${role.id}`}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -519,10 +522,10 @@ export default function Scheduling() {
                                       <SelectValue placeholder={`Slot ${staffIndex + 1} (Optional)`} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="">Leave Open</SelectItem>
-                                      {staff.map((member: any) => (
+                                      <SelectItem value="open">Leave Open</SelectItem>
+                                      {Array.isArray(staff) && staff.map((member: any) => (
                                         <SelectItem key={member.id} value={member.id.toString()}>
-                                          {member.firstName} {member.lastName}
+                                          {member.firstName || member.username} {member.lastName || ''}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
