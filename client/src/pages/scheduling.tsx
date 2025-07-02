@@ -93,7 +93,7 @@ interface TimeEntry {
 }
 
 export default function Scheduling() {
-  const { tenantId, user } = useAuth();
+  const { tenantId, user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -579,7 +579,7 @@ export default function Scheduling() {
               </div>
             </div>
             
-            {user?.role === "owner" && (
+            {role === "owner" && (
               <Button onClick={openCreateShift} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Create Shift
@@ -619,7 +619,7 @@ export default function Scheduling() {
                   handleShiftDelete(shift);
                 }
               }}
-              userRole={user?.role || "staff"}
+              userRole={role}
             />
           )}
         </TabsContent>

@@ -106,6 +106,14 @@ export default function Subscription() {
   // Fetch Current Subscription from database
   const { data: subscription, isLoading: subscriptionLoading } = useQuery<Subscription>({
     queryKey: ["/api/subscription", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/subscription?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch subscription');
+      }
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch Available Plans from database
