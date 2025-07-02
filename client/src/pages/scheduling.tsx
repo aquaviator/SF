@@ -41,13 +41,28 @@ import {
   Loader2,
   List,
   CalendarDays,
-  Trash2
+  Trash2,
+  Edit
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
 import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
+
+// Define shift form schema
+const shiftFormSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  role: z.string().min(1, "Role is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  assignedTo: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type ShiftFormData = z.infer<typeof shiftFormSchema>;
 
 // Define enhanced template schema with slots
 const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
@@ -68,6 +83,23 @@ export default function Scheduling() {
   // Template modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
+
+  // Shift form
+  const shiftForm = useForm<ShiftFormData>({
+    resolver: zodResolver(shiftFormSchema),
+    defaultValues: {
+      date: "",
+      startTime: "",
+      endTime: "",
+      role: "",
+      description: "",
+      location: "",
+      assignedTo: "",
+      notes: "",
+    },
+  });
+
+
   const [templateSubmitting, setTemplateSubmitting] = useState(false);
 
   // Initialize template form with slots support
@@ -87,12 +119,13 @@ export default function Scheduling() {
     }
   });
 
-  // Data queries - only run when tenantId is available
+  // Define data queries first
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery({
     queryKey: [`/api/shifts?tenantId=${tenantId}`],
     enabled: !!tenantId
   });
 
+  // Additional data queries for shift form dropdowns
   const { data: templates = [], isLoading: templatesLoading } = useQuery({
     queryKey: [`/api/schedule-templates?tenantId=${tenantId}`],
     enabled: !!tenantId
@@ -213,17 +246,50 @@ export default function Scheduling() {
   };
 
   const shiftColumns: Column<Shift>[] = [
-    { header: "Date", cell: (shift) => shift.date },
-    { header: "Role", cell: (shift) => shift.role },
-    { header: "Time", cell: (shift) => shift.startTime },
-    { header: "Location", cell: (shift) => shift.location },
-    { header: "Status", cell: (shift) => shift.status },
+    { 
+      key: "date",
+      header: "Date", 
+      cell: (shift) => shift.date 
+    },
+    { 
+      key: "role",
+      header: "Role", 
+      cell: (shift) => shift.role 
+    },
+    { 
+      key: "time",
+      header: "Time", 
+      cell: (shift) => `${shift.startTime} - ${shift.endTime}` 
+    },
+    { 
+      key: "location",
+      header: "Location", 
+      cell: (shift) => shift.location 
+    },
+    { 
+      key: "status",
+      header: "Status", 
+      cell: (shift) => (
+        <Badge variant={shift.status === "assigned" ? "default" : "secondary"}>
+          {shift.status}
+        </Badge>
+      )
+    }
   ];
 
   const templateColumns: Column<ScheduleTemplate>[] = [
-    { header: "Name", cell: (template) => template.name },
-    { header: "Recurrence", cell: (template) => template.recurrence },
     { 
+      key: "name",
+      header: "Name", 
+      cell: (template) => template.name 
+    },
+    { 
+      key: "recurrence",
+      header: "Recurrence", 
+      cell: (template) => template.recurrence 
+    },
+    { 
+      key: "roles",
       header: "Roles", 
       cell: (template) => {
         if (template.slots && Array.isArray(template.slots)) {
@@ -233,6 +299,7 @@ export default function Scheduling() {
       }
     },
     { 
+      key: "status",
       header: "Status", 
       cell: (template) => 
         template.isActive ? 
@@ -240,6 +307,7 @@ export default function Scheduling() {
           <Badge variant="secondary">Inactive</Badge>
     },
     {
+      key: "actions",
       header: "Actions",
       cell: (template) => (
         <div className="flex items-center space-x-2">
@@ -271,6 +339,10 @@ export default function Scheduling() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Scheduling</h1>
           <div className="flex items-center space-x-2">
+            <Button disabled className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Create Shift (Coming Soon)</span>
+            </Button>
             <Button onClick={openTemplateModal} variant="outline" className="flex items-center space-x-2">
               <Copy className="h-4 w-4" />
               <span>Create Template</span>
@@ -292,6 +364,7 @@ export default function Scheduling() {
               </CardHeader>
               <CardContent>
                 <DataTable 
+                  title="Shifts"
                   data={shifts} 
                   columns={shiftColumns}
                   isLoading={shiftsLoading}
