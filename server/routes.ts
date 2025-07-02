@@ -819,63 +819,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Operating Hours routes
-  app.get("/api/operating-hours", async (req, res) => {
+  // Subscription routes
+  app.get("/api/subscription", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const operatingHours = await storage.getOperatingHoursByTenant(tenantId);
-      res.json(operatingHours);
+      const subscription = await storage.getSubscription(tenantId);
+      res.json(subscription);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch operating hours" });
+      res.status(500).json({ message: "Failed to fetch subscription" });
     }
   });
 
-  app.post("/api/operating-hours", async (req, res) => {
+  app.get("/api/subscription/plans", async (req, res) => {
     try {
-      const result = insertOperatingHoursSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch subscription plans" });
+    }
+  });
+
+  // Analytics routes
+  app.get("/api/analytics/reports", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const operatingHours = await storage.createOperatingHours(result.data);
-      res.status(201).json(operatingHours);
+      const reports = await storage.getAnalyticsReportsByTenant(tenantId);
+      res.json(reports);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create operating hours" });
+      res.status(500).json({ message: "Failed to fetch analytics reports" });
     }
   });
 
-  app.put("/api/operating-hours/:id", async (req, res) => {
+  app.get("/api/analytics/metrics", async (req, res) => {
     try {
-      const result = insertOperatingHoursSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const id = parseInt(req.params.id);
-      const operatingHours = await storage.updateOperatingHours(id, result.data);
-      if (!operatingHours) {
-        return res.status(404).json({ message: "Operating hours not found" });
-      }
-      res.json(operatingHours);
+      const metrics = await storage.getAnalyticsMetricsByTenant(tenantId);
+      res.json(metrics);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update operating hours" });
+      res.status(500).json({ message: "Failed to fetch analytics metrics" });
     }
   });
 
-  app.delete("/api/operating-hours/:id", async (req, res) => {
+  app.get("/api/activity-logs", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteOperatingHours(id);
-      if (!success) {
-        return res.status(404).json({ message: "Operating hours not found" });
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
       }
-      res.status(204).send();
+      
+      const logs = await storage.getActivityLogsByTenant(tenantId);
+      res.json(logs);
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete operating hours" });
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  // Performance metrics routes
+  app.get("/api/performance-metrics", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      let metrics;
+      if (userId) {
+        metrics = await storage.getPerformanceMetricsByUser(tenantId, parseInt(userId));
+      } else {
+        metrics = await storage.getPerformanceMetricsByTenant(tenantId);
+      }
+      
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch performance metrics" });
     }
   });
 

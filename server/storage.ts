@@ -1494,30 +1494,265 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  // Time entry operations (simplified for now - would need proper time entry schema)
-  async getActiveTimeEntry(tenantId: string, userId: number): Promise<any | undefined> {
-    // TODO: Implement proper time entry schema
-    return undefined;
+  // Subscription operations
+  async getSubscription(tenantId: string): Promise<Subscription | undefined> {
+    const result = await db.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).limit(1);
+    return result[0];
   }
 
-  async getTimeEntriesByTenant(tenantId: string): Promise<any[]> {
-    // TODO: Implement proper time entry schema
-    return [];
+  async createSubscription(insertSubscription: InsertSubscription): Promise<Subscription> {
+    const result = await db.insert(subscriptions).values(insertSubscription).returning();
+    return result[0];
   }
 
-  async createTimeEntry(insertEntry: any): Promise<any> {
-    // TODO: Implement proper time entry schema
-    return insertEntry;
+  async updateSubscription(tenantId: string, insertSubscription: InsertSubscription): Promise<Subscription | undefined> {
+    const result = await db.update(subscriptions).set(insertSubscription).where(eq(subscriptions.tenantId, tenantId)).returning();
+    return result[0];
   }
 
-  async updateTimeEntry(id: number, insertEntry: any): Promise<any | undefined> {
-    // TODO: Implement proper time entry schema
-    return insertEntry;
+  async deleteSubscription(tenantId: string): Promise<boolean> {
+    const result = await db.delete(subscriptions).where(eq(subscriptions.tenantId, tenantId));
+    return result.rowCount > 0;
   }
 
-  async getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]> {
-    // TODO: Implement proper time entry schema
-    return [];
+  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans);
+  }
+
+  async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const result = await db.insert(subscriptionPlans).values(insertPlan).returning();
+    return result[0];
+  }
+
+  async updateSubscriptionPlan(id: string, insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan | undefined> {
+    const result = await db.update(subscriptionPlans).set(insertPlan).where(eq(subscriptionPlans.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSubscriptionPlan(id: string): Promise<boolean> {
+    const result = await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Analytics operations
+  async getAnalyticsReport(id: number): Promise<AnalyticsReport | undefined> {
+    const result = await db.select().from(analyticsReports).where(eq(analyticsReports.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAnalyticsReportsByTenant(tenantId: string): Promise<AnalyticsReport[]> {
+    return await db.select().from(analyticsReports).where(eq(analyticsReports.tenantId, tenantId));
+  }
+
+  async createAnalyticsReport(insertReport: InsertAnalyticsReport): Promise<AnalyticsReport> {
+    const result = await db.insert(analyticsReports).values(insertReport).returning();
+    return result[0];
+  }
+
+  async updateAnalyticsReport(id: number, insertReport: InsertAnalyticsReport): Promise<AnalyticsReport | undefined> {
+    const result = await db.update(analyticsReports).set(insertReport).where(eq(analyticsReports.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteAnalyticsReport(id: number): Promise<boolean> {
+    const result = await db.delete(analyticsReports).where(eq(analyticsReports.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAnalyticsMetric(id: number): Promise<AnalyticsMetric | undefined> {
+    const result = await db.select().from(analyticsMetrics).where(eq(analyticsMetrics.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAnalyticsMetricsByTenant(tenantId: string): Promise<AnalyticsMetric[]> {
+    return await db.select().from(analyticsMetrics).where(eq(analyticsMetrics.tenantId, tenantId));
+  }
+
+  async createAnalyticsMetric(insertMetric: InsertAnalyticsMetric): Promise<AnalyticsMetric> {
+    const result = await db.insert(analyticsMetrics).values(insertMetric).returning();
+    return result[0];
+  }
+
+  async updateAnalyticsMetric(id: number, insertMetric: InsertAnalyticsMetric): Promise<AnalyticsMetric | undefined> {
+    const result = await db.update(analyticsMetrics).set(insertMetric).where(eq(analyticsMetrics.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteAnalyticsMetric(id: number): Promise<boolean> {
+    const result = await db.delete(analyticsMetrics).where(eq(analyticsMetrics.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Activity log operations
+  async getActivityLog(id: number): Promise<ActivityLog | undefined> {
+    const result = await db.select().from(activityLogs).where(eq(activityLogs.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getActivityLogsByTenant(tenantId: string): Promise<ActivityLog[]> {
+    return await db.select().from(activityLogs).where(eq(activityLogs.tenantId, tenantId));
+  }
+
+  async createActivityLog(insertLog: InsertActivityLog): Promise<ActivityLog> {
+    const result = await db.insert(activityLogs).values(insertLog).returning();
+    return result[0];
+  }
+
+  // Time entry operations  
+  async getTimeEntry(id: number): Promise<TimeEntry | undefined> {
+    const result = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getTimeEntriesByTenant(tenantId: string): Promise<TimeEntry[]> {
+    return await db.select().from(timeEntries).where(eq(timeEntries.tenantId, tenantId));
+  }
+
+  async getTimeEntriesByUser(tenantId: string, userId: number): Promise<TimeEntry[]> {
+    return await db.select().from(timeEntries).where(eq(timeEntries.tenantId, tenantId));
+  }
+
+  async getActiveTimeEntry(tenantId: string, userId: number): Promise<TimeEntry | undefined> {
+    const result = await db.select().from(timeEntries)
+      .where(eq(timeEntries.tenantId, tenantId))
+      .limit(1);
+    return result[0];
+  }
+
+  async createTimeEntry(insertEntry: InsertTimeEntry): Promise<TimeEntry> {
+    const result = await db.insert(timeEntries).values(insertEntry).returning();
+    return result[0];
+  }
+
+  async updateTimeEntry(id: number, insertEntry: InsertTimeEntry): Promise<TimeEntry | undefined> {
+    const result = await db.update(timeEntries).set(insertEntry).where(eq(timeEntries.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteTimeEntry(id: number): Promise<boolean> {
+    const result = await db.delete(timeEntries).where(eq(timeEntries.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Performance metrics operations
+  async getPerformanceMetric(id: number): Promise<PerformanceMetric | undefined> {
+    const result = await db.select().from(performanceMetrics).where(eq(performanceMetrics.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getPerformanceMetricsByTenant(tenantId: string): Promise<PerformanceMetric[]> {
+    return await db.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
+  }
+
+  async getPerformanceMetricsByUser(tenantId: string, userId: number): Promise<PerformanceMetric[]> {
+    return await db.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
+  }
+
+  async createPerformanceMetric(insertMetric: InsertPerformanceMetric): Promise<PerformanceMetric> {
+    const result = await db.insert(performanceMetrics).values(insertMetric).returning();
+    return result[0];
+  }
+
+  async updatePerformanceMetric(id: number, insertMetric: InsertPerformanceMetric): Promise<PerformanceMetric | undefined> {
+    const result = await db.update(performanceMetrics).set(insertMetric).where(eq(performanceMetrics.id, id)).returning();
+    return result[0];
+  }
+
+  async deletePerformanceMetric(id: number): Promise<boolean> {
+    const result = await db.delete(performanceMetrics).where(eq(performanceMetrics.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Shift policy operations
+  async getShiftPolicy(id: number): Promise<ShiftPolicy | undefined> {
+    const result = await db.select().from(shiftPolicies).where(eq(shiftPolicies.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getShiftPoliciesByTenant(tenantId: string): Promise<ShiftPolicy[]> {
+    return await db.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId));
+  }
+
+  async createShiftPolicy(insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy> {
+    const result = await db.insert(shiftPolicies).values(insertPolicy).returning();
+    return result[0];
+  }
+
+  async updateShiftPolicy(id: number, insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy | undefined> {
+    const result = await db.update(shiftPolicies).set(insertPolicy).where(eq(shiftPolicies.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteShiftPolicy(id: number): Promise<boolean> {
+    const result = await db.delete(shiftPolicies).where(eq(shiftPolicies.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Usage metrics operations
+  async getUsageMetrics(tenantId: string): Promise<UsageMetric | undefined> {
+    const result = await db.select().from(usageMetrics).where(eq(usageMetrics.tenantId, tenantId)).limit(1);
+    return result[0];
+  }
+
+  async createUsageMetrics(insertMetrics: InsertUsageMetric): Promise<UsageMetric> {
+    const result = await db.insert(usageMetrics).values(insertMetrics).returning();
+    return result[0];
+  }
+
+  async updateUsageMetrics(tenantId: string, insertMetrics: InsertUsageMetric): Promise<UsageMetric | undefined> {
+    const result = await db.update(usageMetrics).set(insertMetrics).where(eq(usageMetrics.tenantId, tenantId)).returning();
+    return result[0];
+  }
+
+  // Invoice operations
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getInvoicesByTenant(tenantId: string): Promise<Invoice[]> {
+    return await db.select().from(invoices).where(eq(invoices.tenantId, tenantId));
+  }
+
+  async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+    const result = await db.insert(invoices).values(insertInvoice).returning();
+    return result[0];
+  }
+
+  async updateInvoice(id: number, insertInvoice: InsertInvoice): Promise<Invoice | undefined> {
+    const result = await db.update(invoices).set(insertInvoice).where(eq(invoices.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteInvoice(id: number): Promise<boolean> {
+    const result = await db.delete(invoices).where(eq(invoices.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Billing info operations
+  async getBillingInfo(tenantId: string): Promise<BillingInfo | undefined> {
+    const result = await db.select().from(billingInfo).where(eq(billingInfo.tenantId, tenantId)).limit(1);
+    return result[0];
+  }
+
+  async createBillingInfo(insertBilling: InsertBillingInfo): Promise<BillingInfo> {
+    const result = await db.insert(billingInfo).values(insertBilling).returning();
+    return result[0];
+  }
+
+  async updateBillingInfo(tenantId: string, insertBilling: InsertBillingInfo): Promise<BillingInfo | undefined> {
+    const result = await db.update(billingInfo).set(insertBilling).where(eq(billingInfo.tenantId, tenantId)).returning();
+    return result[0];
+  }
+
+  async deleteBillingInfo(tenantId: string): Promise<boolean> {
+    const result = await db.delete(billingInfo).where(eq(billingInfo.tenantId, tenantId));
+    return result.rowCount > 0;
   }
 
   async clearAllData(): Promise<void> {
