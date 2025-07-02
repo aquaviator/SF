@@ -172,7 +172,7 @@ export default function MyWork() {
       header: "Shift",
       cell: (shift) => (
         <div>
-          <div className="text-sm font-medium text-gray-900">{shift.title}</div>
+          <div className="text-sm font-medium text-gray-900">{shift.role}</div>
           <div className="text-sm text-gray-500 flex items-center">
             <MapPin className="h-3 w-3 mr-1" />
             {shift.location}
@@ -370,7 +370,7 @@ export default function MyWork() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {swapRequests.filter(r => r.status === 'pending').length}
+              {swapRequests.filter((r: any) => r.status === 'pending').length}
             </div>
             <p className="text-xs text-muted-foreground">pending requests</p>
           </CardContent>
