@@ -3,42 +3,68 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Scheduling from "@/pages/scheduling";
+import userEvent from "@testing-library/user-event";
 
 // Mock the API request function
+const mockApiRequest = vi.fn();
 vi.mock("@/lib/queryClient", () => ({
-  apiRequest: vi.fn(),
+  apiRequest: mockApiRequest,
 }));
 
-// Mock components
+// Mock components with better interactivity
 vi.mock("@/components/ModalForm", () => ({
-  ModalForm: ({ isOpen, children, title }: any) => 
-    isOpen ? <div data-testid="modal-form" aria-label={title}>{children}</div> : null,
+  ModalForm: ({ isOpen, children, title, onSubmit }: any) => 
+    isOpen ? (
+      <div data-testid="modal-form" aria-label={title}>
+        <h2>{title}</h2>
+        {children}
+        <button onClick={onSubmit} data-testid="modal-submit">Submit</button>
+        <button data-testid="modal-cancel">Cancel</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("@/components/DataTable", () => ({
-  DataTable: ({ data, title, onAdd, emptyState }: any) => (
+  DataTable: ({ data, title, onAdd, onEdit, onDelete, emptyState }: any) => (
     <div data-testid="data-table">
       <h3>{title}</h3>
-      {onAdd && <button onClick={onAdd}>Add</button>}
-      {data.length === 0 ? emptyState : <div>Table with {data.length} items</div>}
+      {onAdd && <button onClick={onAdd} data-testid={`add-${title.replace(/\s+/g, '-').toLowerCase()}`}>Add {title}</button>}
+      {data.length === 0 ? emptyState : (
+        <div>
+          Table with {data.length} items
+          {data.map((item: any, index: number) => (
+            <div key={index} data-testid={`table-row-${index}`}>
+              {item.name || item.title || `Item ${index}`}
+              {onEdit && <button onClick={() => onEdit(item)} data-testid={`edit-${index}`}>Edit</button>}
+              {onDelete && <button onClick={() => onDelete(item)} data-testid={`delete-${index}`}>Delete</button>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   ),
 }));
 
-// Mock hooks
+// Mock useCrud hook with better return value
+const mockUseCrud = vi.fn(() => ({
+  data: [],
+  isLoading: false,
+  error: null,
+  isModalOpen: false,
+  editingItem: null,
+  isSubmitting: false,
+  openCreateModal: vi.fn(),
+  openEditModal: vi.fn(),
+  closeModal: vi.fn(),
+  handleSubmit: vi.fn(),
+  handleDelete: vi.fn(),
+  createMutation: { isPending: false },
+  updateMutation: { isPending: false },
+  deleteMutation: { isPending: false },
+}));
+
 vi.mock("@/hooks/useCrud", () => ({
-  useCrud: vi.fn(() => ({
-    data: [],
-    isLoading: false,
-    isModalOpen: false,
-    editingItem: null,
-    isSubmitting: false,
-    openCreateModal: vi.fn(),
-    openEditModal: vi.fn(),
-    closeModal: vi.fn(),
-    handleSubmit: vi.fn(),
-    handleDelete: vi.fn(),
-  })),
+  useCrud: mockUseCrud,
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -71,10 +97,16 @@ function createWrapper(role: "owner" | "staff" = "owner") {
   });
 
   const MockAuthProvider = ({ children }: { children: React.ReactNode }) => (
-    <AuthProvider value={createMockAuthContext(role) as any}>
+    <AuthProvider>
       {children}
     </AuthProvider>
   );
+
+  // Mock the useAuth hook to return our mock context
+  vi.mock("@/contexts/AuthContext", () => ({
+    AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    useAuth: () => createMockAuthContext(role),
+  }));
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
@@ -212,6 +244,8 @@ describe("Scheduling Module", () => {
       
       await waitFor(() => {
         expect(screen.getByText("Clock In/Out")).toBeInTheDocument();
+        // Should show Clock In button when no active time entry
+        expect(screen.getByText("Clock In")).toBeInTheDocument();
       });
     });
 
