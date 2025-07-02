@@ -52,6 +52,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/shifts/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Guard against undefined or invalid IDs
+      if (isNaN(id) || req.params.id === 'undefined') {
+        return res.status(400).json({ message: "Invalid shift ID provided" });
+      }
+      
       const validatedData = insertShiftSchema.parse(req.body);
       const shift = await storage.updateShift(id, validatedData);
       
@@ -612,6 +618,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Job Roles routes
+  app.get("/api/job-roles", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock job roles data
+      const jobRoles = [
+        {
+          id: 1,
+          tenantId,
+          name: "Manager",
+          description: "Oversees daily operations and staff",
+          department: "Management",
+          hourlyRate: 25.00,
+          isActive: true
+        },
+        {
+          id: 2,
+          tenantId,
+          name: "Cashier",
+          description: "Handles customer transactions",
+          department: "Sales",
+          hourlyRate: 15.00,
+          isActive: true
+        },
+        {
+          id: 3,
+          tenantId,
+          name: "Kitchen Staff",
+          description: "Prepares food and maintains kitchen",
+          department: "Kitchen",
+          hourlyRate: 18.00,
+          isActive: true
+        }
+      ];
+      
+      res.json(jobRoles);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch job roles" });
+    }
+  });
+
+  app.post("/api/job-roles", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for creating job role
+      const newRole = {
+        id: Date.now(),
+        tenantId,
+        ...req.body,
+        isActive: true
+      };
+      
+      res.status(201).json(newRole);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create job role" });
+    }
+  });
+
+  app.patch("/api/job-roles/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.body.tenantId;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for updating job role
+      const updatedRole = {
+        id,
+        tenantId,
+        ...req.body
+      };
+      
+      res.json(updatedRole);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update job role" });
+    }
+  });
+
+  app.delete("/api/job-roles/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.query.tenantId as string;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      res.json({ message: "Job role deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete job role" });
+    }
+  });
+
   // Shift Policies routes
   app.get("/api/shift-policies", async (req, res) => {
     try {
@@ -654,6 +763,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(shiftPolicies);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch shift policies" });
+    }
+  });
+
+  app.post("/api/shift-policies", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for creating shift policy
+      const newPolicy = {
+        id: Date.now(),
+        tenantId,
+        ...req.body,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      res.status(201).json(newPolicy);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create shift policy" });
     }
   });
 
