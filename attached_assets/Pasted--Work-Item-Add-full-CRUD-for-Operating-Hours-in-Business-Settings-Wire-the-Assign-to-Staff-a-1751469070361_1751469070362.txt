@@ -1,0 +1,112 @@
+*🔧 Work Item:
+
+Add full CRUD for Operating Hours in Business Settings
+
+Wire the “Assign to Staff” and “Location” dropdowns in the Create Shift modal to real data**
+
+1. Operating Hours CRUD
+
+Server
+
+In src/server/routes/operating-hours.ts, add these endpoints:
+
+ts
+Copy
+Edit
+router.get('/',   fetchOperatingHours)
+router.post('/',  createOperatingHour)
+router.patch('/:id', updateOperatingHour)
+router.delete('/:id', deleteOperatingHour)
+In your Drizzle schema, define an operating_hours table with fields id, tenant_id, day, open, close.
+
+Implement the controller functions (fetchOperatingHours, etc.) so they always filter by tenant_id from req.query or req.body.
+
+Client
+
+In src/pages/business-settings.tsx, import useCrud('operating-hours').
+
+Under your Operating Hours tab, replace any placeholder UI with your generic <DataTable> + <ModalForm> wired to that hook.
+
+Add button → createOperatingHours.mutate()
+
+Edit/Delete actions → updateOperatingHours.mutate(), deleteOperatingHours.mutate()
+
+Ensure after each mutation you call queryClient.invalidateQueries(['operating-hours', tenantId]) so the table refreshes.
+
+2. Dynamic “Assign to Staff” & “Location” Selects in Create Shift
+
+Fetch real data
+
+ts
+Copy
+Edit
+const { data: roles }     = useCrud<'job-roles'>('job-roles', { query: { tenantId } })
+const { data: locs }      = useCrud<'locations'>('locations', { query: { tenantId } })
+const { data: staffList } = useCrud<'staff'>('staff', { query: { tenantId } })
+In your Create Shift form schema (scheduling.tsx around line 1080):
+
+tsx
+Copy
+Edit
+<Label>Role</Label>
+<SelectFormField name="roleId" control={form.control} rules={{ required: true }}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a role" />
+  </SelectTrigger>
+  <SelectContent>
+    {roles?.map(r => (
+      <SelectItem key={r.id} value={r.id.toString()}>
+        {r.name}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</SelectFormField>
+
+<Label>Assign To</Label>
+<SelectFormField name="staffId" control={form.control}>
+  <SelectTrigger>
+    <SelectValue placeholder="Unassigned" />
+  </SelectTrigger>
+  <SelectContent>
+    {staffList?.map(s => (
+      <SelectItem key={s.id} value={s.id.toString()}>
+        {s.firstName} {s.lastName}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</SelectFormField>
+
+<Label>Location</Label>
+<SelectFormField name="locationId" control={form.control} rules={{ required: true }}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a location" />
+  </SelectTrigger>
+  <SelectContent>
+    {locs?.map(l => (
+      <SelectItem key={l.id} value={l.id.toString()}>
+        {l.name}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</SelectFormField>
+Behaviour
+
+On mount, roles, staffList, and locs should fetch automatically via React Query.
+
+The dropdowns show the real entities instead of “A LOCATION” placeholder.
+
+When you submit, roleId, staffId and locationId go in the POST body.
+
+Once you’ve added those routes and wired the form up as above, run:
+
+Business Settings → Operating Hours
+
+Create / Edit / Delete an entry and verify it persists in Postgres and stays on the page.
+
+Scheduling → Create Shift
+
+Open the modal, confirm the three dropdowns now load your live data.
+
+Create a shift assigning a real role, staff member, and location—verify it POSTs correctly to /api/shifts.
+
+That will close out the two remaining blockers and get all CRUD fully wired end-to-end. Let me know how the tests go!

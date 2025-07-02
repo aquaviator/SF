@@ -165,6 +165,8 @@ export default function BusinessSettingsPage() {
   const [editingLocation, setEditingLocation] = React.useState<Location | null>(null);
   const [isDepartmentModalOpen, setIsDepartmentModalOpen] = React.useState(false);
   const [editingDepartment, setEditingDepartment] = React.useState<Department | null>(null);
+  const [isHoursModalOpen, setIsHoursModalOpen] = React.useState(false);
+  const [editingHours, setEditingHours] = React.useState<OperatingHours | null>(null);
 
   // Business Profile Form
   const profileForm = useForm<BusinessProfileFormData>({
@@ -221,6 +223,21 @@ export default function BusinessSettingsPage() {
       managerId: undefined,
       budget: "",
       isActive: true,
+    },
+  });
+
+  // Operating Hours Form
+  const hoursForm = useForm<OperatingHoursFormData>({
+    resolver: zodResolver(operatingHoursSchema),
+    defaultValues: {
+      tenantId: tenantId || "",
+      dayOfWeek: "monday",
+      openTime: "",
+      closeTime: "",
+      isOpen: true,
+      breakStartTime: "",
+      breakEndTime: "",
+      notes: "",
     },
   });
 
@@ -403,6 +420,40 @@ export default function BusinessSettingsPage() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete department", variant: "destructive" });
+    },
+  });
+
+  // Operating Hours Mutation
+  const hoursMutation = useMutation({
+    mutationFn: async (data: OperatingHoursFormData & { id?: number }) => {
+      if (data.id) {
+        return await apiRequest("PUT", `/api/operating-hours/${data.id}`, data);
+      } else {
+        return await apiRequest("POST", `/api/operating-hours`, data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/operating-hours", tenantId] });
+      setIsHoursModalOpen(false);
+      setEditingHours(null);
+      hoursForm.reset();
+      toast({ title: "Success", description: "Operating hours saved successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save operating hours", variant: "destructive" });
+    },
+  });
+
+  const deleteHoursMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/operating-hours/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/operating-hours", tenantId] });
+      toast({ title: "Success", description: "Operating hours deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete operating hours", variant: "destructive" });
     },
   });
 
