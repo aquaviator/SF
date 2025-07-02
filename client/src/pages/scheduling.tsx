@@ -37,7 +37,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Shift, ScheduleTemplate } from "@shared/schema";
+import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
 import { z } from "zod";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
@@ -680,7 +680,7 @@ export default function Scheduling() {
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea 
-                    placeholder="Describe the shift responsibilities..." 
+                    placeholder="Describe the template purpose..." 
                     {...field} 
                   />
                 </FormControl>
@@ -689,75 +689,24 @@ export default function Scheduling() {
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={templateForm.control}
-              name="startTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={templateForm.control}
-              name="endTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
           <FormField
             control={templateForm.control}
-            name="department"
+            name="recurrence"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Department</FormLabel>
+                <FormLabel>Recurrence Pattern</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder="Select recurrence" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="customer-service">Customer Service</SelectItem>
-                    <SelectItem value="security">Security</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="reception">Reception</SelectItem>
-                    <SelectItem value="warehouse">Warehouse</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={templateForm.control}
-            name="requiredStaff"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Required Staff</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min="1" 
-                    placeholder="1" 
-                    {...field} 
-                  />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
