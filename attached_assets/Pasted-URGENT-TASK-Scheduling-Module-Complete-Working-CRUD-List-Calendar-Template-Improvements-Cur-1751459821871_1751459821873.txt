@@ -1,0 +1,75 @@
+URGENT TASK: Scheduling Module – Complete, Working CRUD (List & Calendar), Template Improvements
+Current Issues:
+Shift Planner/List View:
+
+The “Create Shift” button does not open a working modal. No CRUD operations function (Create, Edit, Delete).
+
+Clicking “Edit” or “Delete” on a shift does not work or trigger a UI modal/confirmation (browser alert shown for delete, which is not acceptable).
+
+Calendar Day Modal:
+
+When clicking on a calendar day, the modal opens, but there are no CRUD actions. You cannot create, edit, delete, or copy shifts from the day view. No modal forms or action buttons appear.
+
+Template Form:
+
+There is an Assignment Type dropdown (Assigned Staff or Open).
+
+If “Assigned Staff” is selected, there is no way to select the specific staff member(s).
+
+This must support selection of one or more staff (with search/filter), and if “Open” is chosen, staff field must be hidden.
+
+REQUIRED DELIVERABLES:
+1. Shift Planner/List View (CRUD)
+“Create Shift” button must open a fully functional Create Shift modal.
+
+Each shift row must have working Edit and Delete buttons:
+
+Edit opens a pre-filled modal for editing.
+
+Delete opens a custom confirmation modal (not a browser alert).
+
+All operations update the backend and list view instantly (no reloads).
+
+Confirm all actions work via automated tests and screenshots.
+
+2. Calendar Day Modal (CRUD + Copy)
+Clicking a calendar day must open a modal showing all shifts for that day.
+
+For each shift on that day, user can:
+
+Edit (open editable modal)
+
+Delete (custom modal confirmation)
+
+Copy/Duplicate (clone shift in modal for that day)
+
+If no shifts exist, allow creating a new shift directly in modal.
+
+All actions must update backend, UI, and calendar view in real time.
+
+3. Template Form Improvements
+When Assignment Type = “Assigned Staff,” display a searchable, multi-select staff dropdown (list is populated with available staff).
+
+When Assignment Type = “Open,” hide the staff selection field.
+
+Ensure template can save these assignments, and that they propagate correctly when bulk-creating shifts.
+
+TESTING & EVIDENCE
+Write and run comprehensive unit, integration, and E2E tests for all new/updated functionality.
+
+If any test fails or functionality cannot be implemented, STOP immediately and report with details.
+
+Attach screenshots and test output logs to prove each feature works.
+
+FAIL-FAST POLICY
+If any part of this task is blocked by errors (TypeScript, API, environment, test failures), STOP and report clearly, do not mark as complete or try workarounds without discussion.
+
+End result:
+
+Both List view and Calendar day modals support full CRUD and copy actions, and update backend+UI instantly.
+
+Template Assignment Type works as described.
+
+All test evidence attached.
+
+No regressions anywhere in Scheduling module.

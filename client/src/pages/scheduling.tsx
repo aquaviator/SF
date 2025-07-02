@@ -52,6 +52,20 @@ const templateFormSchema = insertScheduleTemplateSchema.extend({
 
 type TemplateFormData = z.infer<typeof templateFormSchema>;
 
+// Shift form schema for CRUD operations
+const shiftFormSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  role: z.string().min(1, "Role is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  assignedTo: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type ShiftFormData = z.infer<typeof shiftFormSchema>;
+
 interface LiveOperation {
   id: number;
   staffName: string;
@@ -168,6 +182,47 @@ export default function Scheduling() {
       });
     }
   }, [editingTemplate, templateForm]);
+
+  // Shift form - IMPLEMENTING MISSING CRUD FUNCTIONALITY
+  const shiftForm = useForm<ShiftFormData>({
+    resolver: zodResolver(shiftFormSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      startTime: "09:00",
+      endTime: "17:00",
+      role: "",
+      description: "",
+      location: "",
+      assignedTo: "",
+      notes: "",
+    },
+  });
+
+  React.useEffect(() => {
+    if (editingShift) {
+      shiftForm.reset({
+        date: editingShift.date,
+        startTime: editingShift.startTime,
+        endTime: editingShift.endTime,
+        role: editingShift.role,
+        description: editingShift.description,
+        location: editingShift.location,
+        assignedTo: editingShift.assignedTo?.toString() || "",
+        notes: editingShift.notes || "",
+      });
+    } else {
+      shiftForm.reset({
+        date: new Date().toISOString().split('T')[0],
+        startTime: "09:00",
+        endTime: "17:00",
+        role: "",
+        description: "",
+        location: "",
+        assignedTo: "",
+        notes: "",
+      });
+    }
+  }, [editingShift, shiftForm]);
 
   // Time Entries - Real API Integration
   const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery<TimeEntry[]>({
@@ -856,6 +911,155 @@ export default function Scheduling() {
                     onCheckedChange={field.onChange}
                   />
                 </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </ModalForm>
+
+      {/* Shift CRUD Modal - IMPLEMENTING MISSING FUNCTIONALITY */}
+      <ModalForm
+        isOpen={shiftModalOpen}
+        onClose={closeShiftModal}
+        title={editingShift ? "Edit Shift" : "Create Shift"}
+        onSubmit={shiftForm.handleSubmit(handleShiftSubmit)}
+        isSubmitting={shiftSubmitting}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={shiftForm.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={shiftForm.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="server">Server</SelectItem>
+                      <SelectItem value="bartender">Bartender</SelectItem>
+                      <SelectItem value="host">Host</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="chef">Chef</SelectItem>
+                      <SelectItem value="cleaner">Cleaner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={shiftForm.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Time</FormLabel>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={shiftForm.control}
+              name="endTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Time</FormLabel>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={shiftForm.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Main Dining Hall" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={shiftForm.control}
+            name="assignedTo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assign To Staff (Optional)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Leave unassigned or select staff" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {staff.map((member: any) => (
+                      <SelectItem key={member.id} value={member.id.toString()}>
+                        {member.firstName} {member.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={shiftForm.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Shift description..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={shiftForm.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Additional notes..." {...field} />
+                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
