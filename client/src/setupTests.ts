@@ -1,5 +1,8 @@
 import "@testing-library/jest-dom";
-import { vi, beforeEach } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
+
+// Make vitest functions available globally
+global.afterEach = afterEach;
 
 // Mock global fetch
 global.fetch = vi.fn();

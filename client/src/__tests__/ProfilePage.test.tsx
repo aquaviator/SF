@@ -54,6 +54,13 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 describe('ProfilePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Mock fetch for profile data retrieval
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockUser),
+    });
+    
     // Mock successful user data fetch
     mockApiRequest.mockResolvedValue(mockUser);
   });
