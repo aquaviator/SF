@@ -52,6 +52,8 @@ describe('React Hook Form Error Regression Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clear the DOM between tests
+    document.body.innerHTML = '';
     // Capture console errors and warnings to detect React Hook Form issues
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -60,6 +62,7 @@ describe('React Hook Form Error Regression Tests', () => {
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
     consoleWarnSpy?.mockRestore();
+    document.body.innerHTML = '';
   });
 
   describe('Form Component Validation', () => {
