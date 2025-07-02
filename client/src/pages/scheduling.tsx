@@ -130,7 +130,7 @@ export default function Scheduling() {
       assignedTo: undefined, // Reset assignment for duplicate
       status: "open",
       requiredStaff: shift.requiredStaff,
-      createdBy: user?.id || 1,
+      createdBy: typeof user?.id === 'string' ? parseInt(user.id) : (user?.id || 1),
     });
     setCalendarDayModalOpen(false);
     openCreateShift();
@@ -190,7 +190,7 @@ export default function Scheduling() {
       requiredStaffPerPosition: 1,
       recurrence: "weekly",
       isActive: true,
-      createdBy: user?.id || 1,
+      createdBy: typeof user?.id === 'string' ? parseInt(user.id) : (user?.id || 1),
     },
   });
 
@@ -217,7 +217,7 @@ export default function Scheduling() {
         requiredStaffPerPosition: 1,
         recurrence: "weekly",
         isActive: true,
-        createdBy: user?.id || 1,
+        createdBy: typeof user?.id === 'string' ? parseInt(user.id) : (user?.id || 1),
       });
     }
   }, [editingTemplate, templateForm]);
