@@ -38,19 +38,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
+import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
-// Schema for shift template forms - FIXED to match ScheduleTemplate API
-const shiftTemplateSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().min(1, "Description is required"),
-  shifts: z.array(z.string()).default([]),
-  recurrence: z.string().min(1, "Recurrence is required"),
-  isActive: z.boolean(),
+// Use template form schema that matches API exactly
+const templateFormSchema = insertScheduleTemplateSchema.extend({
+  description: z.string().optional(), // Allow optional description
 });
 
-type ShiftTemplateFormData = z.infer<typeof shiftTemplateSchema>;
+type TemplateFormData = z.infer<typeof templateFormSchema>;
 
 interface LiveOperation {
   id: number;
@@ -125,14 +122,16 @@ export default function Scheduling() {
   });
 
   // Template form - FIXED to match API structure
-  const templateForm = useForm<ShiftTemplateFormData>({
-    resolver: zodResolver(shiftTemplateSchema),
+  const templateForm = useForm<TemplateFormData>({
+    resolver: zodResolver(templateFormSchema),
     defaultValues: {
+      tenantId: tenantId,
       name: "",
       description: "",
       shifts: [],
       recurrence: "weekly",
       isActive: true,
+      createdBy: user?.id || 1,
     },
   });
 
