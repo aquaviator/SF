@@ -54,6 +54,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const validatedData = insertShiftSchema.parse(req.body);
       const shift = await storage.updateShift(id, validatedData);
+      
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      res.json(shift);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update shift" });
+    }
+  });
+
+  app.delete("/api/shifts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteShift(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      res.json({ message: "Shift deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete shift" });
+    }
+  });
+
+  app.put("/api/shifts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertShiftSchema.parse(req.body);
+      const shift = await storage.updateShift(id, validatedData);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
       }

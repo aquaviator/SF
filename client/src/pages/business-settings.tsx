@@ -43,6 +43,15 @@ const jobRoleSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+// Location Schema
+const locationSchema = z.object({
+  name: z.string().min(1, "Location name is required"),
+  description: z.string().min(1, "Location description is required"),
+  type: z.enum(["kitchen", "dining", "bar", "office", "storage", "other"]),
+  capacity: z.number().min(1, "Capacity must be at least 1"),
+  isActive: z.boolean().default(true),
+});
+
 // Operating Hours Schema
 const operatingHoursSchema = z.object({
   monday: z.object({
@@ -84,6 +93,7 @@ const operatingHoursSchema = z.object({
 
 type BusinessProfileFormData = z.infer<typeof businessProfileSchema>;
 type JobRoleFormData = z.infer<typeof jobRoleSchema>;
+type LocationFormData = z.infer<typeof locationSchema>;
 type OperatingHoursFormData = z.infer<typeof operatingHoursSchema>;
 
 interface BusinessProfile {
@@ -103,6 +113,16 @@ interface JobRole {
   description: string;
   department: string;
   permissions: string[];
+  isActive: boolean;
+  tenantId: string;
+}
+
+interface Location {
+  id: number;
+  name: string;
+  description: string;
+  type: "kitchen" | "dining" | "bar" | "office" | "storage" | "other";
+  capacity: number;
   isActive: boolean;
   tenantId: string;
 }
