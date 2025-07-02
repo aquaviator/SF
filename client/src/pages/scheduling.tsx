@@ -922,8 +922,27 @@ export default function Scheduling() {
         isOpen={shiftModalOpen}
         onClose={closeShiftModal}
         title={editingShift ? "Edit Shift" : "Create Shift"}
-        onSubmit={shiftForm.handleSubmit(handleShiftSubmit)}
-        isSubmitting={shiftSubmitting}
+        onSubmit={shiftForm.handleSubmit((formData) => {
+          // Transform form data to match API structure
+          const shiftData = {
+            tenantId: tenantId,
+            date: formData.date,
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+            role: formData.role,
+            description: formData.description,
+            location: formData.location,
+            assignedTo: formData.assignedTo ? parseInt(formData.assignedTo) : null,
+            status: "open" as const,
+            assignmentType: "assigned" as const,
+            requiredStaff: 1,
+            claimedBy: null,
+            templateId: null,
+            createdBy: user?.id || 1,
+            notes: formData.notes || null,
+          };
+          handleShiftSubmit(shiftData);
+        })}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
