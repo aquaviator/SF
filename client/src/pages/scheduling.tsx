@@ -939,7 +939,7 @@ export default function Scheduling() {
             requiredStaff: 1,
             claimedBy: null,
             templateId: null,
-            createdBy: user?.id || 1,
+            createdBy: Number(user?.id) || 1,
             notes: formData.notes || null,
           };
           handleShiftSubmit(shiftData);
