@@ -491,6 +491,11 @@ export default function BusinessSettingsPage() {
     departmentMutation.mutate(submitData);
   };
 
+  const handleHoursSubmit = (data: OperatingHoursFormData) => {
+    const submitData = editingHours ? { ...data, id: editingHours.id } : data;
+    hoursMutation.mutate(submitData);
+  };
+
   const openRoleModal = (role?: JobRole) => {
     if (role) {
       setEditingRole(role);
@@ -568,6 +573,35 @@ export default function BusinessSettingsPage() {
     setIsDepartmentModalOpen(true);
   };
 
+  const openHoursModal = (hours?: OperatingHours) => {
+    if (hours) {
+      setEditingHours(hours);
+      hoursForm.reset({
+        tenantId: hours.tenantId,
+        dayOfWeek: hours.dayOfWeek as "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday",
+        openTime: hours.openTime || "",
+        closeTime: hours.closeTime || "",
+        isOpen: hours.isOpen,
+        breakStartTime: hours.breakStartTime || "",
+        breakEndTime: hours.breakEndTime || "",
+        notes: hours.notes || "",
+      });
+    } else {
+      setEditingHours(null);
+      hoursForm.reset({
+        tenantId: tenantId || "",
+        dayOfWeek: "monday",
+        openTime: "",
+        closeTime: "",
+        isOpen: true,
+        breakStartTime: "",
+        breakEndTime: "",
+        notes: "",
+      });
+    }
+    setIsHoursModalOpen(true);
+  };
+
   // Job Roles Table Columns
   const roleColumns: Column<JobRole>[] = [
     {
@@ -640,6 +674,49 @@ export default function BusinessSettingsPage() {
           {department.isActive ? "Active" : "Inactive"}
         </Badge>
       ),
+    },
+  ];
+
+  // Operating Hours Table Columns
+  const hoursColumns: Column<OperatingHours>[] = [
+    {
+      header: "Day",
+      key: "dayOfWeek",
+      cell: (hours) => <span className="capitalize">{hours.dayOfWeek}</span>,
+    },
+    {
+      header: "Status",
+      key: "isOpen",
+      cell: (hours) => (
+        <Badge variant={hours.isOpen ? "default" : "secondary"}>
+          {hours.isOpen ? "Open" : "Closed"}
+        </Badge>
+      ),
+    },
+    {
+      header: "Hours",
+      key: "hours",
+      cell: (hours) => (
+        <span>
+          {hours.isOpen ? `${hours.openTime} - ${hours.closeTime}` : "Closed"}
+        </span>
+      ),
+    },
+    {
+      header: "Break",
+      key: "break",
+      cell: (hours) => (
+        <span>
+          {hours.breakStartTime && hours.breakEndTime
+            ? `${hours.breakStartTime} - ${hours.breakEndTime}`
+            : "None"}
+        </span>
+      ),
+    },
+    {
+      header: "Notes",
+      key: "notes",
+      cell: (hours) => <span>{hours.notes || "—"}</span>,
     },
   ];
 
@@ -891,37 +968,16 @@ export default function BusinessSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {hoursLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading operating hours...</div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {operatingHours.map((hours) => (
-                    <div key={hours.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="font-medium capitalize">{hours.dayOfWeek}</div>
-                        {hours.isOpen ? (
-                          <div className="text-sm text-muted-foreground">
-                            {hours.openTime} - {hours.closeTime}
-                            {hours.breakStartTime && hours.breakEndTime && (
-                              <span> (Break: {hours.breakStartTime} - {hours.breakEndTime})</span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">Closed</div>
-                        )}
-                        {hours.notes && (
-                          <div className="text-sm text-muted-foreground">({hours.notes})</div>
-                        )}
-                      </div>
-                      <Badge variant={hours.isOpen ? "default" : "secondary"}>
-                        {hours.isOpen ? "Open" : "Closed"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <DataTable
+                data={operatingHours}
+                columns={hoursColumns}
+                title="Operating Hours"
+                isLoading={hoursLoading}
+                onAdd={() => openHoursModal()}
+                onEdit={(hours) => openHoursModal(hours)}
+                onDelete={(hours) => deleteHoursMutation.mutate(hours.id)}
+                addLabel="Add Operating Hours"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -1167,6 +1223,154 @@ export default function BusinessSettingsPage() {
                     onCheckedChange={field.onChange}
                   />
                 </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </ModalForm>
+
+      {/* Operating Hours Modal */}
+      <ModalForm
+        isOpen={isHoursModalOpen}
+        onClose={() => {
+          setIsHoursModalOpen(false);
+          setEditingHours(null);
+          hoursForm.reset();
+        }}
+        title={editingHours ? "Edit Operating Hours" : "Add Operating Hours"}
+        form={hoursForm}
+        onSubmit={handleHoursSubmit}
+        isLoading={hoursMutation.isPending}
+      >
+        <div className="space-y-4">
+          <FormField
+            control={hoursForm.control}
+            name="dayOfWeek"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Day of Week</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a day" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="monday">Monday</SelectItem>
+                    <SelectItem value="tuesday">Tuesday</SelectItem>
+                    <SelectItem value="wednesday">Wednesday</SelectItem>
+                    <SelectItem value="thursday">Thursday</SelectItem>
+                    <SelectItem value="friday">Friday</SelectItem>
+                    <SelectItem value="saturday">Saturday</SelectItem>
+                    <SelectItem value="sunday">Sunday</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={hoursForm.control}
+            name="isOpen"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Open</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Is the business open on this day?
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={hoursForm.control}
+              name="openTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Open Time</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      type="time"
+                      placeholder="09:00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={hoursForm.control}
+              name="closeTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Close Time</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      type="time"
+                      placeholder="18:00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={hoursForm.control}
+              name="breakStartTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Break Start</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      type="time"
+                      placeholder="12:00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={hoursForm.control}
+              name="breakEndTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Break End</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      type="time"
+                      placeholder="13:00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={hoursForm.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Additional notes about these hours" />
+                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

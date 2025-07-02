@@ -287,16 +287,9 @@ export default function Scheduling() {
   const { data: jobRoles = [] } = useQuery({
     queryKey: ["/api/job-roles", tenantId],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        { id: 1, title: "Server", department: "Front of House", isActive: true },
-        { id: 2, title: "Bartender", department: "Bar", isActive: true },
-        { id: 3, title: "Host", department: "Front of House", isActive: true },
-        { id: 4, title: "Manager", department: "Management", isActive: true },
-        { id: 5, title: "Chef", department: "Kitchen", isActive: true },
-        { id: 6, title: "Line Cook", department: "Kitchen", isActive: true },
-        { id: 7, title: "Cleaner", department: "Maintenance", isActive: true },
-      ];
+      const response = await fetch(`/api/job-roles?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch job roles");
+      return response.json();
     },
   });
 
