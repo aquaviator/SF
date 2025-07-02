@@ -116,6 +116,19 @@ export default function Subscription() {
     enabled: !!tenantId,
   });
 
+  // Fetch Usage Metrics
+  const { data: usageMetrics } = useQuery({
+    queryKey: ["/api/usage-metrics", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/usage-metrics?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage metrics');
+      }
+      return response.json();
+    },
+    enabled: !!tenantId,
+  });
+
   // Fetch Available Plans from database
   const { data: plans = [] } = useQuery<Plan[]>({
     queryKey: ["/api/subscription/plans"],
@@ -398,10 +411,10 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Staff Members</span>
-                            <span>{subscription.usageMetrics.staffUsed} / {formatNumber(subscription.usageMetrics.staffLimit)}</span>
+                            <span>{subscription.usageMetrics?.staffUsed || 0} / {formatNumber(subscription.usageMetrics?.staffLimit || 0)}</span>
                           </div>
                           <Progress 
-                            value={subscription.usageMetrics.staffLimit === -1 ? 0 : (subscription.usageMetrics.staffUsed / subscription.usageMetrics.staffLimit) * 100} 
+                            value={!subscription.usageMetrics || subscription.usageMetrics.staffLimit === -1 ? 0 : (subscription.usageMetrics.staffUsed / subscription.usageMetrics.staffLimit) * 100} 
                             className="h-2"
                           />
                         </div>
@@ -409,10 +422,10 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Shifts This Month</span>
-                            <span>{subscription.usageMetrics.shiftsUsed} / {formatNumber(subscription.usageMetrics.shiftsLimit)}</span>
+                            <span>{subscription.usageMetrics?.shiftsUsed || 0} / {formatNumber(subscription.usageMetrics?.shiftsLimit || 0)}</span>
                           </div>
                           <Progress 
-                            value={subscription.usageMetrics.shiftsLimit === -1 ? 0 : (subscription.usageMetrics.shiftsUsed / subscription.usageMetrics.shiftsLimit) * 100} 
+                            value={!subscription.usageMetrics || subscription.usageMetrics.shiftsLimit === -1 ? 0 : (subscription.usageMetrics.shiftsUsed / subscription.usageMetrics.shiftsLimit) * 100} 
                             className="h-2"
                           />
                         </div>
@@ -420,7 +433,7 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Storage</span>
-                            <span>{subscription.usageMetrics.storageUsed} / {subscription.usageMetrics.storageLimit}</span>
+                            <span>{subscription.usageMetrics?.storageUsed || '0 MB'} / {subscription.usageMetrics?.storageLimit || '0 MB'}</span>
                           </div>
                           <Progress value={12.5} className="h-2" />
                         </div>
