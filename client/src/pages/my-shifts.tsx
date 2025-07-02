@@ -122,11 +122,18 @@ export default function MyShifts() {
     },
   });
 
+  // Helper functions
   const getStatusBadge = (status: string) => {
     const variants = {
       assigned: "bg-blue-100 text-blue-800",
       confirmed: "bg-green-100 text-green-800",
       conflict: "bg-red-100 text-red-800",
+      "clocked-in": "bg-green-100 text-green-800",
+      "clocked-out": "bg-gray-100 text-gray-800",
+      "on-break": "bg-yellow-100 text-yellow-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      approved: "bg-green-100 text-green-800",
+      rejected: "bg-red-100 text-red-800",
     };
     
     return (
@@ -136,7 +143,16 @@ export default function MyShifts() {
     );
   };
 
-  const columns: Column<Shift>[] = [
+  const formatTime = (timeString: string) => {
+    return new Date(timeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Column definitions for different tabs
+  const shiftColumns: Column<Shift>[] = [
     {
       key: "date",
       header: "Date & Time",

@@ -10,10 +10,9 @@ import { MoreDrawer } from "@/components/MoreDrawer";
 import Dashboard from "@/pages/dashboard";
 import Shifts from "@/pages/shifts";
 import Staff from "@/pages/staff";
-import MyShifts from "@/pages/my-shifts";
+import MyWork from "@/pages/my-work";
 import Opportunities from "@/pages/opportunities";
 import SwapRequests from "@/pages/swap-requests";
-import Assignments from "@/pages/assignments";
 import HolidayRequests from "@/pages/holiday-requests";
 import Profile from "@/pages/profile";
 import OwnerDashboard from "@/pages/owner-dashboard";
@@ -44,10 +43,9 @@ function Router() {
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/shifts" component={Shifts} />
               <Route path="/staff" component={Staff} />
-              <Route path="/my-shifts" component={MyShifts} />
+              <Route path="/my-work" component={MyWork} />
               <Route path="/opportunities" component={Opportunities} />
               <Route path="/swap-requests" component={SwapRequests} />
-              <Route path="/assignments" component={Assignments} />
               <Route path="/holiday-requests" component={HolidayRequests} />
               <Route path="/profile" component={Profile} />
               <Route path="/owner/dashboard" component={OwnerDashboard} />
@@ -57,7 +55,7 @@ function Router() {
               <Route path="/owner/policies" component={Policies} />
               <Route path="/owner/analytics" component={Analytics} />
               <Route path="/owner/subscription" component={Subscription} />
-              <Route path="/staff/performance" component={MyShifts} />
+              <Route path="/staff/performance" component={MyWork} />
               <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
             </Switch>

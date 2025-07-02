@@ -58,9 +58,9 @@ export const staffMenu: MenuItem[] = [
   },
   {
     label: "My Work",
-    route: "/my-shifts",
+    route: "/my-work",
     icon: Calendar,
-    description: "Manage your shift schedule"
+    description: "Comprehensive work hub with schedule, assignments, time tracking, and requests"
   },
   {
     label: "Requests",
@@ -105,12 +105,6 @@ export const staffMoreMenu: MenuItem[] = [
     route: "/opportunities",
     icon: Briefcase,
     description: "Available shift opportunities"
-  },
-  {
-    label: "Assignments",
-    route: "/assignments",
-    icon: ClipboardList,
-    description: "Current shift assignments"
   },
   {
     label: "Performance",
