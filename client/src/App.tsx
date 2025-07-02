@@ -51,6 +51,8 @@ function Router() {
             <Route path="/owner/policies" component={Policies} />
             <Route path="/owner/analytics" component={Analytics} />
             <Route path="/owner/subscription" component={Subscription} />
+            <Route path="/staff/performance" component={MyShifts} />
+            <Route path="/help" component={NotFound} />
             <Route component={NotFound} />
           </Switch>
         </div>
