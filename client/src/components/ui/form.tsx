@@ -44,15 +44,46 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
+  
+  // Safely get form context
+  let getFieldState, formState
+  try {
+    const formMethods = useFormContext()
+    getFieldState = formMethods?.getFieldState
+    formState = formMethods?.formState
+  } catch (error) {
+    // If no form context, return safe defaults
+    return {
+      id: React.useId(),
+      name: '',
+      formItemId: `fallback-form-item`,
+      formDescriptionId: `fallback-form-item-description`,
+      formMessageId: `fallback-form-item-message`,
+      error: undefined,
+      invalid: false,
+      isDirty: false,
+      isTouched: false,
+    }
   }
 
-  const { id } = itemContext
+  if (!fieldContext?.name || !getFieldState || !formState) {
+    // Return safe defaults if context is incomplete
+    const fallbackId = itemContext?.id || React.useId()
+    return {
+      id: fallbackId,
+      name: fieldContext?.name || '',
+      formItemId: `${fallbackId}-form-item`,
+      formDescriptionId: `${fallbackId}-form-item-description`,
+      formMessageId: `${fallbackId}-form-item-message`,
+      error: undefined,
+      invalid: false,
+      isDirty: false,
+      isTouched: false,
+    }
+  }
+
+  const fieldState = getFieldState(fieldContext.name, formState)
+  const { id } = itemContext || { id: React.useId() }
 
   return {
     id,
