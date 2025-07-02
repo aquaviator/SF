@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -39,7 +40,8 @@ import {
   Copy,
   Loader2,
   List,
-  CalendarDays
+  CalendarDays,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
@@ -869,116 +871,284 @@ export default function Scheduling() {
         </TabsContent>
       </Tabs>
 
-      {/* Template Form Modal */}
-      <ModalForm
-        isOpen={templateModalOpen}
-        onClose={closeTemplateModal}
-        title={editingTemplate ? "Edit Template" : "Create Template"}
-        form={templateForm}
-        onSubmit={handleTemplateSubmit}
-        isLoading={templateSubmitting}
-      >
-        <div className="space-y-4">
-          <FormField
-            control={templateForm.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Template Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Morning Customer Service" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      {/* Enhanced Template Form Modal */}
+      <Dialog open={templateModalOpen} onOpenChange={setTemplateModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...templateForm}>
+            <form onSubmit={templateForm.handleSubmit(handleTemplateSubmit)} className="space-y-6">
+              {/* Section 1: Template Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Template Details</h3>
+                
+                <FormField
+                  control={templateForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Template Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Morning Customer Service" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <FormField
-            control={templateForm.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Describe the template purpose..." 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                <FormField
+                  control={templateForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe the template purpose..." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <FormField
-            control={templateForm.control}
-            name="assignmentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assignment Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select assignment type" />
+                <FormField
+                  control={templateForm.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Active Template</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Enable this template for shift generation
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Section 2: Pattern Settings */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Pattern Settings</h3>
+                
+                <FormField
+                  control={templateForm.control}
+                  name="recurrence"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recurrence Pattern</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select recurrence pattern" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Section 3: Position Slots Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Position Slots Configuration</h3>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const currentSlots = templateForm.getValues('slots') || [];
+                      templateForm.setValue('slots', [
+                        ...currentSlots,
+                        { role: '', quantity: 1, staffIds: [] }
+                      ]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Position
+                  </Button>
+                </div>
+
+                {/* Dynamic Slots Table */}
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Total Slots</TableHead>
+                        <TableHead>Pre-assigned Staff</TableHead>
+                        <TableHead>Open Slots</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(templateForm.watch('slots') || []).map((slot: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Select 
+                              value={slot.role || ''} 
+                              onValueChange={(value) => {
+                                const currentSlots = templateForm.getValues('slots') || [];
+                                currentSlots[index] = { ...currentSlots[index], role: value };
+                                templateForm.setValue('slots', currentSlots);
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {jobRoles.data?.map((role: any) => (
+                                  <SelectItem key={role.id} value={role.title}>
+                                    {role.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={slot.quantity || 1}
+                              onChange={(e) => {
+                                const currentSlots = templateForm.getValues('slots') || [];
+                                const newQuantity = parseInt(e.target.value) || 1;
+                                currentSlots[index] = { 
+                                  ...currentSlots[index], 
+                                  quantity: newQuantity,
+                                  // Ensure staffIds don't exceed quantity
+                                  staffIds: (currentSlots[index].staffIds || []).slice(0, newQuantity)
+                                };
+                                templateForm.setValue('slots', currentSlots);
+                              }}
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              {Array.from({ length: slot.quantity || 1 }, (_, staffIndex) => {
+                                const currentStaffId = (slot.staffIds || [])[staffIndex];
+                                return (
+                                  <Select
+                                    key={staffIndex}
+                                    value={currentStaffId ? currentStaffId.toString() : ''}
+                                    onValueChange={(value) => {
+                                      const currentSlots = templateForm.getValues('slots') || [];
+                                      const staffIds = [...(currentSlots[index].staffIds || [])];
+                                      if (value) {
+                                        staffIds[staffIndex] = parseInt(value);
+                                      } else {
+                                        staffIds.splice(staffIndex, 1);
+                                      }
+                                      currentSlots[index] = { ...currentSlots[index], staffIds };
+                                      templateForm.setValue('slots', currentSlots);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder={`Slot ${staffIndex + 1} (Optional)`} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="">Leave Open</SelectItem>
+                                      {staff.data?.map((member: any) => (
+                                        <SelectItem key={member.id} value={member.id.toString()}>
+                                          {member.firstName} {member.lastName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-center font-medium">
+                              {(slot.quantity || 1) - ((slot.staffIds || []).filter(Boolean).length)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const currentSlots = templateForm.getValues('slots') || [];
+                                  const duplicatedSlot = { ...currentSlots[index], staffIds: [] };
+                                  templateForm.setValue('slots', [...currentSlots, duplicatedSlot]);
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const currentSlots = templateForm.getValues('slots') || [];
+                                  currentSlots.splice(index, 1);
+                                  templateForm.setValue('slots', currentSlots);
+                                }}
+                                disabled={(templateForm.watch('slots') || []).length <= 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Section 4: Quick Duplication */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Quick Duplication</h3>
+                <div className="flex items-center space-x-4">
+                  <Select>
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Duplicate existing shift..." />
                     </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="assigned">Assigned Staff</SelectItem>
-                    <SelectItem value="open_opportunity">Open Opportunity</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={templateForm.control}
-              name="requiredStaffPerPosition"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Required Staff per Position</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      placeholder="1" 
-                      {...field} 
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={templateForm.control}
-              name="recurrence"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recurrence Pattern</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select recurrence" />
-                      </SelectTrigger>
-                    </FormControl>
                     <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
+                      {shifts.data?.slice(0, 5).map((shift: any) => (
+                        <SelectItem key={shift.id} value={shift.id.toString()}>
+                          {shift.role} - {new Date(shift.date).toLocaleDateString()}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                  <Button type="button" variant="outline">
+                    Load Pattern
+                  </Button>
+                </div>
+              </div>
 
-          <FormField
-            control={templateForm.control}
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={closeTemplateModal}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={templateSubmitting}>
+                  {templateSubmitting ? "Saving..." : editingTemplate ? "Update Template" : "Create Template"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
             name="isActive"
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">

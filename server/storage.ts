@@ -1506,13 +1506,19 @@ export class DatabaseStorage implements IStorage {
     let currentDate = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    // Parse staff assignments from JSON
-    let staffAssignments: any[] = [];
-    if (template.staffAssignments) {
-      try {
-        staffAssignments = JSON.parse(template.staffAssignments);
-      } catch (error) {
-        console.warn("Failed to parse staff assignments:", error);
+    // Parse slots from JSON (new format) or fall back to legacy format
+    let slots: Array<{role: string, staffIds: number[], quantity: number}> = [];
+    
+    if (template.slots && Array.isArray(template.slots)) {
+      slots = template.slots;
+    } else {
+      // Legacy fallback: convert positions array to slots format
+      for (const position of template.positions || []) {
+        slots.push({
+          role: position,
+          staffIds: [],
+          quantity: template.requiredStaffPerPosition || 1
+        });
       }
     }
 
@@ -1520,15 +1526,12 @@ export class DatabaseStorage implements IStorage {
     while (currentDate <= endDateObj) {
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      // Create shifts for each position
-      for (const position of template.positions) {
-        // Find staff assignments for this position
-        const positionAssignments = staffAssignments.find(a => a.position === position);
-        const staffIds = positionAssignments?.staffIds || [];
-        const slotsNeeded = positionAssignments?.slots || template.requiredStaffPerPosition;
+      // Create shifts for each slot
+      for (const slot of slots) {
+        const { role, staffIds, quantity } = slot;
 
-        // Create the required number of shifts for this position
-        for (let i = 0; i < slotsNeeded; i++) {
+        // Create the required number of shifts for this role
+        for (let i = 0; i < quantity; i++) {
           const assignedStaffId = staffIds[i] || null;
           
           const shiftData: InsertShift = {
@@ -1536,12 +1539,12 @@ export class DatabaseStorage implements IStorage {
             date: dateStr,
             startTime: "09:00", // Default time - could be made configurable
             endTime: "17:00",   // Default time - could be made configurable
-            role: position,
-            description: `${position} shift from template: ${template.name}`,
+            role: role,
+            description: `${role} shift from template: ${template.name}`,
             location: "Main Location", // Default location - could be made configurable
             assignedTo: assignedStaffId,
             status: assignedStaffId ? "assigned" : "open",
-            assignmentType: template.assignmentType === "assigned" ? "assigned" : "opportunity",
+            assignmentType: assignedStaffId ? "assigned" : "opportunity",
             requiredStaff: 1,
             claimedBy: [],
             templateId: templateId,

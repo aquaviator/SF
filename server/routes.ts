@@ -487,7 +487,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const createdShifts = await storage.generateShiftsFromTemplate(templateId, startDate, endDate);
-      res.status(201).json({ shifts: createdShifts, count: createdShifts.length });
+      
+      // Count assigned vs opportunity shifts
+      const assignedShifts = createdShifts.filter(shift => shift.assignedTo !== null);
+      const opportunityShifts = createdShifts.filter(shift => shift.assignedTo === null);
+      
+      res.status(201).json({ 
+        assignedCreated: assignedShifts.length,
+        opportunitiesCreated: opportunityShifts.length,
+        totalShifts: createdShifts.length,
+        shifts: createdShifts
+      });
     } catch (error) {
       console.error("Failed to generate shifts from template:", error);
       res.status(500).json({ message: "Failed to generate shifts from template" });
