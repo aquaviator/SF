@@ -1495,6 +1495,72 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
+  async generateShiftsFromTemplate(templateId: number, startDate: string, endDate: string): Promise<Shift[]> {
+    // Get the template
+    const template = await this.getScheduleTemplate(templateId);
+    if (!template) {
+      throw new Error(`Template with ID ${templateId} not found`);
+    }
+
+    const createdShifts: Shift[] = [];
+    let currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    // Parse staff assignments from JSON
+    let staffAssignments: any[] = [];
+    if (template.staffAssignments) {
+      try {
+        staffAssignments = JSON.parse(template.staffAssignments);
+      } catch (error) {
+        console.warn("Failed to parse staff assignments:", error);
+      }
+    }
+
+    // Generate shifts for each day in the date range
+    while (currentDate <= endDateObj) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+
+      // Create shifts for each position
+      for (const position of template.positions) {
+        // Find staff assignments for this position
+        const positionAssignments = staffAssignments.find(a => a.position === position);
+        const staffIds = positionAssignments?.staffIds || [];
+        const slotsNeeded = positionAssignments?.slots || template.requiredStaffPerPosition;
+
+        // Create the required number of shifts for this position
+        for (let i = 0; i < slotsNeeded; i++) {
+          const assignedStaffId = staffIds[i] || null;
+          
+          const shiftData: InsertShift = {
+            tenantId: template.tenantId,
+            date: dateStr,
+            startTime: "09:00", // Default time - could be made configurable
+            endTime: "17:00",   // Default time - could be made configurable
+            role: position,
+            description: `${position} shift from template: ${template.name}`,
+            location: "Main Location", // Default location - could be made configurable
+            assignedTo: assignedStaffId,
+            status: assignedStaffId ? "assigned" : "open",
+            assignmentType: template.assignmentType === "assigned" ? "assigned" : "opportunity",
+            requiredStaff: 1,
+            claimedBy: [],
+            templateId: templateId,
+            notes: `Generated from template: ${template.name}`,
+            createdBy: template.createdBy,
+          };
+
+          const createdShift = await this.createShift(shiftData);
+          createdShifts.push(createdShift);
+        }
+      }
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return createdShifts;
+  }
+
   // Subscription operations
   async getSubscription(tenantId: string): Promise<Subscription | undefined> {
     const result = await db.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).limit(1);

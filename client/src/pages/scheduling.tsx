@@ -101,6 +101,10 @@ export default function Scheduling() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarDayModalOpen, setCalendarDayModalOpen] = useState(false);
   const [shiftView, setShiftView] = useState<"list" | "calendar">("list");
+  
+  // Template USE functionality state
+  const [useTemplateModalOpen, setUseTemplateModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
 
   // Calendar Day Modal Handlers
   const handleDateClick = (date: Date) => {
@@ -388,6 +392,32 @@ export default function Scheduling() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to end break", variant: "destructive" });
+    },
+  });
+
+  // Generate shifts from template mutation
+  const generateShiftsMutation = useMutation({
+    mutationFn: async (data: { templateId: number; startDate: string; endDate: string }) => {
+      return apiRequest(`/api/schedule-templates/${data.templateId}/use`, "POST", {
+        startDate: data.startDate,
+        endDate: data.endDate,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
+      toast({ 
+        title: "Success", 
+        description: `Generated ${data.count} shifts from template` 
+      });
+      setUseTemplateModalOpen(false);
+      setSelectedTemplate(null);
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to generate shifts from template", 
+        variant: "destructive" 
+      });
     },
   });
 
