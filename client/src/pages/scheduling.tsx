@@ -975,7 +975,7 @@ export default function Scheduling() {
             description: formData.description,
             location: formData.location,
             assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
-            status: "open" as const,
+            status: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open") as const,
             assignmentType: "assigned" as const,
             requiredStaff: 1,
             claimedBy: null,
