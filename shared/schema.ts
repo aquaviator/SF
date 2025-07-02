@@ -120,6 +120,7 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   assignmentType: text("assignment_type").notNull().$type<"assigned" | "open_opportunity">(),
   requiredStaffPerPosition: integer("required_staff_per_position").notNull().default(1),
   recurrence: text("recurrence").notNull(), // weekly, monthly, custom
+  staffAssignments: text("staff_assignments"), // JSON: {position: string, staffIds: number[], slots: number}[]
   isActive: boolean("is_active").notNull().default(true),
   createdBy: integer("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

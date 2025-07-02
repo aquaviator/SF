@@ -475,6 +475,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate shifts from template
+  app.post("/api/schedule-templates/:id/use", async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const { startDate, endDate } = req.body;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+
+      const createdShifts = await storage.generateShiftsFromTemplate(templateId, startDate, endDate);
+      res.status(201).json({ shifts: createdShifts, count: createdShifts.length });
+    } catch (error) {
+      console.error("Failed to generate shifts from template:", error);
+      res.status(500).json({ message: "Failed to generate shifts from template" });
+    }
+  });
+
   // Time entry routes for clock-in/out functionality
   app.get("/api/time-entries", async (req, res) => {
     try {

@@ -70,6 +70,7 @@ export interface IStorage {
   createScheduleTemplate(template: InsertScheduleTemplate): Promise<ScheduleTemplate>;
   updateScheduleTemplate(id: number, template: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined>;
   deleteScheduleTemplate(id: number): Promise<boolean>;
+  generateShiftsFromTemplate(templateId: number, startDate: string, endDate: string): Promise<Shift[]>;
 
   // Time entry operations for clock-in/out
   getActiveTimeEntry(tenantId: string, userId: number): Promise<any | undefined>;
