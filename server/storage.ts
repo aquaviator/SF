@@ -1078,6 +1078,22 @@ export class MemStorage implements IStorage {
   async deleteOperatingHours(id: number): Promise<boolean> {
     return this.operatingHours.delete(id);
   }
+
+  async clearAllData(): Promise<void> {
+    this.users.clear();
+    this.shifts.clear();
+    this.opportunities.clear();
+    this.swapRequests.clear();
+    this.assignments.clear();
+    this.holidayRequests.clear();
+    this.scheduleTemplates.clear();
+    this.timeEntries.clear();
+    this.businessProfiles.clear();
+    this.jobRoles.clear();
+    this.locations.clear();
+    this.departments.clear();
+    this.operatingHours.clear();
+  }
 }
 
 // Initialize database connection
@@ -1414,6 +1430,21 @@ export class DatabaseStorage implements IStorage {
   async getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]> {
     // TODO: Implement proper time entry schema
     return [];
+  }
+
+  async clearAllData(): Promise<void> {
+    await db.delete(holidayRequests);
+    await db.delete(assignments);
+    await db.delete(swapRequests);
+    await db.delete(opportunities);
+    await db.delete(shifts);
+    await db.delete(scheduleTemplates);
+    await db.delete(operatingHours);
+    await db.delete(departments);
+    await db.delete(locations);
+    await db.delete(jobRoles);
+    await db.delete(businessProfiles);
+    await db.delete(users);
   }
 }
 
