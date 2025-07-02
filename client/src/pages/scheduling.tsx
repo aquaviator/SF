@@ -922,7 +922,8 @@ export default function Scheduling() {
         isOpen={shiftModalOpen}
         onClose={closeShiftModal}
         title={editingShift ? "Edit Shift" : "Create Shift"}
-        onSubmit={shiftForm.handleSubmit((formData) => {
+        form={shiftForm}
+        onSubmit={(formData) => {
           // Transform form data to match API structure
           const shiftData = {
             tenantId: tenantId,
@@ -942,7 +943,8 @@ export default function Scheduling() {
             notes: formData.notes || null,
           };
           handleShiftSubmit(shiftData);
-        })}
+        }}
+        isLoading={shiftSubmitting}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
