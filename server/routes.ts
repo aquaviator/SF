@@ -426,6 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templates = await storage.getScheduleTemplatesByTenant(tenantId);
       res.json(templates);
     } catch (error) {
+      console.error("Schedule templates error:", error);
       res.status(500).json({ message: "Failed to fetch schedule templates" });
     }
   });

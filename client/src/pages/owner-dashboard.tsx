@@ -48,16 +48,19 @@ export default function OwnerDashboard() {
   // Fetch real staff data for metrics
   const { data: staffData = [], isLoading: metricsStaffLoading } = useQuery<User[]>({
     queryKey: ["/api/staff", tenantId],
+    queryFn: () => fetch(`/api/staff?tenantId=${tenantId}`).then(res => res.json()),
   });
 
   // Fetch real shift data for metrics
   const { data: shiftsData = [], isLoading: metricsShiftsLoading } = useQuery<Shift[]>({
     queryKey: ["/api/shifts", tenantId],
+    queryFn: () => fetch(`/api/shifts?tenantId=${tenantId}`).then(res => res.json()),
   });
 
   // Fetch holiday requests for pending count
   const { data: holidayRequests = [] } = useQuery({
     queryKey: ["/api/holiday-requests", tenantId],
+    queryFn: () => fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()),
   });
 
   // Calculate real metrics from API data
@@ -102,8 +105,9 @@ export default function OwnerDashboard() {
   });
 
   // Fetch activity logs from database
-  const { data: activityLogs = [] } = useQuery({
+  const { data: activityLogs = [], isLoading: activitiesLoading } = useQuery({
     queryKey: ["/api/activity-logs", tenantId],
+    queryFn: () => fetch(`/api/activity-logs?tenantId=${tenantId}`).then(res => res.json()),
   });
 
   // Convert activity logs to dashboard format
