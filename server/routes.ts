@@ -790,6 +790,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/operating-hours/:id", async (req, res) => {
     try {
+      const id = parseInt(req.params.id);
+      const result = insertOperatingHoursSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      }
+      
+      const operatingHours = await storage.updateOperatingHours(id, result.data);
+      if (!operatingHours) {
+        return res.status(404).json({ message: "Operating hours not found" });
+      }
+      res.json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update operating hours" });
+    }
+  });
+
+  app.delete("/api/operating-hours/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteOperatingHours(id);
+      if (!success) {
+        return res.status(404).json({ message: "Operating hours not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete operating hours" });
+    }
+  });
+
+  // Operating Hours routes
+  app.get("/api/operating-hours", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const operatingHours = await storage.getOperatingHoursByTenant(tenantId);
+      res.json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch operating hours" });
+    }
+  });
+
+  app.post("/api/operating-hours", async (req, res) => {
+    try {
+      const result = insertOperatingHoursSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      }
+      
+      const operatingHours = await storage.createOperatingHours(result.data);
+      res.status(201).json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create operating hours" });
+    }
+  });
+
+  app.put("/api/operating-hours/:id", async (req, res) => {
+    try {
       const result = insertOperatingHoursSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });

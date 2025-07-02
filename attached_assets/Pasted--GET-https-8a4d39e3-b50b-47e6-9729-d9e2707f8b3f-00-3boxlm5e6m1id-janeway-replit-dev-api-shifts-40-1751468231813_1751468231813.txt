@@ -1,0 +1,217 @@
+  GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/shifts 400 (Bad Request)
+(anonymous) @ queryClient.ts:19
+fetchFn @ @tanstack_react-query.js:840
+run @ @tanstack_react-query.js:494
+start @ @tanstack_react-query.js:536
+fetch @ @tanstack_react-query.js:926
+executeFetch_fn @ @tanstack_react-query.js:2211
+onSubscribe @ @tanstack_react-query.js:1898
+subscribe @ @tanstack_react-query.js:24
+(anonymous) @ @tanstack_react-query.js:3022
+subscribeToStore @ chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js:19447
+commitRootImpl @ chunk-RPCDYKBN.js:19416
+commitRoot @ chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js:9119
+(anonymous) @ chunk-RPCDYKBN.js:18627
+  GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/staff 400 (Bad Request)
+(anonymous) @ queryClient.ts:19
+fetchFn @ @tanstack_react-query.js:840
+run @ @tanstack_react-query.js:494
+start @ @tanstack_react-query.js:536
+fetch @ @tanstack_react-query.js:926
+executeFetch_fn @ @tanstack_react-query.js:2211
+onSubscribe @ @tanstack_react-query.js:1898
+subscribe @ @tanstack_react-query.js:24
+(anonymous) @ @tanstack_react-query.js:3022
+subscribeToStore @ chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js:19447
+commitRootImpl @ chunk-RPCDYKBN.js:19416
+commitRoot @ chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js:9119
+(anonymous) @ chunk-RPCDYKBN.js:18627
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/staff 400 (Bad Request)
+(anonymous) @ queryClient.ts:19
+fetchFn @ @tanstack_react-query.js:840
+run @ @tanstack_react-query.js:494
+start @ @tanstack_react-query.js:536
+fetch @ @tanstack_react-query.js:926
+executeFetch_fn @ @tanstack_react-query.js:2211
+onSubscribe @ @tanstack_react-query.js:1898
+subscribe @ @tanstack_react-query.js:24
+(anonymous) @ @tanstack_react-query.js:3022
+subscribeToStore @ chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js:19447
+commitRootImpl @ chunk-RPCDYKBN.js:19416
+commitRoot @ chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js:9119
+(anonymous) @ chunk-RPCDYKBN.js:18627
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/shifts 400 (Bad Request)
+(anonymous) @ queryClient.ts:19
+fetchFn @ @tanstack_react-query.js:840
+run @ @tanstack_react-query.js:494
+start @ @tanstack_react-query.js:536
+fetch @ @tanstack_react-query.js:926
+executeFetch_fn @ @tanstack_react-query.js:2211
+onSubscribe @ @tanstack_react-query.js:1898
+subscribe @ @tanstack_react-query.js:24
+(anonymous) @ @tanstack_react-query.js:3022
+subscribeToStore @ chunk-RPCDYKBN.js:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js:19447
+commitRootImpl @ chunk-RPCDYKBN.js:19416
+commitRoot @ chunk-RPCDYKBN.js:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js:9119
+(anonymous) @ chunk-RPCDYKBN.js:18627
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/ net::ERR_ABORTED 502 (Bad Gateway)
+ping @ client:736
+waitForSuccessfulPing @ client:749
+(anonymous) @ client:561
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/owner/settings 502 (Bad Gateway)
+(anonymous) @ client:562
+favicon.ico:1 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/favicon.ico 502 (Bad Gateway)
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/owner/settings 502 (Bad Gateway)
+(anonymous) @ settings:108
+setTimeout
+(anonymous) @ settings:107
+favicon.ico:1 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/favicon.ico 502 (Bad Gateway)
+business-settings.tsx:231 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/business-profile?tenantId=acme-corp 404 (Not Found)
+queryFn @ business-settings.tsx:231
+fetchFn @ @tanstack_react-query.js?v=f4db3872:840
+run @ @tanstack_react-query.js?v=f4db3872:494
+start @ @tanstack_react-query.js?v=f4db3872:536
+fetch @ @tanstack_react-query.js?v=f4db3872:926
+executeFetch_fn @ @tanstack_react-query.js?v=f4db3872:2211
+onSubscribe @ @tanstack_react-query.js?v=f4db3872:1898
+subscribe @ @tanstack_react-query.js?v=f4db3872:24
+(anonymous) @ @tanstack_react-query.js?v=f4db3872:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=f4db3872:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=f4db3872:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=f4db3872:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=f4db3872:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=f4db3872:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=f4db3872:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=f4db3872:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=f4db3872:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=f4db3872:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=f4db3872:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=f4db3872:19432
+commitRoot @ chunk-RPCDYKBN.js?v=f4db3872:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=f4db3872:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=f4db3872:18718
+workLoop @ chunk-RPCDYKBN.js?v=f4db3872:197
+flushWork @ chunk-RPCDYKBN.js?v=f4db3872:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=f4db3872:384
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/business-profile 404 (Not Found)
+apiRequest @ queryClient.ts:15
+mutationFn @ business-settings.tsx:295
+fn @ @tanstack_react-query.js?v=f4db3872:1189
+run @ @tanstack_react-query.js?v=f4db3872:494
+start @ @tanstack_react-query.js?v=f4db3872:536
+execute @ @tanstack_react-query.js?v=f4db3872:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=f4db3872:2630
+(anonymous) @ @tanstack_react-query.js?v=f4db3872:3295
+(anonymous) @ business-settings.tsx:649
+(anonymous) @ chunk-4BFJKWC4.js?v=f4db3872:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=f4db3872:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=f4db3872:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=f4db3872:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=f4db3872:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=f4db3872:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=f4db3872:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=f4db3872:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=f4db3872:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=f4db3872:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=f4db3872:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=f4db3872:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=f4db3872:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=f4db3872:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=f4db3872:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=f4db3872:5449
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/business-profile 404 (Not Found)
+apiRequest @ queryClient.ts:15
+mutationFn @ business-settings.tsx:295
+fn @ @tanstack_react-query.js?v=f4db3872:1189
+run @ @tanstack_react-query.js?v=f4db3872:494
+start @ @tanstack_react-query.js?v=f4db3872:536
+execute @ @tanstack_react-query.js?v=f4db3872:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=f4db3872:2630
+(anonymous) @ @tanstack_react-query.js?v=f4db3872:3295
+(anonymous) @ business-settings.tsx:649
+(anonymous) @ chunk-4BFJKWC4.js?v=f4db3872:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=f4db3872:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=f4db3872:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=f4db3872:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=f4db3872:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=f4db3872:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=f4db3872:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=f4db3872:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=f4db3872:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=f4db3872:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=f4db3872:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=f4db3872:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=f4db3872:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=f4db3872:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=f4db3872:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=f4db3872:5449

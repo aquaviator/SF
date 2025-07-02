@@ -1418,47 +1418,70 @@ export class DatabaseStorage implements IStorage {
 async function initializeDatabaseWithSampleData() {
   const dbStorage = new DatabaseStorage();
   
-  // Check if data already exists
-  const existingUsers = await dbStorage.getStaffByTenant("tenant1");
-  if (existingUsers.length > 0) {
+  // Check if business profile already exists for acme-corp
+  const existingProfile = await dbStorage.getBusinessProfile("acme-corp");
+  if (existingProfile) {
     console.log("Database already initialized with sample data");
     return dbStorage;
   }
 
   console.log("Initializing database with sample data...");
 
-  // Create sample users
-  const owner = await dbStorage.createUser({
-    username: "john.doe@company.com",
-    password: "password123", // TODO: Hash passwords in production
-    email: "john.doe@company.com",
-    firstName: "John",
-    lastName: "Doe",
-    role: "owner",
-    tenantId: "tenant1"
-  });
+  // Create sample users only if they don't exist
+  try {
+    await dbStorage.createUser({
+      username: "john.doe@company.com",
+      password: "password123", // TODO: Hash passwords in production
+      email: "john.doe@company.com",
+      firstName: "John",
+      lastName: "Doe",
+      role: "owner",
+      tenantId: "tenant1"
+    });
+  } catch (error) {
+    // User already exists, ignore
+  }
 
-  const staff = await dbStorage.createUser({
-    username: "jane.smith@company.com", 
-    password: "password123", // TODO: Hash passwords in production
-    email: "jane.smith@company.com",
-    firstName: "Jane",
-    lastName: "Smith",
-    role: "staff",
-    tenantId: "tenant1"
-  });
+  try {
+    await dbStorage.createUser({
+      username: "jane.smith@company.com", 
+      password: "password123", // TODO: Hash passwords in production
+      email: "jane.smith@company.com",
+      firstName: "Jane",
+      lastName: "Smith",
+      role: "staff",
+      tenantId: "tenant1"
+    });
+  } catch (error) {
+    // User already exists, ignore
+  }
 
-  // Create business profile
-  await dbStorage.createBusinessProfile({
-    tenantId: "tenant1",
-    name: "Acme Corporation",
-    address: "123 Business St, City, State 12345",
-    phone: "+1 (555) 123-4567",
-    email: "info@acmecorp.com",
-    website: "https://acmecorp.com",
-    industry: "Retail",
-    timezone: "America/New_York"
-  });
+  // Create business profiles only if they don't exist
+  try {
+    await dbStorage.createBusinessProfile({
+      tenantId: "tenant1",
+      name: "Acme Corporation",
+      address: "123 Business St, City, State 12345",
+      phone: "+1 (555) 123-4567",
+      email: "info@acmecorp.com",
+      website: "https://acmecorp.com"
+    });
+  } catch (error) {
+    // Business profile already exists, ignore
+  }
+
+  try {
+    await dbStorage.createBusinessProfile({
+      tenantId: "acme-corp",
+      name: "Acme Corporation",
+      address: "123 Business St, City, State 12345", 
+      phone: "+1 (555) 123-4567",
+      email: "info@acmecorp.com",
+      website: "https://acmecorp.com"
+    });
+  } catch (error) {
+    // Business profile already exists, ignore
+  }
 
   // Create job roles
   const jobRoleData = [
@@ -1494,7 +1517,7 @@ async function initializeDatabaseWithSampleData() {
     await dbStorage.createDepartment(dept);
   }
 
-  // Create operating hours
+  // Create operating hours for tenant1
   const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   for (const day of daysOfWeek) {
     await dbStorage.createOperatingHours({
@@ -1503,6 +1526,17 @@ async function initializeDatabaseWithSampleData() {
       openTime: "06:00",
       closeTime: "22:00",
       isClosed: false
+    });
+  }
+
+  // Create operating hours for acme-corp tenant 
+  for (const day of daysOfWeek) {
+    await dbStorage.createOperatingHours({
+      tenantId: "acme-corp",
+      dayOfWeek: day,
+      openTime: "09:00",
+      closeTime: "18:00",
+      isClosed: day === 'sunday' // Closed on Sundays
     });
   }
 

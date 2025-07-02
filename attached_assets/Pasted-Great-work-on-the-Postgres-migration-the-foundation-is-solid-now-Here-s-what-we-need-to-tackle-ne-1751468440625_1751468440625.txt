@@ -1,0 +1,101 @@
+Great work on the Postgres migration — the foundation is solid now. Here’s what we need to tackle next:
+
+1. Business Settings Persistence Failures
+Business Profile (404 on GET/PUT)
+
+Symptom:
+
+bash
+Copy
+Edit
+GET /api/business-profile?tenantId=acme-corp → 404  
+PUT /api/business-profile → 404  
+Action:
+
+Verify your Express route is registered exactly as /api/business-profile (or /api/business-profile/:tenantId) and that you’re pulling tenantId out of req.query (or req.params).
+
+Update your Drizzle model & controller: ensure business_profile table has a primary key on tenant_id and your GET handler actually queries it.
+
+On client side, confirm React Query’s key and URL match exactly (/api/business-profile?tenantId=…).
+
+Operating Hours (no CRUD at all)
+
+Symptom: No network calls wired up at /api/operating-hours.
+
+Action:
+
+Server: Add full CRUD endpoints:
+
+ts
+Copy
+Edit
+GET    /api/operating-hours?tenantId=:tid  
+POST   /api/operating-hours  
+PATCH  /api/operating-hours/:id  
+DELETE /api/operating-hours/:id
+Hook them up in your Express router and Drizzle ORM.
+
+Client:
+
+Create a useCrud('operating-hours') hook in your Business Settings page.
+
+Wire table CRUD buttons (Add/Edit/Delete) to open your generic ModalForm and call the right mutation.
+
+2. Data Not Persisting Across Navigation
+Symptom: You click away from Business Settings and upon return, all “saved” changes are gone.
+
+Likely Cause:
+
+Your mutations either aren’t actually committing to Postgres (missing await db.insert…), or you’re not invalidating/refetching the React Query cache after a success.
+
+Action:
+
+Audit each mutation handler on the server: ensure it calls Drizzle’s execute and returns the newly upserted record.
+
+In your React Query onSuccess callbacks, call queryClient.invalidateQueries(['business-profile', tenantId]) (and similarly for operating hours, job roles, locations).
+
+3. Verify Job Role Propagation
+Once the above is fixed:
+
+Test:
+
+Go to Business → Job Roles
+
+Add a new role “Barista” → Should return 201 and appear in the list.
+
+Navigate to Scheduling → Create Shift
+
+Confirm “Barista” now shows in the roles dropdown.
+
+If it doesn’t:
+
+Check that your /api/job-roles GET endpoint includes the new record, and that your scheduling page is querying it correctly (useCrud('job-roles')).
+
+4. “400 Bad Request” on /api/shifts and /api/staff
+Symptom:
+
+bash
+Copy
+Edit
+GET /api/shifts → 400  
+GET /api/staff  → 400  
+Likely Cause: Your server is expecting ?tenantId= on all collection GETs, and you’re not providing it.
+
+Action:
+
+Update your client’s base URL builder in queryClient.ts to always include ?tenantId=${tenantId} on every fetch.
+
+Or, make your server default tenantId to the authenticated user’s tenant if missing.
+
+Next Steps
+Implement missing Operating Hours CRUD on both client & server.
+
+Fix Business Profile routing & persistence.
+
+Ensure all mutations do invalidateQueries(...) so data stays fresh.
+
+Audit each Business Settings button—if it shouldn’t yet call an API, show a “TODO: feature not wired” modal.
+
+Re-test Job Roles → Create Shift propagation.
+
+Once those are green, the full Business Settings tab will truly be “permanent” and we can move on to scheduling workflows. Let me know when you’ve pushed those changes and we’ll run through another quick end-to-end test.
