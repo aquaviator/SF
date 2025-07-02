@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema } from "@shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema } from "../shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -271,6 +271,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete swap request" });
+    }
+  });
+
+  // Assignments routes
+  app.get("/api/assignments", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const assignments = await storage.getAssignmentsByTenant(tenantId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch assignments" });
+    }
+  });
+
+  app.post("/api/assignments", async (req, res) => {
+    try {
+      const validatedData = insertAssignmentSchema.parse(req.body);
+      const assignment = await storage.createAssignment(validatedData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create assignment" });
+    }
+  });
+
+  app.put("/api/assignments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertAssignmentSchema.parse(req.body);
+      const assignment = await storage.updateAssignment(id, validatedData);
+      if (!assignment) {
+        return res.status(404).json({ message: "Assignment not found" });
+      }
+      res.json(assignment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update assignment" });
+    }
+  });
+
+  app.delete("/api/assignments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteAssignment(id);
+      if (!success) {
+        return res.status(404).json({ message: "Assignment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete assignment" });
+    }
+  });
+
+  // Holiday Requests routes
+  app.get("/api/holiday-requests", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const holidayRequests = await storage.getHolidayRequestsByTenant(tenantId);
+      res.json(holidayRequests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch holiday requests" });
+    }
+  });
+
+  app.post("/api/holiday-requests", async (req, res) => {
+    try {
+      const validatedData = insertHolidayRequestSchema.parse(req.body);
+      const holidayRequest = await storage.createHolidayRequest(validatedData);
+      res.status(201).json(holidayRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create holiday request" });
+    }
+  });
+
+  app.put("/api/holiday-requests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertHolidayRequestSchema.parse(req.body);
+      const holidayRequest = await storage.updateHolidayRequest(id, validatedData);
+      if (!holidayRequest) {
+        return res.status(404).json({ message: "Holiday request not found" });
+      }
+      res.json(holidayRequest);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update holiday request" });
+    }
+  });
+
+  app.delete("/api/holiday-requests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteHolidayRequest(id);
+      if (!success) {
+        return res.status(404).json({ message: "Holiday request not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete holiday request" });
     }
   });
 

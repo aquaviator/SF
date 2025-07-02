@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { SidebarNav } from '@/components/SidebarNav';
+import { MoreDrawer } from '@/components/MoreDrawer';
 import { ownerMenu, staffMenu, ownerMoreMenu, staffMoreMenu } from '@/config/menus';
 
 // Mock wouter with memory router capability
@@ -36,12 +37,12 @@ describe('Unified Menu System', () => {
   const setupMockAuth = (role: 'owner' | 'staff', location = '/') => {
     mockUseAuth.mockReturnValue({
       role: role,
-      tenantId: 'test-tenant',
+      tenantId: 'acme-corp',
       user: {
         id: '1',
-        firstName: 'Test',
-        lastName: role === 'owner' ? 'Owner' : 'Staff',
-        email: `${role}@test.com`
+        firstName: 'John',
+        lastName: 'Doe',
+        email: `${role}@acme-corp.com`
       },
       switchRole: vi.fn(),
       isAuthenticated: true
@@ -215,6 +216,74 @@ describe('Unified Menu System', () => {
       // The active link should have aria-current="page"
       const activeLink = screen.getByRole('link', { current: 'page' });
       expect(activeLink).toHaveAttribute('href', '/my-shifts');
+    });
+  });
+
+  describe('Role Indicator Tests', () => {
+    it('SidebarNav displays correct role badge for owner', () => {
+      setupMockAuth('owner');
+      render(<SidebarNav />);
+
+      // Check user profile section exists
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Owner')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+      
+      // Check owner role badge styling
+      const ownerBadge = screen.getByText('Owner');
+      expect(ownerBadge).toHaveClass('bg-purple-100', 'text-purple-800');
+    });
+
+    it('SidebarNav displays correct role badge for staff', () => {
+      setupMockAuth('staff');
+      render(<SidebarNav />);
+
+      // Check user profile section exists
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Staff')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+      
+      // Check staff role badge styling
+      const staffBadge = screen.getByText('Staff');
+      expect(staffBadge).toHaveClass('bg-green-100', 'text-green-800');
+    });
+
+    it('MoreDrawer displays correct role indicator for owner', () => {
+      setupMockAuth('owner');
+      const mockOnClose = vi.fn();
+      render(<MoreDrawer isOpen={true} onClose={mockOnClose} />);
+
+      // Check user profile section exists
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Owner')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+      
+      // Check owner role badge styling
+      const ownerBadge = screen.getByText('Owner');
+      expect(ownerBadge).toHaveClass('bg-purple-100', 'text-purple-800');
+    });
+
+    it('MoreDrawer displays correct role indicator for staff', () => {
+      setupMockAuth('staff');
+      const mockOnClose = vi.fn();
+      render(<MoreDrawer isOpen={true} onClose={mockOnClose} />);
+
+      // Check user profile section exists
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Staff')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+      
+      // Check staff role badge styling
+      const staffBadge = screen.getByText('Staff');
+      expect(staffBadge).toHaveClass('bg-green-100', 'text-green-800');
+    });
+
+    it('user avatar displays correct initials', () => {
+      setupMockAuth('owner');
+      render(<SidebarNav />);
+
+      // Check initials are displayed correctly
+      expect(screen.getByText('JD')).toBeInTheDocument();
     });
   });
 
