@@ -40,14 +40,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate } from "@shared/schema";
 import { z } from "zod";
 
-// Schema for shift template forms
+// Schema for shift template forms - FIXED to match ScheduleTemplate API
 const shiftTemplateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  department: z.string().min(1, "Department is required"),
-  requiredStaff: z.coerce.number().min(1, "Required staff must be at least 1"),
+  shifts: z.array(z.string()).default([]),
+  recurrence: z.string().min(1, "Recurrence is required"),
   isActive: z.boolean(),
 });
 
@@ -117,16 +115,14 @@ export default function Scheduling() {
     endpoint: `/api/schedule-templates?tenantId=${tenantId}`,
   });
 
-  // Template form
+  // Template form - FIXED to match API structure
   const templateForm = useForm<ShiftTemplateFormData>({
     resolver: zodResolver(shiftTemplateSchema),
     defaultValues: {
       name: "",
       description: "",
-      startTime: "",
-      endTime: "",
-      department: "",
-      requiredStaff: 1,
+      shifts: [],
+      recurrence: "weekly",
       isActive: true,
     },
   });
@@ -135,21 +131,17 @@ export default function Scheduling() {
     if (editingTemplate) {
       templateForm.reset({
         name: editingTemplate.name,
-        description: editingTemplate.description,
-        startTime: editingTemplate.startTime,
-        endTime: editingTemplate.endTime,
-        department: editingTemplate.department,
-        requiredStaff: editingTemplate.requiredStaff,
+        description: editingTemplate.description || "",
+        shifts: editingTemplate.shifts || [],
+        recurrence: editingTemplate.recurrence,
         isActive: editingTemplate.isActive,
       });
     } else {
       templateForm.reset({
         name: "",
         description: "",
-        startTime: "",
-        endTime: "",
-        department: "",
-        requiredStaff: 1,
+        shifts: [],
+        recurrence: "weekly",
         isActive: true,
       });
     }
@@ -357,19 +349,19 @@ export default function Scheduling() {
       ),
     },
     {
-      key: "department",
-      header: "Department",
+      key: "recurrence",
+      header: "Recurrence",
       cell: (template) => (
-        <Badge variant="outline">{template.department}</Badge>
+        <Badge variant="outline">{template.recurrence}</Badge>
       ),
     },
     {
-      key: "schedule",
-      header: "Schedule",
+      key: "shifts",
+      header: "Shifts",
       cell: (template) => (
         <div className="text-sm">
-          <p>{template.startTime} - {template.endTime}</p>
-          <p className="text-xs text-gray-500">{template.requiredStaff} staff required</p>
+          <p>{template.shifts.length} shifts</p>
+          <p className="text-xs text-gray-500">Template pattern</p>
         </div>
       ),
     },
@@ -406,10 +398,6 @@ export default function Scheduling() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Scheduling</h2>
           <p className="text-gray-600">Manage shifts, templates, and live operations</p>
         </div>
-        <Button onClick={openCreateShift}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Shift
-        </Button>
       </div>
 
       <Tabs defaultValue="planner" className="space-y-6">
