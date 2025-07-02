@@ -129,10 +129,26 @@ export function useCrud<T extends { id: string | number }>({
     }
   };
 
+  // Replace browser confirm with custom modal state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<T | null>(null);
+
   const handleDelete = (item: T) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      deleteMutation.mutate(item.id);
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate(itemToDelete.id);
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   return {
@@ -146,12 +162,18 @@ export function useCrud<T extends { id: string | number }>({
     editingItem,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
 
+    // Delete dialog state
+    deleteDialogOpen,
+    itemToDelete,
+
     // Actions
     openCreateModal,
     openEditModal,
     closeModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
 
     // Mutations
     createMutation,

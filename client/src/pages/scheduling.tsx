@@ -39,6 +39,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate } from "@shared/schema";
 import { z } from "zod";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
 // Schema for shift template forms - FIXED to match ScheduleTemplate API
 const shiftTemplateSchema = z.object({
@@ -88,11 +89,15 @@ export default function Scheduling() {
     isModalOpen: shiftModalOpen,
     editingItem: editingShift,
     isSubmitting: shiftSubmitting,
+    deleteDialogOpen: shiftDeleteDialogOpen,
+    itemToDelete: shiftToDelete,
     openCreateModal: openCreateShift,
     openEditModal: openEditShift,
     closeModal: closeShiftModal,
     handleSubmit: handleShiftSubmit,
     handleDelete: handleShiftDelete,
+    confirmDelete: confirmShiftDelete,
+    cancelDelete: cancelShiftDelete,
   } = useCrud<Shift>({
     queryKey: ["/api/shifts", tenantId],
     endpoint: `/api/shifts?tenantId=${tenantId}`,
@@ -105,11 +110,15 @@ export default function Scheduling() {
     isModalOpen: templateModalOpen,
     editingItem: editingTemplate,
     isSubmitting: templateSubmitting,
+    deleteDialogOpen: templateDeleteDialogOpen,
+    itemToDelete: templateToDelete,
     openCreateModal: openCreateTemplate,
     openEditModal: openEditTemplate,
     closeModal: closeTemplateModal,
     handleSubmit: handleTemplateSubmit,
     handleDelete: handleTemplateDelete,
+    confirmDelete: confirmTemplateDelete,
+    cancelDelete: cancelTemplateDelete,
   } = useCrud<ScheduleTemplate>({
     queryKey: ["/api/schedule-templates", tenantId],
     endpoint: `/api/schedule-templates?tenantId=${tenantId}`,
@@ -776,6 +785,23 @@ export default function Scheduling() {
           />
         </div>
       </ModalForm>
+
+      {/* Delete Confirmation Dialogs - FIXED browser confirm issue */}
+      <DeleteConfirmDialog
+        isOpen={shiftDeleteDialogOpen}
+        onClose={cancelShiftDelete}
+        onConfirm={confirmShiftDelete}
+        title="Delete Shift"
+        itemName={shiftToDelete ? `shift for ${shiftToDelete.date}` : "this shift"}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={templateDeleteDialogOpen}
+        onClose={cancelTemplateDelete}
+        onConfirm={confirmTemplateDelete}
+        title="Delete Template"
+        itemName={templateToDelete ? `template "${templateToDelete.name}"` : "this template"}
+      />
     </div>
   );
 }
