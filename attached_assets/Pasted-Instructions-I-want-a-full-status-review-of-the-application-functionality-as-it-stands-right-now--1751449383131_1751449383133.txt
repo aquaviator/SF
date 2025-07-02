@@ -1,0 +1,51 @@
+Instructions:
+
+I want a full status review of the application functionality as it stands right now, with special focus on identifying areas that are stubbed out, use placeholder code, are incomplete, or do not fully implement the described features.
+
+Compare the current codebase and UI/UX to the original system brief/specification.
+
+Reference the latest functional requirements, user stories, and acceptance criteria.
+
+For each module or major feature (e.g. Dashboard, Scheduling, Analytics, Staff Management, Profile Photos, etc.):
+
+List whether the functionality is:
+
+✅ Fully implemented & production-ready
+
+🚧 Partially complete (describe what's missing)
+
+🕳️ Stubbed out / placeholder (describe what’s just a shell, or fake data)
+
+❌ Not started / missing entirely
+
+For every stub/placeholder/incomplete feature, explain:
+
+What the code/UI currently does (e.g. hardcoded, returns dummy data, disabled, skeleton component, “Coming Soon”, etc.)
+
+What the brief requires that is NOT yet present
+
+Output the findings in a clear table or bullet list, with:
+
+Module/Feature name
+
+Current state (see legend above)
+
+Notes on stubbed/placeholder/incomplete parts
+
+What remains to be done to meet the brief
+
+Example Format:
+
+Module/Feature	Current State	Placeholder/Stub Details	Work Remaining
+Dashboard	✅ Fully implemented	N/A	None
+Analytics	🚧 Partial	Only 2/5 charts show real data; 3 stubbed	Add live endpoints for X, Y, Z
+Staff Directory	🕳️ Stubbed	List is hardcoded, cannot add/edit/remove	Implement CRUD, connect to API
+Profile Photos	✅ Complete		None
+Shift Swap	❌ Not started	No UI, no endpoints	Full feature
+
+Do not make any code changes at this stage. This is an informational audit ONLY.
+
+Finally, highlight any area where you are not certain if the implementation matches the specification, or where the feature is ambiguous or underspecified.
+
+After you provide this functionality audit, I will assign the next dev tasks with explicit requirements for test coverage and regression handling.
+
