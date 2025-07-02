@@ -8,7 +8,8 @@ import type { Shift } from "@shared/schema";
 
 interface CalendarViewProps {
   shifts: Shift[];
-  onCreateShift: (date: string) => void;
+  onDateClick?: (date: Date) => void;
+  onCreateShift: (date: Date) => void;
   onEditShift: (shift: Shift) => void;
   onDuplicateShift: (shift: Shift) => void;
   onDeleteShift: (shiftId: number) => void;
@@ -17,6 +18,7 @@ interface CalendarViewProps {
 
 export function CalendarView({ 
   shifts, 
+  onDateClick,
   onCreateShift, 
   onEditShift, 
   onDuplicateShift, 
@@ -58,8 +60,14 @@ export function CalendarView({
 
   const handleDayClick = (day: number) => {
     const dateStr = formatDate(day);
-    setSelectedDate(dateStr);
-    setDayModalOpen(true);
+    const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    
+    if (onDateClick) {
+      onDateClick(dateObj);
+    } else {
+      setSelectedDate(dateStr);
+      setDayModalOpen(true);
+    }
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {

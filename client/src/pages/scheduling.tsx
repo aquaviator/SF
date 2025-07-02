@@ -621,28 +621,10 @@ export default function Scheduling() {
           ) : (
             <CalendarView
               shifts={shifts}
-              onCreateShift={(date) => {
-                // Pre-fill the shift form with the selected date
-                openCreateShift();
-                // TODO: Pass date to form when modal opens
-              }}
-              onEditShift={(shift) => {
-                openEditShift(shift);
-              }}
-              onDuplicateShift={(shift) => {
-                // Create a duplicate shift for today
-                const today = new Date().toISOString().split('T')[0];
-                const duplicatedShift = { 
-                  ...shift, 
-                  date: today,
-                  id: undefined,
-                  assignedTo: null,
-                  status: "open" as const
-                };
-                // Pass the duplicated shift data to create a new shift
-                openCreateShift();
-                // TODO: Pre-fill form with duplicated data
-              }}
+              onDateClick={handleDateClick}
+              onCreateShift={handleCreateShiftForDate}
+              onEditShift={openEditShift}
+              onDuplicateShift={handleDuplicateShift}
               onDeleteShift={(shiftId) => {
                 const shift = shifts.find(s => s.id === shiftId);
                 if (shift) {
@@ -1183,6 +1165,28 @@ export default function Scheduling() {
         onConfirm={confirmTemplateDelete}
         title="Delete Template"
         itemName={templateToDelete ? `template "${templateToDelete.name}"` : "this template"}
+      />
+
+      {/* Calendar Day Modal */}
+      <CalendarDayModal
+        date={selectedDate}
+        isOpen={calendarDayModalOpen}
+        onClose={() => setCalendarDayModalOpen(false)}
+        shifts={shifts}
+        onEditShift={(shift) => {
+          setCalendarDayModalOpen(false);
+          openEditShift(shift);
+        }}
+        onDeleteShift={(id) => {
+          const shift = shifts.find(s => s.id === id);
+          if (shift) {
+            setCalendarDayModalOpen(false);
+            handleShiftDelete(shift);
+          }
+        }}
+        onDuplicateShift={handleDuplicateShift}
+        onCreateShift={handleCreateShiftForDate}
+        isDeleting={shiftSubmitting}
       />
     </div>
   );
