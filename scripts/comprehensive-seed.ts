@@ -1,4 +1,4 @@
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import {
   users,
@@ -391,7 +391,7 @@ async function comprehensiveSeed() {
 }
 
 // Run seed if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   comprehensiveSeed()
     .then(() => {
       console.log('🎉 Comprehensive seed process completed');
