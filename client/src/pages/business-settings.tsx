@@ -188,10 +188,7 @@ export default function BusinessSettings() {
   // Fetch Business Profile
   const { data: businessProfile, isLoading: _profileLoading } = useQuery<BusinessProfile>({
     queryKey: ["/api/business-profile", tenantId],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/business-profile?tenantId=${tenantId}`);
-      return response;
-    },
+    enabled: !!tenantId,
   });
 
   // Fetch Job Roles
@@ -544,7 +541,8 @@ export default function BusinessSettings() {
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-6">
-          <DataTable
+          <PlaceholderIndicator type="test" description="Job roles section shows demo data for testing">
+            <DataTable
             data={jobRoles}
             columns={roleColumns}
             title="Job Roles"
@@ -561,14 +559,16 @@ export default function BusinessSettings() {
               </div>
             }
           />
+          </PlaceholderIndicator>
         </TabsContent>
 
         <TabsContent value="hours" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Operating Hours</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <PlaceholderIndicator type="test" description="Operating hours form has demo functionality">
+            <Card>
+              <CardHeader>
+                <CardTitle>Operating Hours</CardTitle>
+              </CardHeader>
+              <CardContent>
               <form onSubmit={hoursForm.handleSubmit(onSubmitHours)} className="space-y-4">
                 {dayNames.map((day, index) => (
                   <div key={day} className="flex items-center gap-4 p-4 border rounded-lg">
@@ -638,6 +638,7 @@ export default function BusinessSettings() {
               </form>
             </CardContent>
           </Card>
+          </PlaceholderIndicator>
         </TabsContent>
       </Tabs>
 
@@ -721,6 +722,13 @@ export default function BusinessSettings() {
           />
         </div>
       </ModalForm>
+
+      <NotImplementedModal
+        isOpen={notImplementedModal.isOpen}
+        onClose={() => setNotImplementedModal({ isOpen: false, feature: '', description: '' })}
+        feature={notImplementedModal.feature}
+        description={notImplementedModal.description}
+      />
     </div>
   );
 }
