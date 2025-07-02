@@ -592,12 +592,20 @@ export default function BusinessSettingsPage() {
     },
   ];
 
-  if (user?.role !== "owner") {
+  const { role, switchRole } = useAuth();
+  
+  if (role !== "owner") {
     return (
       <div className="container mx-auto py-8">
         <Card>
-          <CardContent className="flex items-center justify-center p-8">
-            <p className="text-muted-foreground">Access denied. Business Settings is only available to business owners.</p>
+          <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+            <p className="text-muted-foreground text-center">
+              Business Settings is only available to business owners.<br />
+              You are currently viewing as: <Badge variant="secondary">{role}</Badge>
+            </p>
+            <Button onClick={() => switchRole("owner")} variant="outline">
+              Switch to Owner View
+            </Button>
           </CardContent>
         </Card>
       </div>
