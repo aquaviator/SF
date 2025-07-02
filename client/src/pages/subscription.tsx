@@ -75,12 +75,10 @@ interface Plan {
   monthlyPrice: number;
   annualPrice: number;
   features: string[];
-  limits: {
-    staff: number;
-    shifts: number;
-    storage: string;
-  };
-  popular?: boolean;
+  staffLimit: number;
+  shiftsLimit: number;
+  storageLimit: string;
+  isPopular?: boolean;
 }
 
 export default function Subscription() {
@@ -213,6 +211,9 @@ export default function Subscription() {
       toast({ title: "Failed to extend trial", description: error.message, variant: "destructive" });
     },
   });
+
+  // Find current plan based on subscription
+  const currentPlan = plans.find(plan => plan.id === subscription?.planId);
 
   const onSubmitBilling = (data: BillingFormData) => {
     billingMutation.mutate(data);
@@ -411,10 +412,10 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Staff Members</span>
-                            <span>{subscription.usageMetrics?.staffUsed || 0} / {formatNumber(subscription.usageMetrics?.staffLimit || 0)}</span>
+                            <span>{usageMetrics?.staffUsed || 0} / {formatNumber(currentPlan?.staffLimit || 0)}</span>
                           </div>
                           <Progress 
-                            value={!subscription.usageMetrics || subscription.usageMetrics.staffLimit === -1 ? 0 : (subscription.usageMetrics.staffUsed / subscription.usageMetrics.staffLimit) * 100} 
+                            value={!currentPlan || currentPlan.staffLimit === -1 ? 0 : ((usageMetrics?.staffUsed || 0) / currentPlan.staffLimit) * 100} 
                             className="h-2"
                           />
                         </div>
@@ -422,10 +423,10 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Shifts This Month</span>
-                            <span>{subscription.usageMetrics?.shiftsUsed || 0} / {formatNumber(subscription.usageMetrics?.shiftsLimit || 0)}</span>
+                            <span>{usageMetrics?.shiftsUsed || 0} / {formatNumber(currentPlan?.shiftsLimit || 0)}</span>
                           </div>
                           <Progress 
-                            value={!subscription.usageMetrics || subscription.usageMetrics.shiftsLimit === -1 ? 0 : (subscription.usageMetrics.shiftsUsed / subscription.usageMetrics.shiftsLimit) * 100} 
+                            value={!currentPlan || currentPlan.shiftsLimit === -1 ? 0 : ((usageMetrics?.shiftsUsed || 0) / currentPlan.shiftsLimit) * 100} 
                             className="h-2"
                           />
                         </div>
@@ -433,7 +434,7 @@ export default function Subscription() {
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span>Storage</span>
-                            <span>{subscription.usageMetrics?.storageUsed || '0 MB'} / {subscription.usageMetrics?.storageLimit || '0 MB'}</span>
+                            <span>{usageMetrics?.storageUsed || '0 MB'} / {currentPlan?.storageLimit || '0 MB'}</span>
                           </div>
                           <Progress value={12.5} className="h-2" />
                         </div>
@@ -486,9 +487,9 @@ export default function Subscription() {
                     <div className="border-t pt-4">
                       <h4 className="font-medium text-sm mb-2">Limits</h4>
                       <ul className="space-y-1 text-sm text-gray-600">
-                        <li>Staff: {formatNumber(plan.limits.staff)}</li>
-                        <li>Shifts: {formatNumber(plan.limits.shifts)}</li>
-                        <li>Storage: {plan.limits.storage}</li>
+                        <li>Staff: {formatNumber(plan.staffLimit)}</li>
+                        <li>Shifts: {formatNumber(plan.shiftsLimit)}</li>
+                        <li>Storage: {plan.storageLimit}</li>
                       </ul>
                     </div>
 
