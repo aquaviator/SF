@@ -19,143 +19,168 @@ import {
   Building2, 
   Users, 
   Clock, 
-  Shield
+  MapPin
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { PlaceholderIndicator } from "@/components/ui/placeholder-indicator";
-import { NotImplementedModal } from "@/components/ui/not-implemented-modal";
 
 // Business Profile Schema
 const businessProfileSchema = z.object({
+  tenantId: z.string(),
   name: z.string().min(1, "Business name is required"),
+  ownerName: z.string().min(1, "Owner name is required"),
   address: z.string().min(1, "Business address is required"),
   phone: z.string().min(1, "Phone number is required"),
   email: z.string().email("Valid email is required"),
   website: z.string().url("Valid website URL is required").optional().or(z.literal("")),
   logoUrl: z.string().optional(),
+  ownerProfilePicture: z.string().optional(),
+  description: z.string().optional(),
+  businessType: z.string().optional(),
 });
 
 // Job Role Schema
 const jobRoleSchema = z.object({
+  tenantId: z.string(),
   title: z.string().min(1, "Role title is required"),
   description: z.string().min(1, "Role description is required"),
-  department: z.string().min(1, "Department is required"),
-  permissions: z.array(z.string()).min(1, "At least one permission is required"),
+  hourlyRate: z.string().min(1, "Hourly rate is required"),
+  responsibilities: z.array(z.string()).default([]),
+  requirements: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
 });
 
 // Location Schema
 const locationSchema = z.object({
+  tenantId: z.string(),
   name: z.string().min(1, "Location name is required"),
-  description: z.string().min(1, "Location description is required"),
-  type: z.enum(["kitchen", "dining", "bar", "office", "storage", "other"]),
+  description: z.string().optional(),
+  address: z.string().min(1, "Address is required"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
+  isActive: z.boolean().default(true),
+});
+
+// Department Schema
+const departmentSchema = z.object({
+  tenantId: z.string(),
+  name: z.string().min(1, "Department name is required"),
+  description: z.string().optional(),
+  managerId: z.number().optional(),
+  budget: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
 // Operating Hours Schema
 const operatingHoursSchema = z.object({
-  monday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  tuesday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  wednesday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  thursday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  friday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  saturday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
-  sunday: z.object({
-    isOpen: z.boolean(),
-    openTime: z.string(),
-    closeTime: z.string(),
-  }),
+  tenantId: z.string(),
+  dayOfWeek: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
+  openTime: z.string().optional(),
+  closeTime: z.string().optional(),
+  isOpen: z.boolean(),
+  breakStartTime: z.string().optional(),
+  breakEndTime: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type BusinessProfileFormData = z.infer<typeof businessProfileSchema>;
 type JobRoleFormData = z.infer<typeof jobRoleSchema>;
 type LocationFormData = z.infer<typeof locationSchema>;
+type DepartmentFormData = z.infer<typeof departmentSchema>;
 type OperatingHoursFormData = z.infer<typeof operatingHoursSchema>;
 
 interface BusinessProfile {
   id: number;
+  tenantId: string;
   name: string;
+  ownerName: string;
   address: string;
   phone: string;
   email: string;
   website?: string;
   logoUrl?: string;
-  tenantId: string;
+  ownerProfilePicture?: string;
+  description?: string;
+  businessType?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface JobRole {
   id: number;
+  tenantId: string;
   title: string;
   description: string;
-  department: string;
-  permissions: string[];
+  hourlyRate: string;
+  responsibilities: string[];
+  requirements: string[];
   isActive: boolean;
-  tenantId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Location {
   id: number;
+  tenantId: string;
   name: string;
-  description: string;
-  type: "kitchen" | "dining" | "bar" | "office" | "storage" | "other";
+  description?: string;
+  address: string;
   capacity: number;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Department {
+  id: number;
   tenantId: string;
+  name: string;
+  description?: string;
+  managerId?: number;
+  budget?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface OperatingHours {
   id: number;
   tenantId: string;
-  [key: string]: any;
+  dayOfWeek: string;
+  openTime?: string;
+  closeTime?: string;
+  isOpen: boolean;
+  breakStartTime?: string;
+  breakEndTime?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export default function BusinessSettings() {
-  const { tenantId } = useAuth();
+export default function BusinessSettingsPage() {
+  const { user, tenantId } = useAuth();
   const { toast } = useToast();
   const [isRoleModalOpen, setIsRoleModalOpen] = React.useState(false);
   const [editingRole, setEditingRole] = React.useState<JobRole | null>(null);
-  const [notImplementedModal, setNotImplementedModal] = React.useState<{
-    isOpen: boolean;
-    feature: string;
-    description?: string;
-  }>({ isOpen: false, feature: "", description: "" });
+  const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false);
+  const [editingLocation, setEditingLocation] = React.useState<Location | null>(null);
+  const [isDepartmentModalOpen, setIsDepartmentModalOpen] = React.useState(false);
+  const [editingDepartment, setEditingDepartment] = React.useState<Department | null>(null);
 
   // Business Profile Form
   const profileForm = useForm<BusinessProfileFormData>({
     resolver: zodResolver(businessProfileSchema),
     defaultValues: {
+      tenantId: tenantId || "",
       name: "",
+      ownerName: "",
       address: "",
       phone: "",
       email: "",
       website: "",
       logoUrl: "",
+      ownerProfilePicture: "",
+      description: "",
+      businessType: "",
     },
   });
 
@@ -163,31 +188,52 @@ export default function BusinessSettings() {
   const roleForm = useForm<JobRoleFormData>({
     resolver: zodResolver(jobRoleSchema),
     defaultValues: {
+      tenantId: tenantId || "",
       title: "",
       description: "",
-      department: "",
-      permissions: [],
+      hourlyRate: "",
+      responsibilities: [],
+      requirements: [],
       isActive: true,
     },
   });
 
-  // Operating Hours Form
-  const hoursForm = useForm<OperatingHoursFormData>({
-    resolver: zodResolver(operatingHoursSchema),
+  // Location Form
+  const locationForm = useForm<LocationFormData>({
+    resolver: zodResolver(locationSchema),
     defaultValues: {
-      monday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
-      tuesday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
-      wednesday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
-      thursday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
-      friday: { isOpen: true, openTime: "09:00", closeTime: "17:00" },
-      saturday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
-      sunday: { isOpen: false, openTime: "09:00", closeTime: "17:00" },
+      tenantId: tenantId || "",
+      name: "",
+      description: "",
+      address: "",
+      capacity: 1,
+      isActive: true,
+    },
+  });
+
+  // Department Form
+  const departmentForm = useForm<DepartmentFormData>({
+    resolver: zodResolver(departmentSchema),
+    defaultValues: {
+      tenantId: tenantId || "",
+      name: "",
+      description: "",
+      managerId: undefined,
+      budget: "",
+      isActive: true,
     },
   });
 
   // Fetch Business Profile
-  const { data: businessProfile, isLoading: _profileLoading } = useQuery<BusinessProfile>({
+  const { data: businessProfile, isLoading: profileLoading } = useQuery<BusinessProfile>({
     queryKey: ["/api/business-profile", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/business-profile?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch business profile');
+      }
+      return response.json();
+    },
     enabled: !!tenantId,
   });
 
@@ -195,461 +241,639 @@ export default function BusinessSettings() {
   const { data: jobRoles = [], isLoading: rolesLoading } = useQuery<JobRole[]>({
     queryKey: ["/api/job-roles", tenantId],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        {
-          id: 1,
-          title: "Customer Service Representative",
-          description: "Handle customer inquiries and support requests",
-          department: "Customer Service",
-          permissions: ["view_shifts", "request_swaps", "view_schedule"],
-          isActive: true,
-          tenantId,
-        },
-        {
-          id: 2,
-          title: "Security Officer",
-          description: "Maintain building security and safety protocols",
-          department: "Security",
-          permissions: ["view_shifts", "emergency_response"],
-          isActive: true,
-          tenantId,
-        },
-        {
-          id: 3,
-          title: "Maintenance Technician",
-          description: "Perform equipment maintenance and repairs",
-          department: "Maintenance",
-          permissions: ["view_shifts", "equipment_access"],
-          isActive: false,
-          tenantId,
-        },
-      ];
+      const response = await fetch(`/api/job-roles?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch job roles');
+      }
+      return response.json();
     },
+    enabled: !!tenantId,
+  });
+
+  // Fetch Locations
+  const { data: locations = [], isLoading: locationsLoading } = useQuery<Location[]>({
+    queryKey: ["/api/locations", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/locations?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch locations');
+      }
+      return response.json();
+    },
+    enabled: !!tenantId,
+  });
+
+  // Fetch Departments
+  const { data: departments = [], isLoading: departmentsLoading } = useQuery<Department[]>({
+    queryKey: ["/api/departments", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/departments?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch departments');
+      }
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch Operating Hours
-  const { data: _operatingHours, isLoading: _hoursLoading } = useQuery<OperatingHours>({
+  const { data: operatingHours = [], isLoading: hoursLoading } = useQuery<OperatingHours[]>({
     queryKey: ["/api/operating-hours", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/operating-hours?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch operating hours');
+      }
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Business Profile Mutation
   const profileMutation = useMutation({
     mutationFn: async (data: BusinessProfileFormData) => {
-      return await apiRequest("POST", `/api/business-profile`, { ...data, tenantId });
+      return await apiRequest("PUT", `/api/business-profile`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile", tenantId] });
-      toast({ title: "Business profile updated successfully" });
+      toast({ title: "Success", description: "Business profile updated successfully" });
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to update business profile", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update business profile", variant: "destructive" });
     },
   });
 
-  // Job Role Mutations
-  const roleCreateMutation = useMutation({
-    mutationFn: async (data: JobRoleFormData) => {
-      return await apiRequest("POST", `/api/job-roles`, { ...data, tenantId });
+  // Job Role Mutation
+  const roleMutation = useMutation({
+    mutationFn: async (data: JobRoleFormData & { id?: number }) => {
+      if (data.id) {
+        return await apiRequest("PUT", `/api/job-roles/${data.id}`, data);
+      } else {
+        return await apiRequest("POST", `/api/job-roles`, data);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
       setIsRoleModalOpen(false);
       setEditingRole(null);
       roleForm.reset();
-      toast({ title: "Job role created successfully" });
+      toast({ title: "Success", description: "Job role saved successfully" });
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to create job role", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save job role", variant: "destructive" });
     },
   });
 
-  const roleUpdateMutation = useMutation({
-    mutationFn: async (data: JobRole) => {
-      return await apiRequest("PATCH", `/api/job-roles/${data.id}`, data);
+  // Location Mutation
+  const locationMutation = useMutation({
+    mutationFn: async (data: LocationFormData & { id?: number }) => {
+      if (data.id) {
+        return await apiRequest("PUT", `/api/locations/${data.id}`, data);
+      } else {
+        return await apiRequest("POST", `/api/locations`, data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/locations", tenantId] });
+      setIsLocationModalOpen(false);
+      setEditingLocation(null);
+      locationForm.reset();
+      toast({ title: "Success", description: "Location saved successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save location", variant: "destructive" });
+    },
+  });
+
+  // Department Mutation
+  const departmentMutation = useMutation({
+    mutationFn: async (data: DepartmentFormData & { id?: number }) => {
+      if (data.id) {
+        return await apiRequest("PUT", `/api/departments/${data.id}`, data);
+      } else {
+        return await apiRequest("POST", `/api/departments`, data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/departments", tenantId] });
+      setIsDepartmentModalOpen(false);
+      setEditingDepartment(null);
+      departmentForm.reset();
+      toast({ title: "Success", description: "Department saved successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save department", variant: "destructive" });
+    },
+  });
+
+  // Delete Mutations
+  const deleteRoleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/job-roles/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
-      setIsRoleModalOpen(false);
-      setEditingRole(null);
-      roleForm.reset();
-      toast({ title: "Job role updated successfully" });
+      toast({ title: "Success", description: "Job role deleted successfully" });
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to update job role", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete job role", variant: "destructive" });
     },
   });
 
-  // Operating Hours Mutation
-  const hoursMutation = useMutation({
-    mutationFn: async (data: OperatingHoursFormData) => {
-      return await apiRequest("POST", `/api/operating-hours`, { ...data, tenantId });
+  const deleteLocationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/locations/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/operating-hours", tenantId] });
-      toast({ title: "Operating hours updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/locations", tenantId] });
+      toast({ title: "Success", description: "Location deleted successfully" });
     },
-    onError: (error: Error) => {
-      toast({ title: "Failed to update operating hours", description: error.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete location", variant: "destructive" });
     },
   });
 
-  // Initialize forms with data
+  const deleteDepartmentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/departments/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/departments", tenantId] });
+      toast({ title: "Success", description: "Department deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete department", variant: "destructive" });
+    },
+  });
+
+  // Update form when business profile loads
   React.useEffect(() => {
     if (businessProfile) {
       profileForm.reset({
+        tenantId: businessProfile.tenantId,
         name: businessProfile.name,
+        ownerName: businessProfile.ownerName,
         address: businessProfile.address,
         phone: businessProfile.phone,
         email: businessProfile.email,
         website: businessProfile.website || "",
         logoUrl: businessProfile.logoUrl || "",
+        ownerProfilePicture: businessProfile.ownerProfilePicture || "",
+        description: businessProfile.description || "",
+        businessType: businessProfile.businessType || "",
       });
     }
   }, [businessProfile, profileForm]);
 
-  // Helper function to show not implemented modal
-  const showNotImplemented = (feature: string, description?: string) => {
-    setNotImplementedModal({ isOpen: true, feature, description });
+  const handleRoleSubmit = (data: JobRoleFormData) => {
+    const submitData = editingRole ? { ...data, id: editingRole.id } : data;
+    roleMutation.mutate(submitData);
   };
 
-  React.useEffect(() => {
-    if (isRoleModalOpen) {
-      if (editingRole) {
-        roleForm.reset({
-          title: editingRole.title,
-          description: editingRole.description,
-          department: editingRole.department,
-          permissions: editingRole.permissions,
-          isActive: editingRole.isActive,
-        });
-      } else {
-        roleForm.reset({
-          title: "",
-          description: "",
-          department: "",
-          permissions: [],
-          isActive: true,
-        });
-      }
-    }
-  }, [isRoleModalOpen, editingRole, roleForm]);
-
-  const onSubmitProfile = (data: BusinessProfileFormData) => {
-    profileMutation.mutate(data);
+  const handleLocationSubmit = (data: LocationFormData) => {
+    const submitData = editingLocation ? { ...data, id: editingLocation.id } : data;
+    locationMutation.mutate(submitData);
   };
 
-  const onSubmitRole = (data: JobRoleFormData) => {
-    if (editingRole) {
-      roleUpdateMutation.mutate({ ...data, id: editingRole.id, tenantId });
+  const handleDepartmentSubmit = (data: DepartmentFormData) => {
+    const submitData = editingDepartment ? { ...data, id: editingDepartment.id } : data;
+    departmentMutation.mutate(submitData);
+  };
+
+  const openRoleModal = (role?: JobRole) => {
+    if (role) {
+      setEditingRole(role);
+      roleForm.reset({
+        tenantId: role.tenantId,
+        title: role.title,
+        description: role.description,
+        hourlyRate: role.hourlyRate,
+        responsibilities: role.responsibilities,
+        requirements: role.requirements,
+        isActive: role.isActive,
+      });
     } else {
-      roleCreateMutation.mutate(data);
+      setEditingRole(null);
+      roleForm.reset({
+        tenantId: tenantId || "",
+        title: "",
+        description: "",
+        hourlyRate: "",
+        responsibilities: [],
+        requirements: [],
+        isActive: true,
+      });
     }
-  };
-
-  const onSubmitHours = (data: OperatingHoursFormData) => {
-    hoursMutation.mutate(data);
-  };
-
-  const openCreateRole = () => {
-    setEditingRole(null);
     setIsRoleModalOpen(true);
   };
 
-  const openEditRole = (role: JobRole) => {
-    setEditingRole(role);
-    setIsRoleModalOpen(true);
-  };
-
-  const closeRoleModal = () => {
-    setIsRoleModalOpen(false);
-    setEditingRole(null);
-  };
-
-  const handleDeleteRole = async (role: JobRole) => {
-    try {
-      await apiRequest("DELETE", `/api/job-roles/${role.id}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/job-roles", tenantId] });
-      toast({ title: "Job role deleted successfully" });
-    } catch (error) {
-      toast({ title: "Failed to delete job role", description: (error as Error).message, variant: "destructive" });
+  const openLocationModal = (location?: Location) => {
+    if (location) {
+      setEditingLocation(location);
+      locationForm.reset({
+        tenantId: location.tenantId,
+        name: location.name,
+        description: location.description || "",
+        address: location.address,
+        capacity: location.capacity,
+        isActive: location.isActive,
+      });
+    } else {
+      setEditingLocation(null);
+      locationForm.reset({
+        tenantId: tenantId || "",
+        name: "",
+        description: "",
+        address: "",
+        capacity: 1,
+        isActive: true,
+      });
     }
+    setIsLocationModalOpen(true);
   };
 
+  const openDepartmentModal = (department?: Department) => {
+    if (department) {
+      setEditingDepartment(department);
+      departmentForm.reset({
+        tenantId: department.tenantId,
+        name: department.name,
+        description: department.description || "",
+        managerId: department.managerId,
+        budget: department.budget || "",
+        isActive: department.isActive,
+      });
+    } else {
+      setEditingDepartment(null);
+      departmentForm.reset({
+        tenantId: tenantId || "",
+        name: "",
+        description: "",
+        managerId: undefined,
+        budget: "",
+        isActive: true,
+      });
+    }
+    setIsDepartmentModalOpen(true);
+  };
+
+  // Job Roles Table Columns
   const roleColumns: Column<JobRole>[] = [
     {
-      key: "title",
-      header: "Role",
-      cell: (role) => (
-        <div>
-          <p className="font-medium text-sm">{role.title}</p>
-          <p className="text-xs text-gray-500">{role.description}</p>
-        </div>
-      ),
+      header: "Title",
+      accessorKey: "title",
     },
     {
-      key: "department",
-      header: "Department",
-      cell: (role) => <Badge variant="outline">{role.department}</Badge>,
+      header: "Description",
+      accessorKey: "description",
     },
     {
-      key: "permissions",
-      header: "Permissions",
-      cell: (role) => (
-        <div className="flex flex-wrap gap-1">
-          {(role.permissions || []).slice(0, 2).map((perm) => (
-            <Badge key={perm} variant="secondary" className="text-xs">
-              {perm.replace('_', ' ')}
-            </Badge>
-          ))}
-          {(role.permissions || []).length > 2 && (
-            <Badge variant="secondary" className="text-xs">
-              +{(role.permissions || []).length - 2} more
-            </Badge>
-          )}
-        </div>
-      ),
+      header: "Hourly Rate",
+      accessorKey: "hourlyRate",
     },
     {
-      key: "isActive",
       header: "Status",
-      cell: (role) => (
-        <Badge variant={role.isActive ? "default" : "secondary"}>
-          {role.isActive ? "Active" : "Inactive"}
+      accessorKey: "isActive",
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() ? "default" : "secondary"}>
+          {getValue() ? "Active" : "Inactive"}
         </Badge>
       ),
     },
   ];
 
-  const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  // Locations Table Columns
+  const locationColumns: Column<Location>[] = [
+    {
+      header: "Name",
+      accessorKey: "name",
+    },
+    {
+      header: "Address",
+      accessorKey: "address",
+    },
+    {
+      header: "Capacity",
+      accessorKey: "capacity",
+    },
+    {
+      header: "Status",
+      accessorKey: "isActive",
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() ? "default" : "secondary"}>
+          {getValue() ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+  ];
+
+  // Departments Table Columns
+  const departmentColumns: Column<Department>[] = [
+    {
+      header: "Name",
+      accessorKey: "name",
+    },
+    {
+      header: "Description",
+      accessorKey: "description",
+    },
+    {
+      header: "Budget",
+      accessorKey: "budget",
+    },
+    {
+      header: "Status",
+      accessorKey: "isActive",
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() ? "default" : "secondary"}>
+          {getValue() ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (user?.role !== "owner") {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="flex items-center justify-center p-8">
+            <p className="text-muted-foreground">Access denied. Business Settings is only available to business owners.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Settings</h2>
-          <p className="text-gray-600">Manage your business profile, roles, and operating hours</p>
+          <h1 className="text-3xl font-bold tracking-tight">Business Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your business profile, job roles, locations, and operating hours
+          </p>
         </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Business Profile
-          </TabsTrigger>
-          <TabsTrigger value="roles" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Job Roles
-          </TabsTrigger>
-          <TabsTrigger value="hours" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Operating Hours
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile">Business Profile</TabsTrigger>
+          <TabsTrigger value="roles">Job Roles</TabsTrigger>
+          <TabsTrigger value="locations">Locations</TabsTrigger>
+          <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="hours">Operating Hours</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
-          <PlaceholderIndicator type="test" description="Business profile loads demo data from API">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Profile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={profileForm.handleSubmit(onSubmitProfile)} className="space-y-4">
-                <FormField
-                  control={profileForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter business name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={profileForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter business address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={profileForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter phone number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="Enter email address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Business Profile
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profileLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading business profile...</div>
                 </div>
-
-                <FormField
-                  control={profileForm.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter website URL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={profileMutation.isPending}>
-                    {profileMutation.isPending ? "Saving..." : "Save Profile"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-          </PlaceholderIndicator>
-        </TabsContent>
-
-        <TabsContent value="roles" className="space-y-6">
-          <PlaceholderIndicator type="test" description="Job roles section shows demo data for testing">
-            <DataTable
-            data={jobRoles}
-            columns={roleColumns}
-            title="Job Roles"
-            onAdd={openCreateRole}
-            onEdit={openEditRole}
-            onDelete={handleDeleteRole}
-            addLabel="Add Role"
-            isLoading={rolesLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <Shield className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">No job roles defined</p>
-                <p className="text-sm text-gray-400">Create roles to assign to your staff</p>
-              </div>
-            }
-          />
-          </PlaceholderIndicator>
-        </TabsContent>
-
-        <TabsContent value="hours" className="space-y-6">
-          <PlaceholderIndicator type="test" description="Operating hours form has demo functionality">
-            <Card>
-              <CardHeader>
-                <CardTitle>Operating Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-              <form onSubmit={hoursForm.handleSubmit(onSubmitHours)} className="space-y-4">
-                {dayNames.map((day, index) => (
-                  <div key={day} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="w-24">
-                      <label className="text-sm font-medium">{dayLabels[index]}</label>
-                    </div>
-                    
+              ) : (
+                <form onSubmit={profileForm.handleSubmit((data) => profileMutation.mutate(data))} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
-                      control={hoursForm.control}
-                      name={`${day}.isOpen` as any}
+                      control={profileForm.control}
+                      name="name"
                       render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
+                        <FormItem>
+                          <FormLabel>Business Name</FormLabel>
                           <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
+                            <Input {...field} placeholder="Enter business name" />
                           </FormControl>
-                          <FormLabel className="text-sm">Open</FormLabel>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-
-                    <div className="flex items-center gap-2">
-                      <FormField
-                        control={hoursForm.control}
-                        name={`${day}.openTime` as any}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="time"
-                                {...field}
-                                disabled={!hoursForm.watch(`${day}.isOpen` as any)}
-                                className="w-32"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <span className="text-sm text-gray-500">to</span>
-                      <FormField
-                        control={hoursForm.control}
-                        name={`${day}.closeTime` as any}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="time"
-                                {...field}
-                                disabled={!hoursForm.watch(`${day}.isOpen` as any)}
-                                className="w-32"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={profileForm.control}
+                      name="ownerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Owner Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter owner name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder="Enter email address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter phone number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter website URL" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="businessType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Business Type</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter business type" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                ))}
-
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={hoursMutation.isPending}>
-                    {hoursMutation.isPending ? "Saving..." : "Save Operating Hours"}
+                  <FormField
+                    control={profileForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Enter business address" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Enter business description" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={profileMutation.isPending}>
+                    {profileMutation.isPending ? "Saving..." : "Save Profile"}
                   </Button>
-                </div>
-              </form>
+                </form>
+              )}
             </CardContent>
           </Card>
-          </PlaceholderIndicator>
+        </TabsContent>
+
+        <TabsContent value="roles" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Job Roles
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                data={jobRoles}
+                columns={roleColumns}
+                isLoading={rolesLoading}
+                onAdd={() => openRoleModal()}
+                onEdit={(role) => openRoleModal(role)}
+                onDelete={(role) => deleteRoleMutation.mutate(role.id)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="locations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Locations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                data={locations}
+                columns={locationColumns}
+                isLoading={locationsLoading}
+                onAdd={() => openLocationModal()}
+                onEdit={(location) => openLocationModal(location)}
+                onDelete={(location) => deleteLocationMutation.mutate(location.id)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="departments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Departments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                data={departments}
+                columns={departmentColumns}
+                isLoading={departmentsLoading}
+                onAdd={() => openDepartmentModal()}
+                onEdit={(department) => openDepartmentModal(department)}
+                onDelete={(department) => deleteDepartmentMutation.mutate(department.id)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hours" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Operating Hours
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hoursLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading operating hours...</div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {operatingHours.map((hours) => (
+                    <div key={hours.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="font-medium capitalize">{hours.dayOfWeek}</div>
+                        {hours.isOpen ? (
+                          <div className="text-sm text-muted-foreground">
+                            {hours.openTime} - {hours.closeTime}
+                            {hours.breakStartTime && hours.breakEndTime && (
+                              <span> (Break: {hours.breakStartTime} - {hours.breakEndTime})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Closed</div>
+                        )}
+                        {hours.notes && (
+                          <div className="text-sm text-muted-foreground">({hours.notes})</div>
+                        )}
+                      </div>
+                      <Badge variant={hours.isOpen ? "default" : "secondary"}>
+                        {hours.isOpen ? "Open" : "Closed"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
+      {/* Job Role Modal */}
       <ModalForm
         isOpen={isRoleModalOpen}
-        onClose={closeRoleModal}
+        onClose={() => {
+          setIsRoleModalOpen(false);
+          setEditingRole(null);
+          roleForm.reset();
+        }}
         title={editingRole ? "Edit Job Role" : "Add Job Role"}
         form={roleForm}
-        onSubmit={onSubmitRole}
-        submitLabel={editingRole ? "Update Role" : "Create Role"}
-        isLoading={roleCreateMutation.isPending || roleUpdateMutation.isPending}
+        onSubmit={handleRoleSubmit}
+        isSubmitting={roleMutation.isPending}
       >
         <div className="space-y-4">
           <FormField
@@ -657,15 +881,14 @@ export default function BusinessSettings() {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role Title</FormLabel>
+                <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter role title" {...field} />
+                  <Input {...field} placeholder="Enter job title" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={roleForm.control}
             name="description"
@@ -673,44 +896,36 @@ export default function BusinessSettings() {
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter role description" {...field} />
+                  <Textarea {...field} placeholder="Enter job description" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={roleForm.control}
-            name="department"
+            name="hourlyRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Department</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="customer-service">Customer Service</SelectItem>
-                    <SelectItem value="security">Security</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="administration">Administration</SelectItem>
-                    <SelectItem value="management">Management</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel>Hourly Rate</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Enter hourly rate (e.g., $15.00)" />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={roleForm.control}
             name="isActive"
             render={({ field }) => (
-              <FormItem className="flex items-center justify-between">
-                <FormLabel>Active Role</FormLabel>
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Active</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Make this job role available for assignment
+                  </div>
+                </div>
                 <FormControl>
                   <Switch
                     checked={field.value}
@@ -723,12 +938,175 @@ export default function BusinessSettings() {
         </div>
       </ModalForm>
 
-      <NotImplementedModal
-        isOpen={notImplementedModal.isOpen}
-        onClose={() => setNotImplementedModal({ isOpen: false, feature: '', description: '' })}
-        feature={notImplementedModal.feature}
-        description={notImplementedModal.description}
-      />
+      {/* Location Modal */}
+      <ModalForm
+        isOpen={isLocationModalOpen}
+        onClose={() => {
+          setIsLocationModalOpen(false);
+          setEditingLocation(null);
+          locationForm.reset();
+        }}
+        title={editingLocation ? "Edit Location" : "Add Location"}
+        form={locationForm}
+        onSubmit={handleLocationSubmit}
+        isSubmitting={locationMutation.isPending}
+      >
+        <div className="space-y-4">
+          <FormField
+            control={locationForm.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Enter location name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={locationForm.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Enter location address" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={locationForm.control}
+            name="capacity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Capacity</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    placeholder="Enter maximum capacity"
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={locationForm.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Enter location description" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={locationForm.control}
+            name="isActive"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Active</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Make this location available for scheduling
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </ModalForm>
+
+      {/* Department Modal */}
+      <ModalForm
+        isOpen={isDepartmentModalOpen}
+        onClose={() => {
+          setIsDepartmentModalOpen(false);
+          setEditingDepartment(null);
+          departmentForm.reset();
+        }}
+        title={editingDepartment ? "Edit Department" : "Add Department"}
+        form={departmentForm}
+        onSubmit={handleDepartmentSubmit}
+        isSubmitting={departmentMutation.isPending}
+      >
+        <div className="space-y-4">
+          <FormField
+            control={departmentForm.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Enter department name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Enter department description" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="budget"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Budget</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Enter department budget (e.g., $50,000)" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={departmentForm.control}
+            name="isActive"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Active</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Make this department available for use
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+      </ModalForm>
     </div>
   );
 }
