@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 
 export function SidebarNav() {
-  const { role, user, tenantId } = useAuth();
+  const { role, user, tenantId, switchRole } = useAuth();
   const [location] = useLocation();
   
   const menuItems = getMenuForRole(role);
@@ -74,6 +74,21 @@ export function SidebarNav() {
                 </span>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Development Role Switcher */}
+        <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-yellow-800">DEV MODE</span>
+            <select
+              value={role}
+              onChange={(e) => switchRole(e.target.value as "owner" | "staff")}
+              className="text-xs bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+            >
+              <option value="owner">Owner</option>
+              <option value="staff">Staff</option>
+            </select>
           </div>
         </div>
       </div>

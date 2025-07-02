@@ -13,7 +13,7 @@ interface MoreDrawerProps {
 }
 
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
-  const { role, user, tenantId } = useAuth();
+  const { role, user, tenantId, switchRole } = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
   const moreMenuItems = getMoreMenuForRole(role);
 
@@ -158,6 +158,23 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
               </Link>
             );
           })}
+
+          {/* Development Role Switcher */}
+          <Separator className="my-4" />
+          
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-yellow-800">DEV MODE</span>
+              <select
+                value={role}
+                onChange={(e) => switchRole(e.target.value as "owner" | "staff")}
+                className="text-sm bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              >
+                <option value="owner">Owner</option>
+                <option value="staff">Staff</option>
+              </select>
+            </div>
+          </div>
 
           {/* Separator before help */}
           <Separator className="my-4" />
