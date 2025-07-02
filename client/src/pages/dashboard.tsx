@@ -173,7 +173,7 @@ export default function Dashboard() {
     // Recent assignments
     assignments.slice(0, 2).forEach(assignment => {
       const assignedShift = shifts.find(s => s.id === assignment.shiftId);
-      const assignedUser = staff.find(u => u.id === assignment.userId);
+      const assignedUser = staff.find(u => u.id === assignment.assignedTo);
       if (assignedShift && assignedUser) {
         activities.push({
           id: `assignment-${assignment.id}`,
@@ -187,10 +187,11 @@ export default function Dashboard() {
 
     // Recent opportunities
     opportunities.slice(0, 2).forEach(opp => {
+      const relatedShift = shifts.find(s => s.id === opp.shiftId);
       activities.push({
         id: `opportunity-${opp.id}`,
         type: "opportunity_posted",
-        message: `New ${opp.title} opportunity posted`,
+        message: `New ${relatedShift?.role || 'shift'} opportunity posted`,
         timestamp: new Date(),
         status: "info"
       });
@@ -198,7 +199,7 @@ export default function Dashboard() {
 
     // Recent swap requests
     swapRequests.slice(0, 1).forEach(swap => {
-      const requester = staff.find(u => u.id === swap.requestedBy);
+      const requester = staff.find(u => u.id === swap.requesterId);
       activities.push({
         id: `swap-${swap.id}`,
         type: "swap_requested",
@@ -263,7 +264,7 @@ export default function Dashboard() {
           {[1, 2, 3, 4].map(i => (
             <Card key={i}>
               <CardContent className="p-4">
-                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" data-testid="skeleton" />
               </CardContent>
             </Card>
           ))}
@@ -277,7 +278,7 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-4 w-full" />
+                  <Skeleton key={i} className="h-4 w-full" data-testid="skeleton" />
                 ))}
               </div>
             </CardContent>
@@ -290,7 +291,7 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-8 w-full" />
+                  <Skeleton key={i} className="h-8 w-full" data-testid="skeleton" />
                 ))}
               </div>
             </CardContent>
