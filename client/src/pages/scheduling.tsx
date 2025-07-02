@@ -244,6 +244,38 @@ export default function Scheduling() {
     },
   });
 
+  // Fetch job roles for dynamic role dropdown
+  const { data: jobRoles = [] } = useQuery({
+    queryKey: ["/api/job-roles", tenantId],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        { id: 1, title: "Server", department: "Front of House", isActive: true },
+        { id: 2, title: "Bartender", department: "Bar", isActive: true },
+        { id: 3, title: "Host", department: "Front of House", isActive: true },
+        { id: 4, title: "Manager", department: "Management", isActive: true },
+        { id: 5, title: "Chef", department: "Kitchen", isActive: true },
+        { id: 6, title: "Line Cook", department: "Kitchen", isActive: true },
+        { id: 7, title: "Cleaner", department: "Maintenance", isActive: true },
+      ];
+    },
+  });
+
+  // Fetch locations for dynamic location dropdown
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations", tenantId],
+    queryFn: async () => {
+      // Mock data for now
+      return [
+        { id: 1, name: "Kitchen", type: "kitchen", isActive: true },
+        { id: 2, name: "Front of House", type: "dining", isActive: true },
+        { id: 3, name: "Bar", type: "bar", isActive: true },
+        { id: 4, name: "Back Office", type: "office", isActive: true },
+        { id: 5, name: "Storage", type: "storage", isActive: true },
+      ];
+    },
+  });
+
   // Active Time Entry for current user
   const { data: activeTimeEntry } = useQuery({
     queryKey: ["/api/time-entries/active", tenantId, user?.id],
@@ -974,12 +1006,11 @@ export default function Scheduling() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="server">Server</SelectItem>
-                      <SelectItem value="bartender">Bartender</SelectItem>
-                      <SelectItem value="host">Host</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="chef">Chef</SelectItem>
-                      <SelectItem value="cleaner">Cleaner</SelectItem>
+                      {jobRoles.filter((role: any) => role.isActive).map((role: any) => (
+                        <SelectItem key={role.id} value={role.title.toLowerCase()}>
+                          {role.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -1023,9 +1054,20 @@ export default function Scheduling() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Main Dining Hall" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {locations.filter((location: any) => location.isActive).map((location: any) => (
+                      <SelectItem key={location.id} value={location.name}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
