@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift } from "@shared/schema";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
 const shiftFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -35,11 +36,15 @@ export default function Shifts() {
     isModalOpen,
     editingItem,
     isSubmitting,
+    deleteDialogOpen,
+    itemToDelete,
     openCreateModal,
     openEditModal,
     closeModal,
     handleSubmit,
     handleDelete,
+    confirmDelete,
+    cancelDelete,
   } = useCrud<Shift>({
     queryKey: ["/api/shifts", tenantId],
     endpoint: `/api/shifts?tenantId=${tenantId}`,
@@ -321,6 +326,15 @@ export default function Shifts() {
           />
         </div>
       </ModalForm>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Shift"
+        itemName={itemToDelete ? `shift for ${itemToDelete.date}` : "this shift"}
+      />
     </div>
   );
 }
