@@ -333,8 +333,8 @@ export default function Scheduling() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active", tenantId, user?.id] });
       toast({ title: "Success", description: "Clocked in successfully" });
     },
     onError: () => {
@@ -351,8 +351,8 @@ export default function Scheduling() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active", tenantId, user?.id] });
       toast({ title: "Success", description: "Clocked out successfully" });
     },
     onError: () => {
@@ -369,8 +369,8 @@ export default function Scheduling() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active", tenantId, user?.id] });
       toast({ title: "Success", description: "Break started" });
     },
     onError: () => {
@@ -387,8 +387,8 @@ export default function Scheduling() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active", tenantId, user?.id] });
       toast({ title: "Success", description: "Break ended" });
     },
     onError: () => {

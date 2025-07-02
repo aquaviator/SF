@@ -89,6 +89,11 @@ export default function Analytics() {
   // Fetch analytics reports from database
   const { data: analyticsReports = [] } = useQuery({
     queryKey: ["/api/analytics/reports", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/analytics/reports?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch analytics reports");
+      return response.json();
+    },
   });
 
   // Calculate Labor Cost Data from analytics reports
