@@ -171,10 +171,10 @@ export default function Scheduling() {
     try {
       const shiftData = {
         ...formData,
-        assignedTo: formData.assignedTo ? parseInt(formData.assignedTo) : null,
-        status: formData.assignedTo ? "assigned" : "open",
+        assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
+        status: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open") as "assigned" | "open",
         tenantId,
-        assignmentType: formData.assignedTo ? "assigned" : "open_opportunity",
+        assignmentType: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open_opportunity") as "assigned" | "open_opportunity",
         requiredStaff: 1,
         claimedBy: null,
         templateId: null,

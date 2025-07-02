@@ -129,7 +129,9 @@ export function useCrud<T extends { id: string | number }>({
 
   const handleSubmit = (formData: Omit<T, "id"> | T) => {
     if (editingItem) {
-      updateMutation.mutate(formData as T);
+      // Ensure the ID is included when updating
+      const updatedItem = { ...formData, id: editingItem.id } as T;
+      updateMutation.mutate(updatedItem);
     } else {
       createMutation.mutate(formData as Omit<T, "id">);
     }
