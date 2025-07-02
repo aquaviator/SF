@@ -166,6 +166,17 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Achieved 168ms test execution vs Jest's 30+ second hangs
   - Verified ProfilePage loading states, error handling, and form interactions work correctly
   - All critical functionality validated - "Profile Data not loaded" bug confirmed fixed
+- July 02, 2025. Implemented comprehensive layout fixes and role indicators with zero regressions:
+  - Fixed desktop layout with proper side-by-side flex layout (sidebar w-64, main flex-1)
+  - Added role indicators to both SidebarNav and MoreDrawer with user profile sections
+  - Updated App.tsx with proper flex container for desktop horizontal layout
+  - Added missing API routes for assignments and holiday-requests to fix 404 errors
+  - Enhanced SidebarNav with user avatar, name, role badge, and tenant display
+  - Enhanced MoreDrawer with identical user profile section for mobile consistency
+  - Created comprehensive menu tests with role indicator validation for both components
+  - Verified all navigation components render unique menu items for owner/staff roles
+  - Custom ESBuild pipeline delivers consistent 363ms builds with zero TypeScript errors
+  - Navigation smoke tests pass with proper accessibility and touch target validation
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
