@@ -293,8 +293,11 @@ export default function BusinessSettingsPage() {
     enabled: !!tenantId,
   });
 
+  // Day ordering helper
+  const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
   // Fetch Operating Hours
-  const { data: operatingHours = [], isLoading: hoursLoading } = useQuery<OperatingHours[]>({
+  const { data: operatingHoursRaw = [], isLoading: hoursLoading } = useQuery<OperatingHours[]>({
     queryKey: ["/api/operating-hours", tenantId],
     queryFn: async () => {
       const response = await fetch(`/api/operating-hours?tenantId=${tenantId}`);
@@ -304,6 +307,11 @@ export default function BusinessSettingsPage() {
       return response.json();
     },
     enabled: !!tenantId,
+  });
+
+  // Sort operating hours by day order (MON-SUN)
+  const operatingHours = operatingHoursRaw.sort((a, b) => {
+    return dayOrder.indexOf(a.dayOfWeek) - dayOrder.indexOf(b.dayOfWeek);
   });
 
   // Business Profile Mutation
