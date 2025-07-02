@@ -83,36 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/shifts/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const validatedData = insertShiftSchema.parse(req.body);
-      const shift = await storage.updateShift(id, validatedData);
-      if (!shift) {
-        return res.status(404).json({ message: "Shift not found" });
-      }
-      res.json(shift);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to update shift" });
-    }
-  });
 
-  app.put("/api/shifts/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const validatedData = insertShiftSchema.parse(req.body);
-      const shift = await storage.updateShift(id, validatedData);
-      if (!shift) {
-        return res.status(404).json({ message: "Shift not found" });
-      }
-      res.json(shift);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update shift" });
-    }
-  });
 
   app.delete("/api/shifts/:id", async (req, res) => {
     try {
@@ -550,6 +521,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entry);
     } catch (error) {
       res.status(500).json({ message: "Failed to update time entry" });
+    }
+  });
+
+  // Operating Hours routes
+  app.get("/api/operating-hours", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock data for operating hours
+      const operatingHours = [
+        { day: "Monday", open: "09:00", close: "17:00", isOpen: true },
+        { day: "Tuesday", open: "09:00", close: "17:00", isOpen: true },
+        { day: "Wednesday", open: "09:00", close: "17:00", isOpen: true },
+        { day: "Thursday", open: "09:00", close: "17:00", isOpen: true },
+        { day: "Friday", open: "09:00", close: "17:00", isOpen: true },
+        { day: "Saturday", open: "10:00", close: "16:00", isOpen: true },
+        { day: "Sunday", open: "12:00", close: "16:00", isOpen: false }
+      ];
+      
+      res.json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch operating hours" });
+    }
+  });
+
+  app.post("/api/operating-hours", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for updating operating hours
+      res.json({ message: "Operating hours updated successfully", data: req.body });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update operating hours" });
+    }
+  });
+
+  // Business Profile routes
+  app.get("/api/business-profile", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock business profile data
+      const businessProfile = {
+        id: 1,
+        tenantId,
+        name: "Acme Corporation",
+        description: "Leading provider of innovative solutions",
+        address: "123 Business Street, City, State 12345",
+        phone: "+1 (555) 123-4567",
+        email: "contact@acme-corp.com",
+        website: "https://acme-corp.com",
+        industry: "Technology",
+        timezone: "America/New_York"
+      };
+      
+      res.json(businessProfile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch business profile" });
+    }
+  });
+
+  app.post("/api/business-profile", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for creating/updating business profile
+      const businessProfile = {
+        id: 1,
+        tenantId,
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.status(201).json(businessProfile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update business profile" });
+    }
+  });
+
+  // Shift Policies routes
+  app.get("/api/shift-policies", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock shift policies data
+      const shiftPolicies = [
+        {
+          id: 1,
+          tenantId,
+          name: "Minimum Notice Period",
+          description: "Minimum time required to claim or cancel a shift",
+          value: "24",
+          unit: "hours",
+          isActive: true
+        },
+        {
+          id: 2,
+          tenantId,
+          name: "Maximum Daily Hours",
+          description: "Maximum hours a staff member can work in a day",
+          value: "8",
+          unit: "hours",
+          isActive: true
+        },
+        {
+          id: 3,
+          tenantId,
+          name: "Break Duration",
+          description: "Required break time for shifts over 6 hours",
+          value: "30",
+          unit: "minutes",
+          isActive: true
+        }
+      ];
+      
+      res.json(shiftPolicies);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch shift policies" });
+    }
+  });
+
+  app.patch("/api/shift-policies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.body.tenantId;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock response for updating shift policy
+      const updatedPolicy = {
+        id,
+        tenantId,
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json(updatedPolicy);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update shift policy" });
     }
   });
 

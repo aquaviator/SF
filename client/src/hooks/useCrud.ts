@@ -58,7 +58,10 @@ export function useCrud<T extends { id: string | number }>({
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (updatedItem: T) => {
-      const response = await apiRequest("PUT", `${endpoint}/${updatedItem.id}`, updatedItem);
+      // Extract base endpoint and query params to construct proper update URL
+      const [baseEndpoint, queryParams] = endpoint.split('?');
+      const updateUrl = queryParams ? `${baseEndpoint}/${updatedItem.id}?${queryParams}` : `${baseEndpoint}/${updatedItem.id}`;
+      const response = await apiRequest("PUT", updateUrl, updatedItem);
       return response.json();
     },
     onSuccess: (data) => {
@@ -84,7 +87,10 @@ export function useCrud<T extends { id: string | number }>({
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string | number) => {
-      await apiRequest("DELETE", `${endpoint}/${id}`);
+      // Extract base endpoint and query params to construct proper delete URL
+      const [baseEndpoint, queryParams] = endpoint.split('?');
+      const deleteUrl = queryParams ? `${baseEndpoint}/${id}?${queryParams}` : `${baseEndpoint}/${id}`;
+      await apiRequest("DELETE", deleteUrl);
       return id;
     },
     onSuccess: (id) => {
