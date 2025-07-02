@@ -1,4 +1,20 @@
-import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, businessProfiles, jobRoles, locations, departments, operatingHours, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, type BusinessProfile, type InsertBusinessProfile, type JobRole, type InsertJobRole, type Location, type InsertLocation, type Department, type InsertDepartment, type OperatingHours, type InsertOperatingHours } from "@shared/schema";
+import { 
+  users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, 
+  businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
+  analyticsReports, analyticsMetrics, activityLogs, subscriptions, subscriptionPlans,
+  usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics,
+  type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
+  type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
+  type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
+  type BusinessProfile, type InsertBusinessProfile, type JobRole, type InsertJobRole, 
+  type Location, type InsertLocation, type Department, type InsertDepartment, 
+  type OperatingHours, type InsertOperatingHours, type ShiftPolicy, type InsertShiftPolicy,
+  type AnalyticsReport, type InsertAnalyticsReport, type AnalyticsMetric, type InsertAnalyticsMetric,
+  type ActivityLog, type InsertActivityLog, type Subscription, type InsertSubscription,
+  type SubscriptionPlan, type InsertSubscriptionPlan, type UsageMetric, type InsertUsageMetric,
+  type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
+  type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric
+} from "@shared/schema";
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import { eq } from 'drizzle-orm';

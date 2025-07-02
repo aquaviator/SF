@@ -264,6 +264,208 @@ export const insertShiftPolicySchema = createInsertSchema(shiftPolicies).omit({
   updatedAt: true,
 });
 
+// Analytics tables
+export const analyticsReports = pgTable("analytics_reports", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  reportType: text("report_type").notNull().$type<"labor_cost" | "fill_rate" | "time_tracking" | "performance">(),
+  title: text("title").notNull(),
+  description: text("description"),
+  period: text("period").notNull(), // monthly, weekly, daily
+  dataPoints: text("data_points").notNull(), // JSON string of chart data
+  filters: text("filters"), // JSON string of applied filters
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const analyticsMetrics = pgTable("analytics_metrics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  metricType: text("metric_type").notNull().$type<"kpi" | "target" | "benchmark">(),
+  name: text("name").notNull(),
+  value: text("value").notNull(),
+  unit: text("unit").notNull(),
+  category: text("category").notNull(),
+  isPublic: boolean("is_public").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull(),
+  action: text("action").notNull(),
+  resourceType: text("resource_type").notNull(),
+  resourceId: text("resource_id"),
+  details: text("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Subscription tables
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().unique(),
+  planId: text("plan_id").notNull(),
+  status: text("status").notNull().$type<"active" | "trial" | "expired" | "cancelled" | "past_due">(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  trialDaysRemaining: integer("trial_days_remaining"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull().$type<"starter" | "professional" | "enterprise">(),
+  monthlyPrice: integer("monthly_price").notNull(), // in cents
+  annualPrice: integer("annual_price").notNull(), // in cents
+  features: text("features").array().notNull(),
+  staffLimit: integer("staff_limit").notNull(), // -1 for unlimited
+  shiftsLimit: integer("shifts_limit").notNull(), // -1 for unlimited
+  storageLimit: text("storage_limit").notNull(),
+  isPopular: boolean("is_popular").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const usageMetrics = pgTable("usage_metrics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  staffUsed: integer("staff_used").notNull().default(0),
+  shiftsUsed: integer("shifts_used").notNull().default(0),
+  storageUsed: text("storage_used").notNull().default("0GB"),
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+});
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  subscriptionId: integer("subscription_id").notNull(),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  amount: integer("amount").notNull(), // in cents
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull().$type<"paid" | "pending" | "overdue" | "failed" | "refunded">(),
+  description: text("description").notNull(),
+  billingPeriodStart: timestamp("billing_period_start").notNull(),
+  billingPeriodEnd: timestamp("billing_period_end").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  paidAt: timestamp("paid_at"),
+  downloadUrl: text("download_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const billingInfo = pgTable("billing_info", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull().unique(),
+  cardLastFour: text("card_last_four").notNull(),
+  cardBrand: text("card_brand").notNull(),
+  expiryMonth: integer("expiry_month").notNull(),
+  expiryYear: integer("expiry_year").notNull(),
+  cardholderName: text("cardholder_name").notNull(),
+  billingAddress: text("billing_address").notNull(),
+  city: text("city").notNull(),
+  postalCode: text("postal_code").notNull(),
+  country: text("country").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Time tracking tables
+export const timeEntries = pgTable("time_entries", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull(),
+  shiftId: integer("shift_id"),
+  clockInTime: timestamp("clock_in_time").notNull(),
+  clockOutTime: timestamp("clock_out_time"),
+  breakStartTime: timestamp("break_start_time"),
+  breakEndTime: timestamp("break_end_time"),
+  totalHours: text("total_hours"), // calculated field
+  status: text("status").notNull().$type<"clocked_in" | "on_break" | "clocked_out">(),
+  notes: text("notes"),
+  approvedBy: integer("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Performance tracking tables
+export const performanceMetrics = pgTable("performance_metrics", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull(),
+  metricType: text("metric_type").notNull().$type<"attendance" | "punctuality" | "shift_completion" | "rating">(),
+  value: text("value").notNull(),
+  period: text("period").notNull(), // weekly, monthly, quarterly
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+  notes: text("notes"),
+});
+
+// Insert schemas
+export const insertAnalyticsReportSchema = createInsertSchema(analyticsReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAnalyticsMetricSchema = createInsertSchema(analyticsMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUsageMetricSchema = createInsertSchema(usageMetrics).omit({
+  id: true,
+  recordedAt: true,
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBillingInfoSchema = createInsertSchema(billingInfo).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({
+  id: true,
+  recordedAt: true,
+});
+
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
@@ -282,3 +484,25 @@ export type OperatingHours = typeof operatingHours.$inferSelect;
 export type InsertOperatingHours = z.infer<typeof insertOperatingHoursSchema>;
 export type ShiftPolicy = typeof shiftPolicies.$inferSelect;
 export type InsertShiftPolicy = z.infer<typeof insertShiftPolicySchema>;
+
+// New types
+export type AnalyticsReport = typeof analyticsReports.$inferSelect;
+export type InsertAnalyticsReport = z.infer<typeof insertAnalyticsReportSchema>;
+export type AnalyticsMetric = typeof analyticsMetrics.$inferSelect;
+export type InsertAnalyticsMetric = z.infer<typeof insertAnalyticsMetricSchema>;
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type UsageMetric = typeof usageMetrics.$inferSelect;
+export type InsertUsageMetric = z.infer<typeof insertUsageMetricSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type BillingInfo = typeof billingInfo.$inferSelect;
+export type InsertBillingInfo = z.infer<typeof insertBillingInfoSchema>;
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
+export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
