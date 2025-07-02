@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -82,6 +83,14 @@ export default function Scheduling() {
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateSubmitting, setTemplateSubmitting] = useState(false);
+  const [templateDeleteDialogOpen, setTemplateDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<ScheduleTemplate | null>(null);
+
+  // Calendar functionality
+  const [calendarView, setCalendarView] = useState('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [calendarEditMode, setCalendarEditMode] = useState(false);
 
   // Shift CRUD functionality
   const {
@@ -175,7 +184,7 @@ export default function Scheduling() {
         assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
         status: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open") as "assigned" | "open",
         tenantId,
-        assignmentType: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open_opportunity") as "assigned" | "open_opportunity",
+        assignmentType: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "opportunity") as "assigned" | "opportunity",
         requiredStaff: 1,
         claimedBy: null,
         templateId: null,
@@ -229,6 +238,58 @@ export default function Scheduling() {
     setEditingTemplate(null);
   };
 
+  const openEditTemplateModal = (template: ScheduleTemplate) => {
+    setEditingTemplate(template);
+    templateForm.reset({
+      tenantId: template.tenantId,
+      name: template.name,
+      description: template.description || "",
+      positions: template.positions || [],
+      assignmentType: template.assignmentType,
+      requiredStaffPerPosition: template.requiredStaffPerPosition,
+      recurrence: template.recurrence,
+      isActive: template.isActive,
+      createdBy: template.createdBy,
+      slots: (template.slots || [{ role: "", quantity: 1, staffIds: [] }]) as Array<{ role?: string; quantity?: number; staffIds?: number[] }>
+    });
+    setTemplateModalOpen(true);
+  };
+
+  const openDeleteTemplateDialog = (template: ScheduleTemplate) => {
+    setTemplateToDelete(template);
+    setTemplateDeleteDialogOpen(true);
+  };
+
+  const confirmTemplateDelete = async () => {
+    if (!templateToDelete) return;
+    
+    try {
+      await fetch(`/api/schedule-templates/${templateToDelete.id}`, {
+        method: "DELETE"
+      });
+      
+      toast({
+        title: "Template Deleted",
+        description: "Template has been successfully deleted.",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/schedule-templates", tenantId] });
+      setTemplateDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const cancelTemplateDelete = () => {
+    setTemplateDeleteDialogOpen(false);
+    setTemplateToDelete(null);
+  };
+
   const handleTemplateSubmit = async (formData: EnhancedTemplateData) => {
     try {
       setTemplateSubmitting(true);
@@ -277,10 +338,7 @@ export default function Scheduling() {
   // Use template to generate shifts
   const useTemplateMutation = useMutation({
     mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
-      apiRequest(`/api/schedule-templates/${templateId}/use`, {
-        method: "POST",
-        body: JSON.stringify({ startDate, endDate })
-      }),
+      apiRequest(`/api/schedule-templates/${templateId}/use`, "POST", { startDate, endDate }),
     onSuccess: (result: any) => {
       toast({ 
         title: "Shifts Generated",
@@ -392,13 +450,31 @@ export default function Scheduling() {
       key: "actions",
       header: "Actions",
       cell: (template) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openEditTemplateModal(template)}
+            className="h-8 w-8 p-0"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
           <Button
             size="sm"
             onClick={() => handleUseTemplate(template.id)}
             disabled={useTemplateMutation.isPending}
+            className="h-8 px-2 text-xs"
           >
+            <Settings className="h-3 w-3 mr-1" />
             {useTemplateMutation.isPending ? "Using..." : "Use"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openDeleteTemplateDialog(template)}
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       )
@@ -757,7 +833,7 @@ export default function Scheduling() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="assigned">Pre-assigned</SelectItem>
-                            <SelectItem value="open_opportunity">Open Opportunity</SelectItem>
+                            <SelectItem value="opportunity">Open Opportunity</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -931,6 +1007,27 @@ export default function Scheduling() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Template Delete Dialog */}
+      <AlertDialog open={templateDeleteDialogOpen} onOpenChange={setTemplateDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the template "{templateToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTemplateDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmTemplateDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
