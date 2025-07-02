@@ -88,7 +88,16 @@ const createMockAuthContext = (role: "owner" | "staff") => ({
   isAuthenticated: true,
 });
 
+// Mock useAuth hook globally
+let currentUserRole: "owner" | "staff" = "owner";
+vi.mock("@/contexts/AuthContext", () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  useAuth: () => createMockAuthContext(currentUserRole),
+}));
+
 function createWrapper(role: "owner" | "staff" = "owner") {
+  currentUserRole = role; // Set the role for the mock
+  
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -96,23 +105,11 @@ function createWrapper(role: "owner" | "staff" = "owner") {
     },
   });
 
-  const MockAuthProvider = ({ children }: { children: React.ReactNode }) => (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  );
-
-  // Mock the useAuth hook to return our mock context
-  vi.mock("@/contexts/AuthContext", () => ({
-    AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useAuth: () => createMockAuthContext(role),
-  }));
-
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MockAuthProvider>
+      <AuthProvider>
         {children}
-      </MockAuthProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
