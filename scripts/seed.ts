@@ -1,6 +1,5 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { neon } from '@neondatabase/serverless';
-import { config } from '../server/config';
 import {
   users,
   businessProfiles,
@@ -14,11 +13,14 @@ import {
   swapRequests,
   assignments,
   holidayRequests,
-  timeEntries,
 } from '../shared/schema';
 
 // Initialize database connection
-const sql = neon(config.database.connectionString);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
+const sql = neon(connectionString);
 const db = drizzle(sql);
 
 async function seed() {
@@ -27,7 +29,6 @@ async function seed() {
   try {
     // Clear existing data
     console.log('🗑️  Clearing existing data...');
-    await db.delete(timeEntries);
     await db.delete(holidayRequests);
     await db.delete(assignments);
     await db.delete(swapRequests);
