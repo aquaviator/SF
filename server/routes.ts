@@ -906,7 +906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const usageMetrics = await storage.getUsageMetricsByTenant(tenantId);
+      const usageMetrics = await storage.getUsageMetrics(tenantId);
       res.json(usageMetrics);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch usage metrics" });
