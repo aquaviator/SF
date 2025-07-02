@@ -492,12 +492,12 @@ export default function Scheduling() {
       ),
     },
     {
-      key: "shifts",
-      header: "Shifts",
+      key: "positions",
+      header: "Positions",
       cell: (template) => (
         <div className="text-sm">
-          <p>{template.shifts.length} shifts</p>
-          <p className="text-xs text-gray-500">Template pattern</p>
+          <p>{template.positions?.length || 0} positions</p>
+          <p className="text-xs text-gray-500">{template.recurrence}</p>
         </div>
       ),
     },
