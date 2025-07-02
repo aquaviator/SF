@@ -160,7 +160,7 @@ describe("Scheduling Module - Comprehensive Tests", () => {
   describe("Shift CRUD Operations", () => {
     it("opens create shift modal when main 'Create Shift' button is clicked", async () => {
       const openCreateModal = vi.fn();
-      mockUseCrud.mockReturnValue({
+      vi.mocked(useCrud).mockReturnValue({
         data: [],
         isLoading: false,
         error: null,
