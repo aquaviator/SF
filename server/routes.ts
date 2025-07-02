@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema } from "../shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -530,45 +530,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Operating Hours routes
-  app.get("/api/operating-hours", async (req, res) => {
-    try {
-      const tenantId = req.query.tenantId as string;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
-      }
-      
-      // Mock data for operating hours
-      const operatingHours = [
-        { day: "Monday", open: "09:00", close: "17:00", isOpen: true },
-        { day: "Tuesday", open: "09:00", close: "17:00", isOpen: true },
-        { day: "Wednesday", open: "09:00", close: "17:00", isOpen: true },
-        { day: "Thursday", open: "09:00", close: "17:00", isOpen: true },
-        { day: "Friday", open: "09:00", close: "17:00", isOpen: true },
-        { day: "Saturday", open: "10:00", close: "16:00", isOpen: true },
-        { day: "Sunday", open: "12:00", close: "16:00", isOpen: false }
-      ];
-      
-      res.json(operatingHours);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch operating hours" });
-    }
-  });
-
-  app.post("/api/operating-hours", async (req, res) => {
-    try {
-      const tenantId = req.body.tenantId;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
-      }
-      
-      // Mock response for updating operating hours
-      res.json({ message: "Operating hours updated successfully", data: req.body });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update operating hours" });
-    }
-  });
-
   // Business Profile routes
   app.get("/api/business-profile", async (req, res) => {
     try {
@@ -577,20 +538,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Mock business profile data
-      const businessProfile = {
-        id: 1,
-        tenantId,
-        name: "Acme Corporation",
-        description: "Leading provider of innovative solutions",
-        address: "123 Business Street, City, State 12345",
-        phone: "+1 (555) 123-4567",
-        email: "contact@acme-corp.com",
-        website: "https://acme-corp.com",
-        industry: "Technology",
-        timezone: "America/New_York"
-      };
-      
+      const businessProfile = await storage.getBusinessProfile(tenantId);
+      if (!businessProfile) {
+        return res.status(404).json({ message: "Business profile not found" });
+      }
       res.json(businessProfile);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch business profile" });
@@ -599,20 +550,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/business-profile", async (req, res) => {
     try {
-      const tenantId = req.body.tenantId;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
+      const result = insertBusinessProfileSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid business profile data", errors: result.error.issues });
       }
       
-      // Mock response for creating/updating business profile
-      const businessProfile = {
-        id: 1,
-        tenantId,
-        ...req.body,
-        updatedAt: new Date().toISOString()
-      };
-      
+      const businessProfile = await storage.createBusinessProfile(result.data);
       res.status(201).json(businessProfile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create business profile" });
+    }
+  });
+
+  app.put("/api/business-profile", async (req, res) => {
+    try {
+      const result = insertBusinessProfileSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid business profile data", errors: result.error.issues });
+      }
+      
+      const businessProfile = await storage.updateBusinessProfile(result.data.tenantId, result.data);
+      if (!businessProfile) {
+        return res.status(404).json({ message: "Business profile not found" });
+      }
+      res.json(businessProfile);
     } catch (error) {
       res.status(500).json({ message: "Failed to update business profile" });
     }
@@ -626,37 +587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Mock job roles data
-      const jobRoles = [
-        {
-          id: 1,
-          tenantId,
-          name: "Manager",
-          description: "Oversees daily operations and staff",
-          department: "Management",
-          hourlyRate: 25.00,
-          isActive: true
-        },
-        {
-          id: 2,
-          tenantId,
-          name: "Cashier",
-          description: "Handles customer transactions",
-          department: "Sales",
-          hourlyRate: 15.00,
-          isActive: true
-        },
-        {
-          id: 3,
-          tenantId,
-          name: "Kitchen Staff",
-          description: "Prepares food and maintains kitchen",
-          department: "Kitchen",
-          hourlyRate: 18.00,
-          isActive: true
-        }
-      ];
-      
+      const jobRoles = await storage.getJobRolesByTenant(tenantId);
       res.json(jobRoles);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch job roles" });
@@ -665,42 +596,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/job-roles", async (req, res) => {
     try {
-      const tenantId = req.body.tenantId;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
+      const result = insertJobRoleSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid job role data", errors: result.error.issues });
       }
       
-      // Mock response for creating job role
-      const newRole = {
-        id: Date.now(),
-        tenantId,
-        ...req.body,
-        isActive: true
-      };
-      
-      res.status(201).json(newRole);
+      const jobRole = await storage.createJobRole(result.data);
+      res.status(201).json(jobRole);
     } catch (error) {
       res.status(500).json({ message: "Failed to create job role" });
     }
   });
 
-  app.patch("/api/job-roles/:id", async (req, res) => {
+  app.put("/api/job-roles/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const tenantId = req.body.tenantId;
-      
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
+      const result = insertJobRoleSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid job role data", errors: result.error.issues });
       }
       
-      // Mock response for updating job role
-      const updatedRole = {
-        id,
-        tenantId,
-        ...req.body
-      };
-      
-      res.json(updatedRole);
+      const id = parseInt(req.params.id);
+      const jobRole = await storage.updateJobRole(id, result.data);
+      if (!jobRole) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+      res.json(jobRole);
     } catch (error) {
       res.status(500).json({ message: "Failed to update job role" });
     }
@@ -709,15 +629,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/job-roles/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const success = await storage.deleteJobRole(id);
+      if (!success) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete job role" });
+    }
+  });
+
+  // Locations routes
+  app.get("/api/locations", async (req, res) => {
+    try {
       const tenantId = req.query.tenantId as string;
-      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      res.json({ message: "Job role deleted successfully" });
+      const locations = await storage.getLocationsByTenant(tenantId);
+      res.json(locations);
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete job role" });
+      res.status(500).json({ message: "Failed to fetch locations" });
+    }
+  });
+
+  app.post("/api/locations", async (req, res) => {
+    try {
+      const result = insertLocationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid location data", errors: result.error.issues });
+      }
+      
+      const location = await storage.createLocation(result.data);
+      res.status(201).json(location);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create location" });
+    }
+  });
+
+  app.put("/api/locations/:id", async (req, res) => {
+    try {
+      const result = insertLocationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid location data", errors: result.error.issues });
+      }
+      
+      const id = parseInt(req.params.id);
+      const location = await storage.updateLocation(id, result.data);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      res.json(location);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update location" });
+    }
+  });
+
+  app.delete("/api/locations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteLocation(id);
+      if (!success) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete location" });
+    }
+  });
+
+  // Departments routes
+  app.get("/api/departments", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const departments = await storage.getDepartmentsByTenant(tenantId);
+      res.json(departments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch departments" });
+    }
+  });
+
+  app.post("/api/departments", async (req, res) => {
+    try {
+      const result = insertDepartmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid department data", errors: result.error.issues });
+      }
+      
+      const department = await storage.createDepartment(result.data);
+      res.status(201).json(department);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create department" });
+    }
+  });
+
+  app.put("/api/departments/:id", async (req, res) => {
+    try {
+      const result = insertDepartmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid department data", errors: result.error.issues });
+      }
+      
+      const id = parseInt(req.params.id);
+      const department = await storage.updateDepartment(id, result.data);
+      if (!department) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+      res.json(department);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update department" });
+    }
+  });
+
+  app.delete("/api/departments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteDepartment(id);
+      if (!success) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete department" });
+    }
+  });
+
+  // Operating Hours routes
+  app.get("/api/operating-hours", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const operatingHours = await storage.getOperatingHoursByTenant(tenantId);
+      res.json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch operating hours" });
+    }
+  });
+
+  app.post("/api/operating-hours", async (req, res) => {
+    try {
+      const result = insertOperatingHoursSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      }
+      
+      const operatingHours = await storage.createOperatingHours(result.data);
+      res.status(201).json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create operating hours" });
+    }
+  });
+
+  app.put("/api/operating-hours/:id", async (req, res) => {
+    try {
+      const result = insertOperatingHoursSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid operating hours data", errors: result.error.issues });
+      }
+      
+      const id = parseInt(req.params.id);
+      const operatingHours = await storage.updateOperatingHours(id, result.data);
+      if (!operatingHours) {
+        return res.status(404).json({ message: "Operating hours not found" });
+      }
+      res.json(operatingHours);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update operating hours" });
+    }
+  });
+
+  app.delete("/api/operating-hours/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteOperatingHours(id);
+      if (!success) {
+        return res.status(404).json({ message: "Operating hours not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete operating hours" });
     }
   });
 

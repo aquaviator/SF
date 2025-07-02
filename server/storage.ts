@@ -282,6 +282,254 @@ export class MemStorage implements IStorage {
       this.opportunities.set(opportunity.id, opportunity);
       this.currentOpportunityId = Math.max(this.currentOpportunityId, opportunity.id + 1);
     });
+
+    // Sample business profile
+    const sampleBusinessProfile: BusinessProfile = {
+      id: 1,
+      tenantId: "acme-corp",
+      name: "ACME Corporation",
+      ownerName: "John Doe",
+      address: "123 Business Street, City, State 12345",
+      phone: "+1 (555) 123-4567",
+      email: "info@acmecorp.com",
+      website: "https://www.acmecorp.com",
+      logoUrl: null,
+      ownerProfilePicture: null,
+      description: "Leading provider of workplace solutions",
+      businessType: "Technology Services",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.businessProfiles.set("acme-corp", sampleBusinessProfile);
+
+    // Sample job roles
+    const sampleJobRoles: JobRole[] = [
+      {
+        id: 1,
+        tenantId: "acme-corp",
+        title: "Manager",
+        description: "Team lead responsible for operations",
+        hourlyRate: "$25.00",
+        responsibilities: ["Team leadership", "Scheduling", "Performance reviews"],
+        requirements: ["Management experience", "Communication skills"],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        tenantId: "acme-corp",
+        title: "Customer Service Representative",
+        description: "Handle customer inquiries and support",
+        hourlyRate: "$18.00",
+        responsibilities: ["Answer phones", "Process orders", "Resolve complaints"],
+        requirements: ["High school diploma", "Customer service experience"],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        tenantId: "acme-corp",
+        title: "Security Guard",
+        description: "Maintain safety and security of premises",
+        hourlyRate: "$22.00",
+        responsibilities: ["Monitor premises", "Check credentials", "Report incidents"],
+        requirements: ["Security license", "Physical fitness"],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    sampleJobRoles.forEach(role => {
+      this.jobRoles.set(role.id, role);
+      this.currentJobRoleId = Math.max(this.currentJobRoleId, role.id + 1);
+    });
+
+    // Sample locations
+    const sampleLocations: Location[] = [
+      {
+        id: 1,
+        tenantId: "acme-corp",
+        name: "Main Office",
+        description: "Primary business location",
+        address: "123 Business Street, City, State 12345",
+        capacity: 100,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        tenantId: "acme-corp",
+        name: "Warehouse",
+        description: "Storage and distribution center",
+        address: "456 Industrial Ave, City, State 12345",
+        capacity: 50,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        tenantId: "acme-corp",
+        name: "Customer Service Center",
+        description: "Call center operations",
+        address: "789 Service Blvd, City, State 12345",
+        capacity: 75,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    sampleLocations.forEach(location => {
+      this.locations.set(location.id, location);
+      this.currentLocationId = Math.max(this.currentLocationId, location.id + 1);
+    });
+
+    // Sample departments
+    const sampleDepartments: Department[] = [
+      {
+        id: 1,
+        tenantId: "acme-corp",
+        name: "Operations",
+        description: "Daily business operations and management",
+        managerId: 1,
+        budget: "$500,000",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        tenantId: "acme-corp",
+        name: "Customer Service",
+        description: "Customer support and relations",
+        managerId: null,
+        budget: "$250,000",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        tenantId: "acme-corp",
+        name: "Security",
+        description: "Building and personnel security",
+        managerId: null,
+        budget: "$180,000",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    sampleDepartments.forEach(department => {
+      this.departments.set(department.id, department);
+      this.currentDepartmentId = Math.max(this.currentDepartmentId, department.id + 1);
+    });
+
+    // Sample operating hours
+    const sampleOperatingHours: OperatingHours[] = [
+      {
+        id: 1,
+        tenantId: "acme-corp",
+        dayOfWeek: "monday",
+        openTime: "08:00",
+        closeTime: "18:00",
+        isOpen: true,
+        breakStartTime: "12:00",
+        breakEndTime: "13:00",
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        tenantId: "acme-corp",
+        dayOfWeek: "tuesday",
+        openTime: "08:00",
+        closeTime: "18:00",
+        isOpen: true,
+        breakStartTime: "12:00",
+        breakEndTime: "13:00",
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        tenantId: "acme-corp",
+        dayOfWeek: "wednesday",
+        openTime: "08:00",
+        closeTime: "18:00",
+        isOpen: true,
+        breakStartTime: "12:00",
+        breakEndTime: "13:00",
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 4,
+        tenantId: "acme-corp",
+        dayOfWeek: "thursday",
+        openTime: "08:00",
+        closeTime: "18:00",
+        isOpen: true,
+        breakStartTime: "12:00",
+        breakEndTime: "13:00",
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 5,
+        tenantId: "acme-corp",
+        dayOfWeek: "friday",
+        openTime: "08:00",
+        closeTime: "18:00",
+        isOpen: true,
+        breakStartTime: "12:00",
+        breakEndTime: "13:00",
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 6,
+        tenantId: "acme-corp",
+        dayOfWeek: "saturday",
+        openTime: "09:00",
+        closeTime: "15:00",
+        isOpen: true,
+        breakStartTime: null,
+        breakEndTime: null,
+        notes: "Weekend hours",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 7,
+        tenantId: "acme-corp",
+        dayOfWeek: "sunday",
+        openTime: null,
+        closeTime: null,
+        isOpen: false,
+        breakStartTime: null,
+        breakEndTime: null,
+        notes: "Closed",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    sampleOperatingHours.forEach(hours => {
+      this.operatingHours.set(hours.id, hours);
+      this.currentOperatingHoursId = Math.max(this.currentOperatingHoursId, hours.id + 1);
+    });
   }
 
   // User operations
@@ -638,6 +886,191 @@ export class MemStorage implements IStorage {
       entry.tenantId === tenantId && 
       entry.userId === userId
     );
+  }
+
+  // Business profile operations
+  async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {
+    return this.businessProfiles.get(tenantId);
+  }
+
+  async createBusinessProfile(insertProfile: InsertBusinessProfile): Promise<BusinessProfile> {
+    const profile: BusinessProfile = {
+      id: 1, // Business profiles are unique per tenant
+      ...insertProfile,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.businessProfiles.set(insertProfile.tenantId, profile);
+    return profile;
+  }
+
+  async updateBusinessProfile(tenantId: string, insertProfile: InsertBusinessProfile): Promise<BusinessProfile | undefined> {
+    const existingProfile = this.businessProfiles.get(tenantId);
+    if (!existingProfile) return undefined;
+
+    const updatedProfile: BusinessProfile = {
+      ...existingProfile,
+      ...insertProfile,
+      updatedAt: new Date(),
+    };
+    this.businessProfiles.set(tenantId, updatedProfile);
+    return updatedProfile;
+  }
+
+  async deleteBusinessProfile(tenantId: string): Promise<boolean> {
+    return this.businessProfiles.delete(tenantId);
+  }
+
+  // Job role operations
+  async getJobRole(id: number): Promise<JobRole | undefined> {
+    return this.jobRoles.get(id);
+  }
+
+  async getJobRolesByTenant(tenantId: string): Promise<JobRole[]> {
+    return Array.from(this.jobRoles.values()).filter(role => role.tenantId === tenantId);
+  }
+
+  async createJobRole(insertRole: InsertJobRole): Promise<JobRole> {
+    const id = this.currentJobRoleId++;
+    const role: JobRole = {
+      id,
+      ...insertRole,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.jobRoles.set(id, role);
+    return role;
+  }
+
+  async updateJobRole(id: number, insertRole: InsertJobRole): Promise<JobRole | undefined> {
+    const existingRole = this.jobRoles.get(id);
+    if (!existingRole) return undefined;
+
+    const updatedRole: JobRole = {
+      ...existingRole,
+      ...insertRole,
+      updatedAt: new Date(),
+    };
+    this.jobRoles.set(id, updatedRole);
+    return updatedRole;
+  }
+
+  async deleteJobRole(id: number): Promise<boolean> {
+    return this.jobRoles.delete(id);
+  }
+
+  // Location operations
+  async getLocation(id: number): Promise<Location | undefined> {
+    return this.locations.get(id);
+  }
+
+  async getLocationsByTenant(tenantId: string): Promise<Location[]> {
+    return Array.from(this.locations.values()).filter(location => location.tenantId === tenantId);
+  }
+
+  async createLocation(insertLocation: InsertLocation): Promise<Location> {
+    const id = this.currentLocationId++;
+    const location: Location = {
+      id,
+      ...insertLocation,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.locations.set(id, location);
+    return location;
+  }
+
+  async updateLocation(id: number, insertLocation: InsertLocation): Promise<Location | undefined> {
+    const existingLocation = this.locations.get(id);
+    if (!existingLocation) return undefined;
+
+    const updatedLocation: Location = {
+      ...existingLocation,
+      ...insertLocation,
+      updatedAt: new Date(),
+    };
+    this.locations.set(id, updatedLocation);
+    return updatedLocation;
+  }
+
+  async deleteLocation(id: number): Promise<boolean> {
+    return this.locations.delete(id);
+  }
+
+  // Department operations
+  async getDepartment(id: number): Promise<Department | undefined> {
+    return this.departments.get(id);
+  }
+
+  async getDepartmentsByTenant(tenantId: string): Promise<Department[]> {
+    return Array.from(this.departments.values()).filter(department => department.tenantId === tenantId);
+  }
+
+  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
+    const id = this.currentDepartmentId++;
+    const department: Department = {
+      id,
+      ...insertDepartment,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.departments.set(id, department);
+    return department;
+  }
+
+  async updateDepartment(id: number, insertDepartment: InsertDepartment): Promise<Department | undefined> {
+    const existingDepartment = this.departments.get(id);
+    if (!existingDepartment) return undefined;
+
+    const updatedDepartment: Department = {
+      ...existingDepartment,
+      ...insertDepartment,
+      updatedAt: new Date(),
+    };
+    this.departments.set(id, updatedDepartment);
+    return updatedDepartment;
+  }
+
+  async deleteDepartment(id: number): Promise<boolean> {
+    return this.departments.delete(id);
+  }
+
+  // Operating hours operations
+  async getOperatingHours(id: number): Promise<OperatingHours | undefined> {
+    return this.operatingHours.get(id);
+  }
+
+  async getOperatingHoursByTenant(tenantId: string): Promise<OperatingHours[]> {
+    return Array.from(this.operatingHours.values()).filter(hours => hours.tenantId === tenantId);
+  }
+
+  async createOperatingHours(insertHours: InsertOperatingHours): Promise<OperatingHours> {
+    const id = this.currentOperatingHoursId++;
+    const hours: OperatingHours = {
+      id,
+      ...insertHours,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.operatingHours.set(id, hours);
+    return hours;
+  }
+
+  async updateOperatingHours(id: number, insertHours: InsertOperatingHours): Promise<OperatingHours | undefined> {
+    const existingHours = this.operatingHours.get(id);
+    if (!existingHours) return undefined;
+
+    const updatedHours: OperatingHours = {
+      ...existingHours,
+      ...insertHours,
+      updatedAt: new Date(),
+    };
+    this.operatingHours.set(id, updatedHours);
+    return updatedHours;
+  }
+
+  async deleteOperatingHours(id: number): Promise<boolean> {
+    return this.operatingHours.delete(id);
   }
 }
 
