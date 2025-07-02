@@ -1,4 +1,7 @@
 import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, businessProfiles, jobRoles, locations, departments, operatingHours, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, type BusinessProfile, type InsertBusinessProfile, type JobRole, type InsertJobRole, type Location, type InsertLocation, type Department, type InsertDepartment, type OperatingHours, type InsertOperatingHours } from "@shared/schema";
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import { eq } from 'drizzle-orm';
 
 export interface IStorage {
   // User operations
