@@ -843,6 +843,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/subscription", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const subscription = await storage.createSubscription(req.body);
+      res.status(201).json(subscription);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
+  app.put("/api/subscription", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const subscription = await storage.updateSubscription(tenantId, req.body);
+      res.json(subscription);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
+  app.get("/api/billing-info", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const billingInfo = await storage.getBillingInfo(tenantId);
+      res.json(billingInfo);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch billing info" });
+    }
+  });
+
+  app.get("/api/invoices", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const invoices = await storage.getInvoicesByTenant(tenantId);
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  app.get("/api/usage-metrics", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const usageMetrics = await storage.getUsageMetricsByTenant(tenantId);
+      res.json(usageMetrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch usage metrics" });
+    }
+  });
+
   // Analytics routes
   app.get("/api/analytics/reports", async (req, res) => {
     try {
@@ -855,6 +925,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(reports);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch analytics reports" });
+    }
+  });
+
+  app.post("/api/analytics/reports", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const report = await storage.createAnalyticsReport(req.body);
+      res.status(201).json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create analytics report" });
     }
   });
 
@@ -996,6 +1080,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedPolicy);
     } catch (error) {
       res.status(500).json({ message: "Failed to update shift policy" });
+    }
+  });
+
+  // Notification Settings routes
+  app.get("/api/notification-settings", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Mock notification settings for now
+      const notificationSettings = [
+        {
+          id: 1,
+          tenantId,
+          type: "shift_assigned",
+          enabled: true,
+          method: "email",
+          description: "Notify when shifts are assigned"
+        },
+        {
+          id: 2,
+          tenantId,
+          type: "shift_reminder",
+          enabled: true,
+          method: "push",
+          description: "Send shift reminders 2 hours before"
+        },
+        {
+          id: 3,
+          tenantId,
+          type: "swap_request",
+          enabled: false,
+          method: "email",
+          description: "Notify about shift swap requests"
+        }
+      ];
+      
+      res.json(notificationSettings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notification settings" });
+    }
+  });
+
+  app.post("/api/notification-settings", async (req, res) => {
+    try {
+      const tenantId = req.body.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const newSetting = {
+        id: Date.now(),
+        tenantId,
+        ...req.body,
+        createdAt: new Date().toISOString()
+      };
+      
+      res.status(201).json(newSetting);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create notification setting" });
+    }
+  });
+
+  app.patch("/api/notification-settings/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.body.tenantId;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const updatedSetting = {
+        id,
+        tenantId,
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json(updatedSetting);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update notification setting" });
     }
   });
 
