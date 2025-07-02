@@ -297,14 +297,9 @@ export default function Scheduling() {
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations", tenantId],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        { id: 1, name: "Kitchen", type: "kitchen", isActive: true },
-        { id: 2, name: "Front of House", type: "dining", isActive: true },
-        { id: 3, name: "Bar", type: "bar", isActive: true },
-        { id: 4, name: "Back Office", type: "office", isActive: true },
-        { id: 5, name: "Storage", type: "storage", isActive: true },
-      ];
+      const response = await fetch(`/api/locations?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch locations");
+      return response.json();
     },
   });
 
