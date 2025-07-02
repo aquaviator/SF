@@ -450,6 +450,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Time entry routes for clock-in/out functionality
+  app.get("/api/time-entries", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const entries = await storage.getTimeEntriesByTenant(tenantId);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch time entries" });
+    }
+  });
+
+  app.get("/api/time-entries/active", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      const entry = await storage.getActiveTimeEntry(tenantId, parseInt(userId));
+      res.json(entry || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch active time entry" });
+    }
+  });
+
+  app.post("/api/time-entries", async (req, res) => {
+    try {
+      const validatedData = req.body; // Using any for now until we fix schema
+      const entry = await storage.createTimeEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create time entry" });
+    }
+  });
+
+  app.patch("/api/time-entries/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = req.body; // Using any for now
+      const entry = await storage.updateTimeEntry(id, validatedData);
+      if (!entry) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update time entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

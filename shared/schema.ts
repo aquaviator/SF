@@ -136,34 +136,9 @@ export const insertScheduleTemplateSchema = createInsertSchema(scheduleTemplates
   updatedAt: true,
 });
 
-// Time entries for clock-in/out functionality
-export const timeEntries = pgTable("time_entries", {
-  id: serial("id").primaryKey(),
-  tenantId: varchar("tenant_id", { length: 256 }).notNull(),
-  userId: integer("user_id").notNull(),
-  shiftId: integer("shift_id"),
-  clockInTime: timestamp("clock_in_time").notNull(),
-  clockOutTime: timestamp("clock_out_time"),
-  breakStartTime: timestamp("break_start_time"),
-  breakEndTime: timestamp("break_end_time"),
-  status: varchar("status", { length: 50 }).notNull().default("clocked-in"), // clocked-in, on-break, clocked-out
-  location: varchar("location", { length: 256 }),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
 export type InsertHolidayRequest = z.infer<typeof insertHolidayRequestSchema>;
 export type ScheduleTemplate = typeof scheduleTemplates.$inferSelect;
 export type InsertScheduleTemplate = z.infer<typeof insertScheduleTemplateSchema>;
-export type TimeEntry = typeof timeEntries.$inferSelect;
-export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;

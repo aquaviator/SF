@@ -1,4 +1,4 @@
-import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, timeEntries, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, type TimeEntry, type InsertTimeEntry } from "@shared/schema";
+import { users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate } from "@shared/schema";
 
 export interface IStorage {
   // User operations
@@ -51,6 +51,13 @@ export interface IStorage {
   createScheduleTemplate(template: InsertScheduleTemplate): Promise<ScheduleTemplate>;
   updateScheduleTemplate(id: number, template: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined>;
   deleteScheduleTemplate(id: number): Promise<boolean>;
+
+  // Time entry operations for clock-in/out
+  getActiveTimeEntry(tenantId: string, userId: number): Promise<any | undefined>;
+  getTimeEntriesByTenant(tenantId: string): Promise<any[]>;
+  createTimeEntry(entry: any): Promise<any>;
+  updateTimeEntry(id: number, entry: any): Promise<any | undefined>;
+  getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -61,6 +68,7 @@ export class MemStorage implements IStorage {
   private assignments: Map<number, Assignment>;
   private holidayRequests: Map<number, HolidayRequest>;
   private scheduleTemplates: Map<number, ScheduleTemplate>;
+  private timeEntries: Map<number, any>;
   private currentUserId: number;
   private currentShiftId: number;
   private currentOpportunityId: number;
@@ -68,6 +76,7 @@ export class MemStorage implements IStorage {
   private currentAssignmentId: number;
   private currentHolidayRequestId: number;
   private currentScheduleTemplateId: number;
+  private currentTimeEntryId: number;
 
   constructor() {
     this.users = new Map();
@@ -77,6 +86,7 @@ export class MemStorage implements IStorage {
     this.assignments = new Map();
     this.holidayRequests = new Map();
     this.scheduleTemplates = new Map();
+    this.timeEntries = new Map();
     this.currentUserId = 1;
     this.currentShiftId = 1;
     this.currentOpportunityId = 1;
@@ -84,6 +94,7 @@ export class MemStorage implements IStorage {
     this.currentAssignmentId = 1;
     this.currentHolidayRequestId = 1;
     this.currentScheduleTemplateId = 1;
+    this.currentTimeEntryId = 1;
 
     // Initialize with sample data
     this.initializeSampleData();
@@ -516,6 +527,53 @@ export class MemStorage implements IStorage {
 
   async deleteScheduleTemplate(id: number): Promise<boolean> {
     return this.scheduleTemplates.delete(id);
+  }
+
+  // Time entry operations for clock-in/out
+  async getActiveTimeEntry(tenantId: string, userId: number): Promise<any | undefined> {
+    const entries = Array.from(this.timeEntries.values());
+    return entries.find(entry => 
+      entry.tenantId === tenantId && 
+      entry.userId === userId && 
+      entry.status !== "clocked-out"
+    );
+  }
+
+  async getTimeEntriesByTenant(tenantId: string): Promise<any[]> {
+    const entries = Array.from(this.timeEntries.values());
+    return entries.filter(entry => entry.tenantId === tenantId);
+  }
+
+  async createTimeEntry(insertEntry: any): Promise<any> {
+    const entry = { 
+      id: this.currentTimeEntryId++, 
+      ...insertEntry,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.timeEntries.set(entry.id, entry);
+    return entry;
+  }
+
+  async updateTimeEntry(id: number, insertEntry: any): Promise<any | undefined> {
+    const existingEntry = this.timeEntries.get(id);
+    if (!existingEntry) return undefined;
+    
+    const updatedEntry = { 
+      ...existingEntry,
+      ...insertEntry,
+      updatedAt: new Date(),
+    };
+    this.timeEntries.set(id, updatedEntry);
+    return updatedEntry;
+  }
+
+  async getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]> {
+    const entries = Array.from(this.timeEntries.values());
+    return entries.filter(entry => 
+      entry.tenantId === tenantId && 
+      entry.userId === userId
+    );
   }
 }
 
