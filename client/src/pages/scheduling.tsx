@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, Column } from "@/components/DataTable";
 import { CalendarView } from "@/components/CalendarView";
+import { CalendarDayModal } from "@/components/CalendarDayModal";
 import { useCrud } from "@/hooks/useCrud";
 import { ModalForm } from "@/components/ModalForm";
 import { useForm } from "react-hook-form";
@@ -95,7 +96,45 @@ export default function Scheduling() {
   const { tenantId, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Calendar Day Modal State
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarDayModalOpen, setCalendarDayModalOpen] = useState(false);
   const [shiftView, setShiftView] = useState<"list" | "calendar">("list");
+
+  // Calendar Day Modal Handlers
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setCalendarDayModalOpen(true);
+  };
+
+  const handleCreateShiftForDate = (date: Date) => {
+    shiftForm.reset({
+      ...shiftForm.getValues(),
+      date: date.toISOString().split('T')[0],
+    });
+    setCalendarDayModalOpen(false);
+    openCreateShift();
+  };
+
+  const handleDuplicateShift = (shift: Shift) => {
+    shiftForm.reset({
+      tenantId: shift.tenantId,
+      date: shift.date,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      role: shift.role,
+      location: shift.location,
+      description: shift.description + " (Copy)",
+      assignmentType: shift.assignmentType,
+      assignedTo: null, // Reset assignment for duplicate
+      status: "open",
+      requiredStaff: shift.requiredStaff,
+      createdBy: user?.id || 1,
+    });
+    setCalendarDayModalOpen(false);
+    openCreateShift();
+  };
 
   // Shift Planner
   const {
