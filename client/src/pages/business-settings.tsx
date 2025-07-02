@@ -189,17 +189,8 @@ export default function BusinessSettings() {
   const { data: businessProfile, isLoading: _profileLoading } = useQuery<BusinessProfile>({
     queryKey: ["/api/business-profile", tenantId],
     queryFn: async () => {
-      // Mock data for now
-      return {
-        id: 1,
-        name: "Acme Corporation",
-        address: "123 Business Ave, City, State 12345",
-        phone: "+1 (555) 123-4567",
-        email: "contact@acme-corp.com",
-        website: "https://acme-corp.com",
-        logoUrl: "",
-        tenantId,
-      };
+      const response = await apiRequest("GET", `/api/business-profile?tenantId=${tenantId}`);
+      return response;
     },
   });
 
@@ -319,6 +310,11 @@ export default function BusinessSettings() {
       });
     }
   }, [businessProfile, profileForm]);
+
+  // Helper function to show not implemented modal
+  const showNotImplemented = (feature: string, description?: string) => {
+    setNotImplementedModal({ isOpen: true, feature, description });
+  };
 
   React.useEffect(() => {
     if (isRoleModalOpen) {
@@ -457,12 +453,13 @@ export default function BusinessSettings() {
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={profileForm.handleSubmit(onSubmitProfile)} className="space-y-4">
+          <PlaceholderIndicator type="test" description="Business profile loads demo data from API">
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Profile</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={profileForm.handleSubmit(onSubmitProfile)} className="space-y-4">
                 <FormField
                   control={profileForm.control}
                   name="name"
@@ -543,6 +540,7 @@ export default function BusinessSettings() {
               </form>
             </CardContent>
           </Card>
+          </PlaceholderIndicator>
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-6">
