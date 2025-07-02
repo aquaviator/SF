@@ -383,12 +383,12 @@ export default function Subscription() {
                     <div>
                       <h4 className="font-medium mb-2">Features</h4>
                       <ul className="space-y-1">
-                        {subscription.features.map((feature, index) => (
+                        {subscription.features?.map((feature, index) => (
                           <li key={index} className="flex items-center text-sm">
                             <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
                             {feature}
                           </li>
-                        ))}
+                        )) || <li className="text-sm text-gray-500">No features listed</li>}
                       </ul>
                     </div>
 
