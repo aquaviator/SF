@@ -52,9 +52,9 @@ export const ownerMenu: MenuItem[] = [
 export const staffMenu: MenuItem[] = [
   {
     label: "Dashboard",
-    route: "/my-shifts",
+    route: "/dashboard",
     icon: Home,
-    description: "View your upcoming shifts"
+    description: "View your dashboard with shift overview"
   },
   {
     label: "My Work",
