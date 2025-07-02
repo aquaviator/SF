@@ -103,106 +103,14 @@ export default function Subscription() {
     },
   });
 
-  // Fetch Current Subscription
+  // Fetch Current Subscription from database
   const { data: subscription, isLoading: subscriptionLoading } = useQuery<Subscription>({
     queryKey: ["/api/subscription", tenantId],
-    queryFn: async () => {
-      // Mock data for now
-      return {
-        id: 1,
-        planName: "Professional Plan",
-        planType: "professional",
-        status: "trial",
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 15),
-        trialDaysRemaining: 15,
-        monthlyPrice: 49,
-        annualPrice: 490,
-        features: [
-          "Up to 50 staff members",
-          "Unlimited shifts",
-          "Advanced analytics",
-          "Priority support",
-          "API access",
-        ],
-        usageMetrics: {
-          staffLimit: 50,
-          staffUsed: 12,
-          shiftsLimit: -1, // unlimited
-          shiftsUsed: 156,
-          storageLimit: "100GB",
-          storageUsed: "12.5GB",
-        },
-      };
-    },
   });
 
-  // Fetch Available Plans
+  // Fetch Available Plans from database
   const { data: plans = [] } = useQuery<Plan[]>({
     queryKey: ["/api/subscription/plans"],
-    queryFn: async () => {
-      // Mock data for now
-      return [
-        {
-          id: "starter",
-          name: "Starter",
-          type: "starter",
-          monthlyPrice: 19,
-          annualPrice: 190,
-          features: [
-            "Up to 10 staff members",
-            "100 shifts per month",
-            "Basic reporting",
-            "Email support",
-          ],
-          limits: {
-            staff: 10,
-            shifts: 100,
-            storage: "10GB",
-          },
-        },
-        {
-          id: "professional",
-          name: "Professional",
-          type: "professional",
-          monthlyPrice: 49,
-          annualPrice: 490,
-          features: [
-            "Up to 50 staff members",
-            "Unlimited shifts",
-            "Advanced analytics",
-            "Priority support",
-            "API access",
-          ],
-          limits: {
-            staff: 50,
-            shifts: -1,
-            storage: "100GB",
-          },
-          popular: true,
-        },
-        {
-          id: "enterprise",
-          name: "Enterprise",
-          type: "enterprise",
-          monthlyPrice: 99,
-          annualPrice: 990,
-          features: [
-            "Unlimited staff",
-            "Unlimited shifts",
-            "Custom integrations",
-            "24/7 phone support",
-            "Dedicated account manager",
-            "Custom reporting",
-          ],
-          limits: {
-            staff: -1,
-            shifts: -1,
-            storage: "1TB",
-          },
-        },
-      ];
-    },
   });
 
   // Fetch Invoices

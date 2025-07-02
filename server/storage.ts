@@ -112,6 +112,78 @@ export interface IStorage {
   updateOperatingHours(id: number, hours: InsertOperatingHours): Promise<OperatingHours | undefined>;
   deleteOperatingHours(id: number): Promise<boolean>;
 
+  // Shift policy operations
+  getShiftPolicy(id: number): Promise<ShiftPolicy | undefined>;
+  getShiftPoliciesByTenant(tenantId: string): Promise<ShiftPolicy[]>;
+  createShiftPolicy(policy: InsertShiftPolicy): Promise<ShiftPolicy>;
+  updateShiftPolicy(id: number, policy: InsertShiftPolicy): Promise<ShiftPolicy | undefined>;
+  deleteShiftPolicy(id: number): Promise<boolean>;
+
+  // Analytics operations
+  getAnalyticsReport(id: number): Promise<AnalyticsReport | undefined>;
+  getAnalyticsReportsByTenant(tenantId: string): Promise<AnalyticsReport[]>;
+  createAnalyticsReport(report: InsertAnalyticsReport): Promise<AnalyticsReport>;
+  updateAnalyticsReport(id: number, report: InsertAnalyticsReport): Promise<AnalyticsReport | undefined>;
+  deleteAnalyticsReport(id: number): Promise<boolean>;
+
+  getAnalyticsMetric(id: number): Promise<AnalyticsMetric | undefined>;
+  getAnalyticsMetricsByTenant(tenantId: string): Promise<AnalyticsMetric[]>;
+  createAnalyticsMetric(metric: InsertAnalyticsMetric): Promise<AnalyticsMetric>;
+  updateAnalyticsMetric(id: number, metric: InsertAnalyticsMetric): Promise<AnalyticsMetric | undefined>;
+  deleteAnalyticsMetric(id: number): Promise<boolean>;
+
+  // Activity log operations
+  getActivityLog(id: number): Promise<ActivityLog | undefined>;
+  getActivityLogsByTenant(tenantId: string): Promise<ActivityLog[]>;
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+
+  // Subscription operations
+  getSubscription(tenantId: string): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(tenantId: string, subscription: InsertSubscription): Promise<Subscription | undefined>;
+  deleteSubscription(tenantId: string): Promise<boolean>;
+
+  getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined>;
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(id: string, plan: InsertSubscriptionPlan): Promise<SubscriptionPlan | undefined>;
+  deleteSubscriptionPlan(id: string): Promise<boolean>;
+
+  // Usage metrics operations
+  getUsageMetrics(tenantId: string): Promise<UsageMetric | undefined>;
+  createUsageMetrics(metrics: InsertUsageMetric): Promise<UsageMetric>;
+  updateUsageMetrics(tenantId: string, metrics: InsertUsageMetric): Promise<UsageMetric | undefined>;
+
+  // Invoice operations
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoicesByTenant(tenantId: string): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, invoice: InsertInvoice): Promise<Invoice | undefined>;
+  deleteInvoice(id: number): Promise<boolean>;
+
+  // Billing info operations
+  getBillingInfo(tenantId: string): Promise<BillingInfo | undefined>;
+  createBillingInfo(billing: InsertBillingInfo): Promise<BillingInfo>;
+  updateBillingInfo(tenantId: string, billing: InsertBillingInfo): Promise<BillingInfo | undefined>;
+  deleteBillingInfo(tenantId: string): Promise<boolean>;
+
+  // Time entry operations (proper types)
+  getTimeEntry(id: number): Promise<TimeEntry | undefined>;
+  getTimeEntriesByTenant(tenantId: string): Promise<TimeEntry[]>;
+  getTimeEntriesByUser(tenantId: string, userId: number): Promise<TimeEntry[]>;
+  getActiveTimeEntry(tenantId: string, userId: number): Promise<TimeEntry | undefined>;
+  createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry>;
+  updateTimeEntry(id: number, entry: InsertTimeEntry): Promise<TimeEntry | undefined>;
+  deleteTimeEntry(id: number): Promise<boolean>;
+
+  // Performance metrics operations
+  getPerformanceMetric(id: number): Promise<PerformanceMetric | undefined>;
+  getPerformanceMetricsByTenant(tenantId: string): Promise<PerformanceMetric[]>;
+  getPerformanceMetricsByUser(tenantId: string, userId: number): Promise<PerformanceMetric[]>;
+  createPerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
+  updatePerformanceMetric(id: number, metric: InsertPerformanceMetric): Promise<PerformanceMetric | undefined>;
+  deletePerformanceMetric(id: number): Promise<boolean>;
+
   // Debug operations
   clearAllData(): Promise<void>;
 }

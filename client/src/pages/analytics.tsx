@@ -86,28 +86,23 @@ export default function Analytics() {
     queryKey: ["/api/staff", tenantId],
   });
 
-  // Calculate Labor Cost Data from real shifts
-  const laborCostData: LaborCostData[] = React.useMemo(() => {
-    if (!Array.isArray(shiftsData)) return [];
-    
-    const monthlyData = shiftsData.reduce((acc: Record<string, number>, shift: any) => {
-      const date = new Date(shift.date);
-      const month = date.toLocaleDateString('en-US', { month: 'short' });
-      const startTime = new Date(`${shift.date} ${shift.startTime}`);
-      const endTime = new Date(`${shift.date} ${shift.endTime}`);
-      const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      const cost = hours * 25; // $25/hour average rate
-      
-      acc[month] = (acc[month] || 0) + cost;
-      return acc;
-    }, {});
+  // Fetch analytics reports from database
+  const { data: analyticsReports = [] } = useQuery({
+    queryKey: ["/api/analytics/reports", tenantId],
+  });
 
-    return Object.entries(monthlyData).map(([month, cost]) => ({
-      month,
-      cost: Math.round(cost),
-      budget: 15000,
-    }));
-  }, [shiftsData]);
+  // Calculate Labor Cost Data from analytics reports
+  const laborCostData: LaborCostData[] = React.useMemo(() => {
+    const laborReport = analyticsReports.find((report: any) => report.reportType === 'labor_cost');
+    if (laborReport && laborReport.dataPoints) {
+      try {
+        return JSON.parse(laborReport.dataPoints);
+      } catch (e) {
+        console.error('Failed to parse labor cost data:', e);
+      }
+    }
+    return [];
+  }, [analyticsReports]);
 
   // Calculate Fill Rate Data from real shifts
   const fillRateData: FillRateData[] = React.useMemo(() => {
