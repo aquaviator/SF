@@ -5,46 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Shift } from "@shared/schema";
+import { getRoleColor, getRoleDotColor, roleColorMap } from "@/utils/roleColors";
 
-// Role color mapping for calendar badges
-const roleColorMap: Record<string, string> = {
-  "Chef": "bg-green-100 border-green-300 text-green-800",
-  "Bar Staff": "bg-blue-100 border-blue-300 text-blue-800",
-  "Bartender": "bg-blue-100 border-blue-300 text-blue-800",
-  "Security": "bg-yellow-100 border-yellow-300 text-yellow-800",
-  "Supervisor": "bg-purple-100 border-purple-300 text-purple-800",
-  "Manager": "bg-purple-100 border-purple-300 text-purple-800",
-  "Server": "bg-indigo-100 border-indigo-300 text-indigo-800",
-  "Driver": "bg-orange-100 border-orange-300 text-orange-800",
-  "Warehouse Clerk": "bg-gray-100 border-gray-300 text-gray-800",
-  // Default fallback
-  "default": "bg-slate-100 border-slate-300 text-slate-800"
-};
-
-// Helper function to get role-based colors
-export const getRoleColor = (role: string): string => {
-  return roleColorMap[role] || roleColorMap["default"];
-};
-
-// Helper function to get dot colors for mobile (darker shades)
-export const getRoleDotColor = (role: string): string => {
-  const dotColorMap: Record<string, string> = {
-    "Chef": "bg-green-500",
-    "Bar Staff": "bg-blue-500",
-    "Bartender": "bg-blue-500",
-    "Security": "bg-yellow-500",
-    "Supervisor": "bg-purple-500",
-    "Manager": "bg-purple-500",
-    "Server": "bg-indigo-500",
-    "Driver": "bg-orange-500",
-    "Warehouse Clerk": "bg-gray-500",
-    "default": "bg-slate-500"
-  };
-  return dotColorMap[role] || dotColorMap["default"];
-};
-
-// Export the role color mapping for external use
-export { roleColorMap };
+// Export for backward compatibility
+export { getRoleColor, getRoleDotColor, roleColorMap };
 
 interface CalendarViewProps {
   shifts: Shift[];
