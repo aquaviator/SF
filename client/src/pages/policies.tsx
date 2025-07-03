@@ -121,6 +121,10 @@ export default function Policies() {
         maxStrikePoints: updatedPolicy.maxStrikePoints,
         strikePointsNoShow: updatedPolicy.strikePointsNoShow,
         strikePointsLateCancellation: updatedPolicy.strikePointsLateCancellation,
+        resetPeriodDays: updatedPolicy.resetPeriodDays,
+        lateGracePeriodMinutes: updatedPolicy.lateGracePeriodMinutes,
+        clockInBufferMinutes: updatedPolicy.clockInBufferMinutes,
+        clockOutBufferMinutes: updatedPolicy.clockOutBufferMinutes,
       });
       
       // Invalidate and refetch the query
