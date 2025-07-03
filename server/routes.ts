@@ -1560,6 +1560,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get strikes for a user
+  app.get("/api/staff/:userId/strikes", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("📡 GET_STRIKES", { userId, tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      const strikes = await storage.getStaffStrikesByUser(tenantId, userId);
+      
+      // Calculate total points from active strikes
+      const totalPoints = strikes
+        .filter(strike => strike.isActive)
+        .reduce((sum, strike) => sum + strike.points, 0);
+      
+      const result = {
+        totalPoints,
+        strikes
+      };
+      
+      console.log("✅ GET_STRIKES SUCCESS", { 
+        userId, 
+        totalPoints,
+        strikeCount: strikes.length,
+        timestamp: new Date() 
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("❌ GET_STRIKES ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch strike data" });
+    }
+  });
+
   // Create a new strike
   app.post("/api/staff/:userId/strikes", async (req, res) => {
     try {
@@ -1673,6 +1711,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking claim eligibility:", error);
       res.status(500).json({ message: "Failed to check claim eligibility" });
+    }
+  });
+
+  // Get all staff strikes summary (owner only)
+  app.get("/api/staff/strikes/all", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("📡 GET_ALL_STAFF_STRIKES", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get all staff members
+      const staff = await storage.getStaffByTenant(tenantId);
+      
+      // Get strikes for each staff member
+      const strikePromises = staff.map(async (member) => {
+        const strikes = await storage.getStaffStrikesByUser(tenantId, member.id);
+        const totalPoints = strikes.filter(s => s.isActive).reduce((sum, s) => sum + s.points, 0);
+        const activeStrikes = strikes.filter(s => s.isActive).length;
+        const lastIssued = strikes.length > 0 ? 
+          Math.max(...strikes.map(s => new Date(s.issuedAt).getTime())) : null;
+        
+        return {
+          userId: member.id,
+          userFirstName: member.firstName,
+          userLastName: member.lastName,
+          totalPoints,
+          activeStrikes,
+          lastIssued: lastIssued ? new Date(lastIssued).toISOString() : null
+        };
+      });
+      
+      const strikesSummary = await Promise.all(strikePromises);
+      
+      console.log("✅ GET_ALL_STAFF_STRIKES SUCCESS", { 
+        tenantId,
+        staffCount: staff.length,
+        timestamp: new Date() 
+      });
+      
+      res.json({ strikes: strikesSummary });
+    } catch (error) {
+      console.error("❌ GET_ALL_STAFF_STRIKES ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch staff strikes" });
     }
   });
 
