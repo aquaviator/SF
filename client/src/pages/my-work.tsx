@@ -6,6 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -21,7 +26,8 @@ import {
   Users,
   Briefcase,
   RefreshCw,
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import type { Shift } from "@shared/schema";
 
@@ -30,6 +36,8 @@ export default function MyWork() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   
   // Fetch my shifts
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
@@ -59,6 +67,7 @@ export default function MyWork() {
       if (!response.ok) return []; // Return empty array if no data
       return response.json();
     },
+    enabled: !!user?.id && !!tenantId, // Only run when user is loaded
   });
 
   // Fetch holiday requests for activity feed
@@ -206,7 +215,10 @@ export default function MyWork() {
       title: "Submit Holiday Request",
       description: "Request time off for vacation or sick days",
       icon: Calendar,
-      action: () => setActiveTab("holiday-requests"),
+      action: () => {
+        setActiveTab("holiday-requests");
+        setIsHolidayModalOpen(true);
+      },
       color: "bg-blue-500 hover:bg-blue-600",
     },
     {
@@ -220,7 +232,10 @@ export default function MyWork() {
       title: "Request Shift Swap",
       description: "Find someone to cover your shift",
       icon: RefreshCw,
-      action: () => setActiveTab("swap-requests"),
+      action: () => {
+        setActiveTab("swap-requests");
+        setIsSwapModalOpen(true);
+      },
       color: "bg-purple-500 hover:bg-purple-600",
     },
   ];
@@ -388,9 +403,9 @@ export default function MyWork() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="time-tracking">Time Tracking</TabsTrigger>
-          <TabsTrigger value="shifts">My Shifts</TabsTrigger>
-          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="my-shifts">My Shifts</TabsTrigger>
+          <TabsTrigger value="holiday-requests">Holiday Requests</TabsTrigger>
+          <TabsTrigger value="swap-requests">Swap Requests</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -655,7 +670,7 @@ export default function MyWork() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="shifts" className="space-y-4">
+        <TabsContent value="my-shifts" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>My Shifts</CardTitle>
@@ -746,6 +761,122 @@ export default function MyWork() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="holiday-requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Holiday Requests
+                <Dialog open={isHolidayModalOpen} onOpenChange={setIsHolidayModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Submit Request
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Submit Holiday Request</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="type">Request Type</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="vacation">Vacation</SelectItem>
+                            <SelectItem value="sick">Sick Leave</SelectItem>
+                            <SelectItem value="personal">Personal Day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="startDate">Start Date</Label>
+                        <Input id="startDate" type="date" />
+                      </div>
+                      <div>
+                        <Label htmlFor="endDate">End Date</Label>
+                        <Input id="endDate" type="date" />
+                      </div>
+                      <div>
+                        <Label htmlFor="reason">Reason</Label>
+                        <Textarea id="reason" placeholder="Please provide a reason for your request..." />
+                      </div>
+                      <Button className="w-full">Submit Request</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                View and manage your holiday requests
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No holiday requests found.</p>
+                <p className="text-sm text-gray-400">Click "Submit Request" to create your first holiday request.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="swap-requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Swap Requests
+                <Dialog open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Request Swap
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Request Shift Swap</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="shiftToSwap">Shift to Swap</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your shift" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shifts.map((shift) => (
+                              <SelectItem key={shift.id} value={shift.id.toString()}>
+                                {shift.date} - {shift.startTime} to {shift.endTime} ({shift.role})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="reason">Reason for Swap</Label>
+                        <Textarea id="reason" placeholder="Please explain why you need to swap this shift..." />
+                      </div>
+                      <Button className="w-full">Submit Swap Request</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Request to swap shifts with other staff members
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No swap requests found.</p>
+                <p className="text-sm text-gray-400">Click "Request Swap" to find someone to cover your shift.</p>
               </div>
             </CardContent>
           </Card>
