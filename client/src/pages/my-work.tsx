@@ -390,14 +390,14 @@ export default function MyWork() {
     const entryDate = new Date(entry.clockInTime);
     return entryDate >= currentWeek.start && entryDate <= currentWeek.end;
   });
-  const hoursThisWeek = thisWeekEntries.reduce((total: number, entry: any) => total + (entry.totalHours || 0), 0);
+  const hoursThisWeek = thisWeekEntries.reduce((total: number, entry: any) => total + (parseFloat(entry.totalHours) || 0), 0);
   
   // Calculate last week hours for comparison
   const lastWeekEntries = (timeEntries || []).filter((entry: any) => {
     const entryDate = new Date(entry.clockInTime);
     return entryDate >= lastWeek.start && entryDate <= lastWeek.end;
   });
-  const hoursLastWeek = lastWeekEntries.reduce((total: number, entry: any) => total + (entry.totalHours || 0), 0);
+  const hoursLastWeek = lastWeekEntries.reduce((total: number, entry: any) => total + (parseFloat(entry.totalHours) || 0), 0);
   const hoursChange = hoursThisWeek - hoursLastWeek;
 
   // Performance calculation functions
