@@ -44,10 +44,7 @@ export default function Policies() {
 
   // Fetch Business Policy
   const { data: policy, isLoading: policyLoading } = useQuery<BusinessPolicy>({
-    queryKey: ["/api/shift-policy", tenantId],
-    queryFn: async () => {
-      return await apiRequest("GET", `/api/shift-policy?tenantId=${tenantId}`);
-    },
+    queryKey: [`/api/shift-policy?tenantId=${tenantId}`],
   });
 
   // Business Policy Form
@@ -65,17 +62,29 @@ export default function Policies() {
 
   // Update form when policy data loads
   React.useEffect(() => {
-    if (policy) {
-      policyForm.reset({
-        minNoticeHours: policy.minNoticeHours,
-        maxAdvanceBookingDays: policy.maxAdvanceBookingDays,
-        cancellationDeadlineHours: policy.cancellationDeadlineHours,
-        maxStrikePoints: policy.maxStrikePoints,
-        strikePointsNoShow: policy.strikePointsNoShow,
-        strikePointsLateCancellation: policy.strikePointsLateCancellation,
-      });
+    if (policy && Object.keys(policy).length > 0) {
+      const formValues = {
+        minNoticeHours: policy.minNoticeHours || 24,
+        maxAdvanceBookingDays: policy.maxAdvanceBookingDays || 30,
+        cancellationDeadlineHours: policy.cancellationDeadlineHours || 4,
+        maxStrikePoints: policy.maxStrikePoints || 5,
+        strikePointsNoShow: policy.strikePointsNoShow || 2,
+        strikePointsLateCancellation: policy.strikePointsLateCancellation || 1,
+      };
+      policyForm.reset(formValues);
+    } else if (!policyLoading) {
+      // Use defaults if no policy exists yet
+      const defaultValues = {
+        minNoticeHours: 24,
+        maxAdvanceBookingDays: 30,
+        cancellationDeadlineHours: 4,
+        maxStrikePoints: 5,
+        strikePointsNoShow: 2,
+        strikePointsLateCancellation: 1,
+      };
+      policyForm.reset(defaultValues);
     }
-  }, [policy, policyForm]);
+  }, [policy, policyLoading, policyForm]);
 
   // Policy Update Mutation
   const policyUpdateMutation = useMutation({
