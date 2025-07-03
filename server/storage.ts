@@ -15,7 +15,7 @@ import {
   type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
   type HolidayEntitlement, type InsertHolidayEntitlement
-} from "@shared/schema";
+} from "../shared/schema";
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import { eq, and } from 'drizzle-orm';
@@ -2183,4 +2183,11 @@ async function initializeDatabaseWithSampleData() {
 }
 
 // Export initialized storage
-export const storage = await initializeDatabaseWithSampleData();
+export const storage = new DatabaseStorage();
+
+// Initialize database with sample data
+initializeDatabaseWithSampleData().then(() => {
+  console.log("Database storage initialized successfully");
+}).catch((error) => {
+  console.error("Failed to initialize database storage:", error);
+});

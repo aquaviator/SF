@@ -1384,10 +1384,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Time entries result:", timeEntries);
-      res.json(timeEntries);
+      res.json(timeEntries || []);
     } catch (error) {
       console.error("Get time entries error:", error);
-      res.status(500).json({ message: "Failed to fetch time entries" });
+      console.error("Error details:", error.message);
+      console.error("Stack trace:", error.stack);
+      res.status(500).json({ message: "Failed to fetch time entries", error: error.message });
     }
   });
 
@@ -1398,6 +1400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: parseInt(req.body.userId),
         date: req.body.date,
         clockInTime: req.body.clockInTime,
+        status: "clocked_in",
         shiftId: req.body.shiftId || null,
       };
       
@@ -1417,6 +1420,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updateData = {
+        tenantId: req.body.tenantId,
+        status: req.body.status || "clocked_out",
+        userId: req.body.userId,
         clockOutTime: req.body.clockOutTime,
         breakMinutes: req.body.breakMinutes,
         notes: req.body.notes,
