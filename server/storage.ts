@@ -118,8 +118,10 @@ export interface IStorage {
   // Shift policy operations
   getShiftPolicy(id: number): Promise<ShiftPolicy | undefined>;
   getShiftPoliciesByTenant(tenantId: string): Promise<ShiftPolicy[]>;
+  getShiftPolicyByTenant(tenantId: string): Promise<ShiftPolicy | undefined>;
   createShiftPolicy(policy: InsertShiftPolicy): Promise<ShiftPolicy>;
   updateShiftPolicy(id: number, policy: InsertShiftPolicy): Promise<ShiftPolicy | undefined>;
+  upsertShiftPolicy(policy: InsertShiftPolicy): Promise<ShiftPolicy>;
   deleteShiftPolicy(id: number): Promise<boolean>;
 
   // Analytics operations
@@ -1814,6 +1816,27 @@ export class DatabaseStorage implements IStorage {
   async deleteShiftPolicy(id: number): Promise<boolean> {
     const result = await db.delete(shiftPolicies).where(eq(shiftPolicies.id, id));
     return result.rowCount > 0;
+  }
+
+  async getShiftPolicyByTenant(tenantId: string): Promise<ShiftPolicy | undefined> {
+    const result = await db.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId)).limit(1);
+    return result[0];
+  }
+
+  async upsertShiftPolicy(insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy> {
+    const existing = await this.getShiftPolicyByTenant(insertPolicy.tenantId);
+    if (existing) {
+      // Update existing policy
+      const result = await db.update(shiftPolicies).set({
+        ...insertPolicy,
+        updatedAt: new Date(),
+      }).where(eq(shiftPolicies.tenantId, insertPolicy.tenantId)).returning();
+      return result[0];
+    } else {
+      // Create new policy
+      const result = await db.insert(shiftPolicies).values(insertPolicy).returning();
+      return result[0];
+    }
   }
 
   // Usage metrics operations

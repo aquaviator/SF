@@ -1212,92 +1212,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Shift Policies routes
-  app.get("/api/shift-policies", async (req, res) => {
+  // Shift Policy routes
+  app.get("/api/shift-policy", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Mock shift policies data
-      const shiftPolicies = [
-        {
-          id: 1,
+      const policy = await storage.getShiftPolicyByTenant(tenantId);
+      if (!policy) {
+        // Return default policy if none exists
+        const defaultPolicy = {
           tenantId,
-          name: "Minimum Notice Period",
-          description: "Minimum time required to claim or cancel a shift",
-          value: "24",
-          unit: "hours",
-          isActive: true
-        },
-        {
-          id: 2,
-          tenantId,
-          name: "Maximum Daily Hours",
-          description: "Maximum hours a staff member can work in a day",
-          value: "8",
-          unit: "hours",
-          isActive: true
-        },
-        {
-          id: 3,
-          tenantId,
-          name: "Break Duration",
-          description: "Required break time for shifts over 6 hours",
-          value: "30",
-          unit: "minutes",
-          isActive: true
-        }
-      ];
+          minNoticeHours: 24,
+          maxAdvanceBookingDays: 30,
+          cancellationDeadlineHours: 4,
+          maxStrikePoints: 5,
+          strikePointsNoShow: 2,
+          strikePointsLateCancellation: 1,
+        };
+        return res.json(defaultPolicy);
+      }
       
-      res.json(shiftPolicies);
+      res.json(policy);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch shift policies" });
+      res.status(500).json({ message: "Failed to fetch shift policy" });
     }
   });
 
-  app.post("/api/shift-policies", async (req, res) => {
+  app.put("/api/shift-policy", async (req, res) => {
     try {
-      const tenantId = req.body.tenantId;
-      if (!tenantId) {
+      const normalizedData = {
+        tenantId: req.body.tenantId,
+        minNoticeHours: parseInt(req.body.minNoticeHours),
+        maxAdvanceBookingDays: parseInt(req.body.maxAdvanceBookingDays),
+        cancellationDeadlineHours: parseInt(req.body.cancellationDeadlineHours),
+        maxStrikePoints: parseInt(req.body.maxStrikePoints),
+        strikePointsNoShow: parseInt(req.body.strikePointsNoShow),
+        strikePointsLateCancellation: parseInt(req.body.strikePointsLateCancellation),
+      };
+      
+      if (!normalizedData.tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Mock response for creating shift policy
-      const newPolicy = {
-        id: Date.now(),
-        tenantId,
-        ...req.body,
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      
-      res.status(201).json(newPolicy);
+      const policy = await storage.upsertShiftPolicy(normalizedData);
+      res.json(policy);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create shift policy" });
-    }
-  });
-
-  app.patch("/api/shift-policies/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const tenantId = req.body.tenantId;
-      
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
-      }
-      
-      // Mock response for updating shift policy
-      const updatedPolicy = {
-        id,
-        tenantId,
-        ...req.body,
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.json(updatedPolicy);
-    } catch (error) {
+      console.error("Shift policy update error:", error);
       res.status(500).json({ message: "Failed to update shift policy" });
     }
   });

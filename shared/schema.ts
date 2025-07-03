@@ -207,15 +207,16 @@ export const operatingHours = pgTable("operating_hours", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Shift policies table
+// Shift policies table - Single policy per tenant
 export const shiftPolicies = pgTable("shift_policies", {
   id: serial("id").primaryKey(),
-  tenantId: text("tenant_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  value: text("value").notNull(),
-  unit: text("unit").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
+  tenantId: text("tenant_id").notNull().unique(), // Only one policy per tenant
+  minNoticeHours: integer("min_notice_hours").notNull().default(24),
+  maxAdvanceBookingDays: integer("max_advance_booking_days").notNull().default(30),
+  cancellationDeadlineHours: integer("cancellation_deadline_hours").notNull().default(4),
+  maxStrikePoints: integer("max_strike_points").notNull().default(5),
+  strikePointsNoShow: integer("strike_points_no_show").notNull().default(2),
+  strikePointsLateCancellation: integer("strike_points_late_cancellation").notNull().default(1),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
