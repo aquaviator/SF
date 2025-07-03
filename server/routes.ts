@@ -9,11 +9,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/shifts", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
+      const date = req.query.date as string;
+      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const shifts = await storage.getShiftsByTenant(tenantId);
+      let shifts;
+      if (date) {
+        // Filter by specific date
+        shifts = await storage.getShiftsByTenantAndDate(tenantId, date);
+      } else {
+        // Get all shifts for tenant
+        shifts = await storage.getShiftsByTenant(tenantId);
+      }
+      
       res.json(shifts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch shifts" });

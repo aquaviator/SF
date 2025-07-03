@@ -17,7 +17,7 @@ import {
 } from "@shared/schema";
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export interface IStorage {
   // User operations
@@ -31,6 +31,7 @@ export interface IStorage {
   // Shift operations
   getShift(id: number): Promise<Shift | undefined>;
   getShiftsByTenant(tenantId: string): Promise<Shift[]>;
+  getShiftsByTenantAndDate(tenantId: string, date: string): Promise<Shift[]>;
   getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]>;
   createShift(shift: InsertShift): Promise<Shift>;
   updateShift(id: number, shift: InsertShift): Promise<Shift | undefined>;
@@ -679,6 +680,12 @@ export class MemStorage implements IStorage {
 
   async getShiftsByTenant(tenantId: string): Promise<Shift[]> {
     return Array.from(this.shifts.values()).filter(shift => shift.tenantId === tenantId);
+  }
+
+  async getShiftsByTenantAndDate(tenantId: string, date: string): Promise<Shift[]> {
+    return Array.from(this.shifts.values()).filter(shift => 
+      shift.tenantId === tenantId && shift.date === date
+    );
   }
 
   async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
@@ -1349,6 +1356,10 @@ export class DatabaseStorage implements IStorage {
 
   async getShiftsByTenant(tenantId: string): Promise<Shift[]> {
     return await db.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+  }
+
+  async getShiftsByTenantAndDate(tenantId: string, date: string): Promise<Shift[]> {
+    return await db.select().from(shifts).where(and(eq(shifts.tenantId, tenantId), eq(shifts.date, date)));
   }
 
   async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
