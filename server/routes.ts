@@ -1560,6 +1560,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create a new strike
+  app.post("/api/staff/:userId/strikes", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { tenantId, reason, points, shiftId, notes, expiresAt } = req.body;
+      
+      console.log("📝 CREATE_STRIKE", { 
+        userId, 
+        reason, 
+        points, 
+        tenantId,
+        timestamp: new Date() 
+      });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Calculate expiry date if not provided
+      let calculatedExpiresAt = expiresAt;
+      if (!calculatedExpiresAt) {
+        const policy = await storage.getShiftPolicyByTenant(tenantId);
+        const resetPeriodDays = policy?.resetPeriodDays || 90;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + resetPeriodDays);
+        calculatedExpiresAt = expiry;
+      }
+      
+      const strike = await storage.createStaffStrike({
+        tenantId,
+        userId,
+        points,
+        reason: reason as "no_show" | "late_cancellation" | "manual_adjustment",
+        shiftId,
+        notes,
+        expiresAt: calculatedExpiresAt,
+        isActive: true
+      });
+      
+      console.log("✅ STRIKE_CREATED", { 
+        strikeId: strike.id,
+        userId, 
+        points,
+        timestamp: new Date() 
+      });
+      
+      res.json(strike);
+    } catch (error) {
+      console.error("Error creating strike:", error);
+      res.status(500).json({ message: "Failed to create strike" });
+    }
+  });
+
+  // Update a strike
+  app.put("/api/staff/:userId/strikes/:strikeId", async (req, res) => {
+    try {
+      const strikeId = parseInt(req.params.strikeId);
+      const { isActive, notes, expiresAt } = req.body;
+      
+      console.log("📝 UPDATE_STRIKE", { 
+        strikeId, 
+        isActive, 
+        timestamp: new Date() 
+      });
+      
+      const strike = await storage.updateStaffStrike(strikeId, {
+        isActive,
+        notes,
+        expiresAt: expiresAt ? new Date(expiresAt) : undefined
+      });
+      
+      if (!strike) {
+        return res.status(404).json({ message: "Strike not found" });
+      }
+      
+      console.log("✅ STRIKE_UPDATED", { 
+        strikeId, 
+        isActive,
+        timestamp: new Date() 
+      });
+      
+      res.json(strike);
+    } catch (error) {
+      console.error("Error updating strike:", error);
+      res.status(500).json({ message: "Failed to update strike" });
+    }
+  });
+
+  // Check if user can claim shifts (strike validation)
+  app.get("/api/staff/:userId/can-claim", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("🔐 CAN_CLAIM_CHECK", { userId, tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      const result = await strikeService.canClaimShift(tenantId, userId);
+      
+      console.log("✅ CAN_CLAIM_RESULT", { 
+        userId, 
+        canClaim: result.canClaim,
+        reason: result.reason,
+        timestamp: new Date() 
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error checking claim eligibility:", error);
+      res.status(500).json({ message: "Failed to check claim eligibility" });
+    }
+  });
+
   // Test endpoint for manual strike assignment (development only)
   app.post("/api/test/assign-strike", async (req, res) => {
     try {

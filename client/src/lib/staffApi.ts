@@ -1,0 +1,191 @@
+import { apiRequest } from "@/lib/queryClient";
+import type { StaffStrike, InsertStaffStrike } from "@shared/schema";
+
+export interface StrikeData {
+  totalPoints: number;
+  strikes: StaffStrike[];
+}
+
+export interface CreateStrikeRequest {
+  tenantId: string;
+  userId: number;
+  reason: "no_show" | "late_cancellation" | "manual_adjustment";
+  points: number;
+  shiftId?: number;
+  notes?: string;
+  expiresAt?: string;
+}
+
+export interface UpdateStrikeRequest {
+  isActive?: boolean;
+  notes?: string;
+  expiresAt?: string;
+}
+
+export interface StaffStrikesListResponse {
+  strikes: Array<{
+    id: number;
+    userId: number;
+    userFirstName: string;
+    userLastName: string;
+    totalPoints: number;
+    activeStrikes: number;
+    lastIssued: string | null;
+  }>;
+}
+
+export const staffApi = {
+  /**
+   * Get strikes for a specific user
+   */
+  async getStrikes(userId: number, tenantId: string): Promise<StrikeData> {
+    console.log("📡 GET_STRIKES API", { userId, tenantId, timestamp: new Date() });
+    
+    try {
+      const response = await apiRequest(`/api/staff/${userId}/strikes?tenantId=${tenantId}`);
+      
+      console.log("✅ GET_STRIKES SUCCESS", { 
+        userId,
+        totalPoints: response.totalPoints,
+        strikeCount: response.strikes.length,
+        timestamp: new Date() 
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("❌ GET_STRIKES FAILED", { userId, tenantId, error, timestamp: new Date() });
+      throw new Error("Failed to fetch strike data");
+    }
+  },
+
+  /**
+   * Get all staff strikes for owner view (if endpoint exists)
+   */
+  async getAllStaffStrikes(tenantId: string, userId?: number): Promise<StaffStrikesListResponse> {
+    console.log("📡 GET_ALL_STAFF_STRIKES API", { tenantId, userId, timestamp: new Date() });
+    
+    try {
+      const url = userId 
+        ? `/api/staff-strikes?tenantId=${tenantId}&userId=${userId}`
+        : `/api/staff-strikes?tenantId=${tenantId}`;
+      
+      const response = await apiRequest(url);
+      
+      console.log("✅ GET_ALL_STAFF_STRIKES SUCCESS", { 
+        tenantId,
+        strikeCount: response.strikes?.length || 0,
+        timestamp: new Date() 
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("❌ GET_ALL_STAFF_STRIKES FAILED", { tenantId, userId, error, timestamp: new Date() });
+      throw new Error("Failed to fetch staff strikes data");
+    }
+  },
+
+  /**
+   * Create a new strike
+   */
+  async createStrike(request: CreateStrikeRequest): Promise<StaffStrike> {
+    console.log("📡 CREATE_STRIKE API", { 
+      userId: request.userId, 
+      reason: request.reason,
+      points: request.points,
+      timestamp: new Date() 
+    });
+    
+    try {
+      const response = await apiRequest(`/api/staff/${request.userId}/strikes`, {
+        method: "POST",
+        body: JSON.stringify(request),
+      });
+      
+      console.log("✅ CREATE_STRIKE SUCCESS", { 
+        userId: request.userId,
+        strikeId: response.id,
+        points: request.points,
+        timestamp: new Date() 
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("❌ CREATE_STRIKE FAILED", { 
+        userId: request.userId, 
+        reason: request.reason,
+        error, 
+        timestamp: new Date() 
+      });
+      throw new Error("Failed to create strike");
+    }
+  },
+
+  /**
+   * Update an existing strike
+   */
+  async updateStrike(userId: number, strikeId: number, updates: UpdateStrikeRequest): Promise<StaffStrike> {
+    console.log("📡 UPDATE_STRIKE API", { 
+      userId, 
+      strikeId, 
+      updates,
+      timestamp: new Date() 
+    });
+    
+    try {
+      const response = await apiRequest(`/api/staff/${userId}/strikes/${strikeId}`, {
+        method: "PUT",
+        body: JSON.stringify(updates),
+      });
+      
+      console.log("✅ UPDATE_STRIKE SUCCESS", { 
+        userId,
+        strikeId,
+        isActive: updates.isActive,
+        timestamp: new Date() 
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("❌ UPDATE_STRIKE FAILED", { 
+        userId, 
+        strikeId, 
+        updates,
+        error, 
+        timestamp: new Date() 
+      });
+      throw new Error("Failed to update strike");
+    }
+  },
+
+  /**
+   * Deactivate a strike (convenience method)
+   */
+  async deactivateStrike(userId: number, strikeId: number): Promise<StaffStrike> {
+    console.log("📡 DEACTIVATE_STRIKE API", { userId, strikeId, timestamp: new Date() });
+    
+    return this.updateStrike(userId, strikeId, { isActive: false });
+  },
+
+  /**
+   * Check if user can claim shifts (strike validation)
+   */
+  async canClaimShift(userId: number, tenantId: string): Promise<{ canClaim: boolean; reason?: string }> {
+    console.log("📡 CAN_CLAIM_SHIFT API", { userId, tenantId, timestamp: new Date() });
+    
+    try {
+      const response = await apiRequest(`/api/staff/${userId}/can-claim?tenantId=${tenantId}`);
+      
+      console.log("✅ CAN_CLAIM_SHIFT SUCCESS", { 
+        userId,
+        canClaim: response.canClaim,
+        reason: response.reason,
+        timestamp: new Date() 
+      });
+      
+      return response;
+    } catch (error) {
+      console.error("❌ CAN_CLAIM_SHIFT FAILED", { userId, tenantId, error, timestamp: new Date() });
+      throw new Error("Failed to check shift claim eligibility");
+    }
+  }
+};

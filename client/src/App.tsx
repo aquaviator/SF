@@ -23,6 +23,8 @@ import BusinessSettings from "@/pages/business-settings";
 import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
+import StaffStrikes from "@/pages/staff/strikes";
+import OwnerStrikes from "@/pages/owner/strikes";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 
@@ -58,6 +60,8 @@ function Router() {
               <Route path="/owner/policies" component={Policies} />
               <Route path="/owner/analytics" component={Analytics} />
               <Route path="/owner/subscription" component={Subscription} />
+              <Route path="/staff/strikes" component={StaffStrikes} />
+              <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={MyWork} />
               <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
