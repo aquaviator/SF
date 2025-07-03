@@ -325,11 +325,31 @@ export default function BusinessSettingsPage() {
   // Business Profile Mutation
   const profileMutation = useMutation({
     mutationFn: async (data: BusinessProfileFormData) => {
-      return await apiRequest("PUT", `/api/business-profile`, data);
+      // Update business profile
+      const profileResult = await apiRequest("PUT", `/api/business-profile`, data);
+      
+      // If owner name changed, also update the user profile to keep them in sync
+      if (data.ownerName && user?.id) {
+        const [firstName, ...lastNameParts] = data.ownerName.split(' ');
+        const lastName = lastNameParts.join(' ');
+        
+        // Get current user data to preserve other fields
+        const currentUser = await apiRequest("GET", `/api/users/${user.id}`);
+        
+        // Update user with new name
+        await apiRequest("PUT", `/api/users/${user.id}`, {
+          ...currentUser,
+          firstName: firstName || "",
+          lastName: lastName || "",
+        });
+      }
+      
+      return profileResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile", tenantId] });
-      toast({ title: "Success", description: "Business profile updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
+      toast({ title: "Success", description: "Business profile and user data updated successfully" });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update business profile", variant: "destructive" });

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import type { User, Shift } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -184,21 +185,9 @@ export default function OwnerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Owner Dashboard</h2>
-          <p className="text-gray-600">Overview of your workforce and operations</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            View Reports
-          </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Quick Actions
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Owner Dashboard</h2>
+        <p className="text-gray-600">Overview of your workforce and operations</p>
       </div>
 
       {/* Metrics Cards */}
@@ -357,12 +346,19 @@ export default function OwnerDashboard() {
           <DialogHeader>
             <DialogTitle>Create Shift</DialogTitle>
             <DialogDescription>
-              Quick shift creation functionality.
+              Go to the Scheduling module to create new shifts.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 text-center text-gray-500">
-            <p>Shift creation form will be implemented here.</p>
-            <p className="text-sm mt-2">This modal connects to the full Scheduling module.</p>
+          <div className="p-4 space-y-4">
+            <p className="text-center text-gray-600">Create and manage shifts in the full Scheduling interface.</p>
+            <div className="flex justify-center">
+              <Link href="/owner/scheduling">
+                <Button onClick={() => setIsCreateShiftOpen(false)}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Go to Scheduling
+                </Button>
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -372,12 +368,19 @@ export default function OwnerDashboard() {
           <DialogHeader>
             <DialogTitle>Add Staff Member</DialogTitle>
             <DialogDescription>
-              Add new staff to your team.
+              Go to the Staff module to add new team members.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 text-center text-gray-500">
-            <p>Staff registration form will be implemented here.</p>
-            <p className="text-sm mt-2">This modal connects to the Staff management module.</p>
+          <div className="p-4 space-y-4">
+            <p className="text-center text-gray-600">Manage your team and add new staff members.</p>
+            <div className="flex justify-center">
+              <Link href="/owner/staff">
+                <Button onClick={() => setIsAddStaffOpen(false)}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Go to Staff
+                </Button>
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -387,12 +390,13 @@ export default function OwnerDashboard() {
           <DialogHeader>
             <DialogTitle>Approve Requests</DialogTitle>
             <DialogDescription>
-              Review and approve pending staff requests.
+              This functionality is not yet implemented.
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 text-center text-gray-500">
-            <p>Request approval interface will be implemented here.</p>
-            <p className="text-sm mt-2">This modal connects to Holiday Requests and other approval workflows.</p>
+            <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
+            <p>Request approval workflow is not currently available.</p>
+            <p className="text-sm mt-2">This feature will be added in a future update.</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -402,12 +406,13 @@ export default function OwnerDashboard() {
           <DialogHeader>
             <DialogTitle>View Reports</DialogTitle>
             <DialogDescription>
-              Access detailed analytics and reports.
+              This functionality is not yet implemented.
             </DialogDescription>
           </DialogHeader>
           <div className="p-4 text-center text-gray-500">
-            <p>Quick reports overview will be implemented here.</p>
-            <p className="text-sm mt-2">This modal connects to the full Analytics module.</p>
+            <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
+            <p>Quick reports feature is not currently available.</p>
+            <p className="text-sm mt-2">Use the Analytics module for detailed reports.</p>
           </div>
         </DialogContent>
       </Dialog>
