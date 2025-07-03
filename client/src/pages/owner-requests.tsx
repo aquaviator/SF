@@ -304,15 +304,26 @@ export default function OwnerRequestsPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-1">Dates</p>
                         <p className="text-sm text-gray-600">
-                          {format(new Date(request.startDate), "MMM d, yyyy")} - {format(new Date(request.endDate), "MMM d, yyyy")}
+                          {request.startDate && request.endDate 
+                            ? `${format(new Date(request.startDate), "MMM d, yyyy")} - ${format(new Date(request.endDate), "MMM d, yyyy")}`
+                            : "Date not specified"
+                          }
                         </p>
                         <p className="text-sm text-gray-500">
-                          {Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                          {request.startDate && request.endDate 
+                            ? `${Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days`
+                            : ""
+                          }
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-1">Requested</p>
-                        <p className="text-sm text-gray-600">{format(new Date(request.createdAt), "MMM d, yyyy")}</p>
+                        <p className="text-sm text-gray-600">
+                          {request.createdAt 
+                            ? format(new Date(request.createdAt), "MMM d, yyyy")
+                            : "Date not available"
+                          }
+                        </p>
                       </div>
                     </div>
                     
