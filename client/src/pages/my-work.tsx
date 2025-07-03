@@ -1264,7 +1264,7 @@ export default function MyWork() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {shifts.filter(shift => shift.assignedTo === parseInt(user?.id || "0")).map((shift) => (
+                                  {shifts.filter(shift => shift.assignedTo === parseInt(user?.id?.toString() || "0")).map((shift) => (
                                     <SelectItem key={shift.id} value={shift.id.toString()}>
                                       {shift.date} - {shift.startTime} to {shift.endTime} ({shift.role})
                                     </SelectItem>
@@ -1289,12 +1289,12 @@ export default function MyWork() {
                                 </FormControl>
                                 <SelectContent>
                                   {allShifts
-                                    .filter(shift => 
-                                      shift.assignedTo !== parseInt(user?.id || "0") && 
+                                    .filter((shift: any) => 
+                                      shift.assignedTo !== parseInt(user?.id?.toString() || "0") && 
                                       shift.assignedTo !== null &&
                                       shift.status === "assigned"
                                     )
-                                    .map((shift) => (
+                                    .map((shift: any) => (
                                       <SelectItem key={shift.id} value={shift.id.toString()}>
                                         <div className="flex flex-col items-start">
                                           <div className="font-medium">

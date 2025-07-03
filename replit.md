@@ -276,6 +276,15 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Removed all test data including shifts, time entries, staff profiles, and business information
   - Database now contains only single basic tenant owner user (Sarah Johnson for acme-corp)
   - System ready for fresh data population or authentic business configuration
+- July 03, 2025. Completed comprehensive role-based data filtering security system:
+  - Fixed critical data leakage where staff users could see company-wide data instead of personal data only
+  - Implemented proper role-based filtering across Holiday Requests, Swap Requests, and Assignments endpoints
+  - Added userRole parameter to all My Work page API calls for proper backend filtering
+  - Enhanced database storage methods with user-specific queries (getHolidayRequestsByUser, getSwapRequestsByUser, getAssignmentsByUser)
+  - Updated AuthContext integration to properly destructure role separately from user object
+  - Verified Mike Chen (staff) now sees only personal shifts (85 shifts) instead of company-wide data
+  - Strike system properly enforces 16 strike points blocking shift claiming (limit: 5 points)
+  - All endpoints now implement proper tenant isolation with userId + tenantId + userRole filtering
 - July 03, 2025. Fixed critical My Work page JavaScript error and role-based data filtering:
   - Resolved "hoursThisWeek.toFixed is not a function" error by properly parsing totalHours strings with parseFloat()
   - Fixed role-based user profiles - Owner (Sarah Johnson) and Staff (Mike Chen) now properly separated
