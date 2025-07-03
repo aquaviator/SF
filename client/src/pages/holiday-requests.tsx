@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { useCrud } from "@/hooks/useCrud";
 import { DataTable, Column } from "@/components/DataTable";
 import { ModalForm } from "@/components/ModalForm";
@@ -26,9 +27,34 @@ type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
 export default function HolidayRequests() {
   const { tenantId, user } = useAuth();
   
+  // Memoized query function to fetch holiday requests with user names
+  const fetchHolidayRequests = useCallback(async () => {
+    const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}`);
+    const data = await response.json();
+    console.log("STAFF HOLIDAY REQUESTS: holiday requests raw data →", data);
+    
+    // Process data to include display names
+    return data.map((req: any) => {
+      const displayName = req.name || (req.firstName && req.lastName 
+        ? `${req.firstName} ${req.lastName}` 
+        : `User #${req.requesterId}`);
+      console.log(`STAFF HOLIDAY REQUESTS: processing request ${req.id} - name field: "${req.name}", computed: "${displayName}"`);
+      return {
+        ...req,
+        displayName, // Add display name for UI
+      };
+    });
+  }, [tenantId]);
+
+  // Custom query for holiday requests with user names
+  const { data: holidayRequests = [], isLoading } = useQuery({
+    queryKey: ["/api/holiday-requests", tenantId],
+    queryFn: fetchHolidayRequests,
+    enabled: !!tenantId,
+  });
+
+  // Use the remaining crud functionality from useCrud hook
   const {
-    data: holidayRequests,
-    isLoading,
     isModalOpen,
     editingItem,
     isSubmitting,
@@ -117,13 +143,13 @@ export default function HolidayRequests() {
     return daysDiff;
   };
 
-  const columns: Column<HolidayRequest>[] = [
+  const columns: Column<any>[] = [
     {
       key: "requesterId",
       header: "Requested By",
       cell: (request) => (
         <div className="text-sm text-gray-900">
-          User #{request.requesterId}
+          {request.displayName || request.name || `User #${request.requesterId}`}
         </div>
       ),
     },
@@ -169,7 +195,7 @@ export default function HolidayRequests() {
       header: "Reviewed By",
       cell: (request) => (
         <div className="text-sm text-gray-600">
-          {request.reviewedBy ? `User #${request.reviewedBy}` : "Pending"}
+          {request.reviewedBy ? `Manager (User #${request.reviewedBy})` : "Pending"}
         </div>
       ),
     },
