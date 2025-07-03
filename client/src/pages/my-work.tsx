@@ -137,6 +137,17 @@ export default function MyWork() {
     enabled: !!tenantId,
   });
 
+  // Fetch swap requests for activity feed
+  const { data: swapRequests = [], isLoading: swapRequestsLoading } = useQuery({
+    queryKey: ["/api/swap-requests", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/swap-requests?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
   // Fetch strike data
   const { data: strikeData, isLoading: strikesLoading, error: strikesError } = useQuery<StrikeData>({
     queryKey: ["/api/strikes", tenantId, user?.id],
@@ -182,7 +193,7 @@ export default function MyWork() {
       toast({ title: "Holiday request submitted successfully!" });
       holidayForm.reset();
       setIsHolidayModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/holiday-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/holiday-requests", tenantId, user?.id] });
     },
     onError: () => {
       toast({ title: "Failed to submit holiday request", variant: "destructive" });
@@ -205,7 +216,7 @@ export default function MyWork() {
       toast({ title: "Swap request submitted successfully!" });
       swapForm.reset();
       setIsSwapModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests", tenantId, user?.id] });
     },
     onError: () => {
       toast({ title: "Failed to submit swap request", variant: "destructive" });
@@ -1354,11 +1365,51 @@ export default function MyWork() {
               </p>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No swap requests found.</p>
-                <p className="text-sm text-gray-400">Click "Request Swap" to find someone to cover your shift.</p>
-              </div>
+              {swapRequestsLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <div className="h-10 w-10 bg-muted rounded-full"></div>
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                        <div className="h-3 bg-muted rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !swapRequests.length ? (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No swap requests found.</p>
+                  <p className="text-sm text-gray-400">Click "Request Swap" to find someone to cover your shift.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {swapRequests.map((request: any) => (
+                    <div key={request.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <p className="font-medium">Shift Swap Request</p>
+                          <p className="text-sm text-muted-foreground">
+                            Requested: {new Date(request.createdAt || Date.now()).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={
+                          request.status === "pending" ? "default" :
+                          request.status === "approved" ? "success" : "destructive"
+                        }>
+                          {request.status}
+                        </Badge>
+                      </div>
+                      {request.reason && (
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Reason:</strong> {request.reason}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
