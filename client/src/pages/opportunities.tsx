@@ -67,46 +67,34 @@ export default function Opportunities() {
 
   const columns: Column<Shift>[] = [
     {
-      key: "date",
-      header: "Date",
-      cell: (opportunity) => new Date(opportunity.date).toLocaleDateString(),
+      key: "datetime",
+      header: "Date & Time",
+      cell: (opportunity) => (
+        <div className="text-xs space-y-1">
+          <div className="font-medium">{new Date(opportunity.date).toLocaleDateString()}</div>
+          <div className="text-gray-500">{opportunity.startTime}-{opportunity.endTime}</div>
+        </div>
+      ),
     },
     {
       key: "role",
       header: "Position",
-      cell: (opportunity) => opportunity.role,
+      cell: (opportunity) => (
+        <div className="text-sm font-medium max-w-[120px] truncate">{opportunity.role}</div>
+      ),
     },
     {
       key: "location",
       header: "Location",
-      cell: (opportunity) => opportunity.location,
-    },
-    {
-      key: "timeSlot",
-      header: "Time",
-      cell: (opportunity) => `${opportunity.startTime} - ${opportunity.endTime}`,
-    },
-    {
-      key: "description",
-      header: "Description",
       cell: (opportunity) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900">
-            {opportunity.description}
-          </div>
-          {opportunity.notes && (
-            <div className="text-sm text-gray-500 mt-1">
-              {opportunity.notes}
-            </div>
-          )}
-        </div>
+        <div className="text-xs text-gray-600 max-w-[100px] truncate">{opportunity.location}</div>
       ),
     },
     {
       key: "status",
       header: "Status",
       cell: (opportunity) => (
-        <Badge variant={opportunity.status === "open" ? "default" : "secondary"}>
+        <Badge variant={opportunity.status === "open" ? "default" : "secondary"} className="text-xs px-2 py-1">
           {opportunity.status === "open" ? "Available" : "Closed"}
         </Badge>
       ),
@@ -119,6 +107,7 @@ export default function Opportunities() {
           size="sm"
           onClick={() => handleClaim(opportunity)}
           disabled={opportunity.status !== "open" || claimingIds.has(opportunity.id)}
+          className="text-xs px-3 py-1 h-8"
         >
           {claimingIds.has(opportunity.id) ? "Claiming..." : "Claim"}
         </Button>

@@ -44,51 +44,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const switchRole = (newRole: UserRole) => {
     setRole(newRole);
     localStorage.setItem("dev-role", newRole);
+    // Fetch user data for the new role
+    fetchUserDataForRole(newRole);
   };
 
-  // Fetch user data from API
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch('/api/users/1'); // Fixed user ID for demo
-        if (response.ok) {
-          const userData = await response.json();
-          setUser({
-            id: userData.id,
-            firstName: userData.firstName || "User",
-            lastName: userData.lastName || "",
-            email: userData.email || "user@example.com",
-            tenantId: userData.tenantId || "acme-corp"
-          });
-        } else {
-          // Fallback to default user if API fails
-          setUser({
-            id: 1,
-            firstName: "Demo",
-            lastName: "User",
-            email: "demo@acme-corp.com",
-            tenantId: "acme-corp"
-          });
-        }
-      } catch (error) {
-        console.log("User data fetch failed, using fallback");
+  // Fetch user data based on role
+  const fetchUserDataForRole = async (userRole: UserRole) => {
+    try {
+      // Owner: Sarah Johnson (ID: 1), Staff: Mike Chen (ID: 2) as demo staff user
+      const userId = userRole === "owner" ? 1 : 2;
+      const response = await fetch(`/api/users/${userId}`);
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("Profile data loaded:", userData);
         setUser({
-          id: "1",
-          firstName: "Demo", 
-          lastName: "User",
-          email: "demo@acme-corp.com"
+          id: userData.id,
+          firstName: userData.firstName || "User",
+          lastName: userData.lastName || "",
+          email: userData.email || "user@example.com",
+          tenantId: userData.tenantId || "acme-corp"
+        });
+      } else {
+        // Fallback based on role
+        setUser({
+          id: userRole === "owner" ? 1 : 2,
+          firstName: userRole === "owner" ? "Sarah" : "Mike",
+          lastName: userRole === "owner" ? "Johnson" : "Chen",
+          email: userRole === "owner" ? "sarah@acme-corp.com" : "mike@acme-corp.com",
+          tenantId: "acme-corp"
         });
       }
-    };
+    } catch (error) {
+      console.log("User data fetch failed, using fallback for role:", userRole);
+      setUser({
+        id: userRole === "owner" ? 1 : 2,
+        firstName: userRole === "owner" ? "Sarah" : "Mike",
+        lastName: userRole === "owner" ? "Johnson" : "Chen",
+        email: userRole === "owner" ? "sarah@acme-corp.com" : "mike@acme-corp.com",
+        tenantId: "acme-corp"
+      });
+    }
+  };
 
-    fetchUserData();
-  }, []);
-
+  // Initialize role and user data
   useEffect(() => {
     const savedRole = localStorage.getItem("dev-role") as UserRole;
-    if (savedRole && (savedRole === "owner" || savedRole === "staff")) {
-      setRole(savedRole);
-    }
+    const initialRole = (savedRole && (savedRole === "owner" || savedRole === "staff")) ? savedRole : "owner";
+    setRole(initialRole);
+    fetchUserDataForRole(initialRole);
   }, []);
 
   const value: AuthContextType = {

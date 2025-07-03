@@ -169,7 +169,7 @@ export default function MyWork() {
       const submitData = {
         ...data,
         tenantId,
-        requesterId: parseInt(user?.id || "1"),
+        requesterId: user?.id || 1,
         status: "pending" as const,
         reviewedBy: null,
         reviewedAt: null,
@@ -193,7 +193,7 @@ export default function MyWork() {
     mutationFn: async (data: SwapRequestFormData) => {
       const submitData = {
         tenantId,
-        requestingUserId: parseInt(user?.id || "1"),
+        requestingUserId: user?.id || 1,
         requestedShiftId: parseInt(data.myShiftId),
         targetShiftId: parseInt(data.targetShiftId),
         reason: data.reason,
