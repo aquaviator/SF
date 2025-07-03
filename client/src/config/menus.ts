@@ -64,9 +64,9 @@ export const staffMenu: MenuItem[] = [
   },
   {
     label: "Requests",
-    route: "/swap-requests",
-    icon: RefreshCw,
-    description: "Swap and holiday requests"
+    route: "/holiday-requests",
+    icon: FileText,
+    description: "Holiday and time-off requests"
   },
   {
     label: "Account",
@@ -105,6 +105,12 @@ export const staffMoreMenu: MenuItem[] = [
     route: "/opportunities",
     icon: Briefcase,
     description: "Available shift opportunities"
+  },
+  {
+    label: "Swap Requests",
+    route: "/swap-requests",
+    icon: RefreshCw,
+    description: "Request to swap shifts with colleagues"
   },
   {
     label: "Performance",
