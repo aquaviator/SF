@@ -370,18 +370,18 @@ export default function Analytics() {
       </div>
 
       <Tabs defaultValue="charts" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="charts" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Charts
+        <TabsList className="grid w-full grid-cols-3 gap-1">
+          <TabsTrigger value="charts" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <BarChart3 className="w-4 h-4 shrink-0" />
+            <span className="truncate">Charts</span>
           </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Reports
+          <TabsTrigger value="reports" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="truncate">Reports</span>
           </TabsTrigger>
-          <TabsTrigger value="activity" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Activity Log
+          <TabsTrigger value="activity" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span className="truncate">Activity</span>
           </TabsTrigger>
         </TabsList>
 

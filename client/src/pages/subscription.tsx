@@ -344,18 +344,18 @@ export default function Subscription() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Overview
+        <TabsList className="grid w-full grid-cols-3 gap-1">
+          <TabsTrigger value="overview" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <TrendingUp className="w-4 h-4 shrink-0" />
+            <span className="truncate">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="plans" className="flex items-center gap-2">
-            <Star className="w-4 h-4" />
-            Plans
+          <TabsTrigger value="plans" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Star className="w-4 h-4 shrink-0" />
+            <span className="truncate">Plans</span>
           </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            Billing
+          <TabsTrigger value="billing" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <CreditCard className="w-4 h-4 shrink-0" />
+            <span className="truncate">Billing</span>
           </TabsTrigger>
         </TabsList>
 

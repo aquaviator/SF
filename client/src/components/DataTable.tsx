@@ -90,53 +90,102 @@ export function DataTable<T extends { id: string | number }>({
         ) : data.length === 0 ? (
           emptyState || defaultEmptyState
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {columns.map((column, index) => (
-                    <TableHead key={index}>{column.header}</TableHead>
-                  ))}
-                  {(onEdit || onDelete) && <TableHead>Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data && Array.isArray(data) && data.map((item) => (
-                  <TableRow key={item.id}>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {columns.map((column, index) => (
-                      <TableCell key={index}>
-                        {getCellValue(item, column)}
-                      </TableCell>
+                      <TableHead key={index}>{column.header}</TableHead>
+                    ))}
+                    {(onEdit || onDelete) && <TableHead>Actions</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data && Array.isArray(data) && data.map((item) => (
+                    <TableRow key={item.id}>
+                      {columns.map((column, index) => (
+                        <TableCell key={index}>
+                          {getCellValue(item, column)}
+                        </TableCell>
+                      ))}
+                      {(onEdit || onDelete) && (
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {onEdit && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onEdit(item)}
+                                className="min-h-[44px] min-w-[44px]"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {onDelete && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onDelete(item)}
+                                className="min-h-[44px] min-w-[44px]"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {data && Array.isArray(data) && data.map((item) => (
+                <Card key={item.id} className="p-4 border border-gray-200">
+                  <div className="space-y-3">
+                    {columns.map((column, index) => (
+                      <div key={index} className="flex flex-col space-y-1">
+                        <span className="text-sm font-medium text-gray-600">{column.header}</span>
+                        <div className="text-sm text-gray-900">
+                          {getCellValue(item, column)}
+                        </div>
+                      </div>
                     ))}
                     {(onEdit || onDelete) && (
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {onEdit && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onEdit(item)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {onDelete && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onDelete(item)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        {onEdit && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(item)}
+                            className="flex-1 min-h-[44px]"
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                        )}
+                        {onDelete && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onDelete(item)}
+                            className="flex-1 min-h-[44px]"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        )}
+                      </div>
                     )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

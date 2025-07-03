@@ -499,10 +499,16 @@ export default function Scheduling() {
         </div>
 
         <Tabs defaultValue="shifts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="shifts">Shifts</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 gap-1">
+            <TabsTrigger value="shifts" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Shifts</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Templates</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="shifts" className="space-y-4">

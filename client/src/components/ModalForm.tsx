@@ -31,21 +31,23 @@ export function ModalForm<T extends FieldValues = FieldValues>({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-lg">{title}</DialogTitle>
           <DialogDescription>
             Fill out the form below to save your changes.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {children}
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div className="form-grid grid gap-4 md:grid-cols-2">
+              {children}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px]">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="min-h-[44px]">
                 {isLoading ? "Saving..." : submitLabel}
               </Button>
             </div>

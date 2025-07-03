@@ -331,18 +331,18 @@ export default function Workforce() {
       </div>
 
       <Tabs defaultValue="staff" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="staff" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Staff Directory
+        <TabsList className="grid w-full grid-cols-3 gap-1">
+          <TabsTrigger value="staff" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="truncate">Staff</span>
           </TabsTrigger>
-          <TabsTrigger value="performance" className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Performance
+          <TabsTrigger value="performance" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <TrendingUp className="w-4 h-4 shrink-0" />
+            <span className="truncate">Performance</span>
           </TabsTrigger>
-          <TabsTrigger value="holidays" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Holiday Entitlements
+          <TabsTrigger value="holidays" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="truncate">Holidays</span>
           </TabsTrigger>
         </TabsList>
 

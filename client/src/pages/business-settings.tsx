@@ -760,12 +760,22 @@ export default function BusinessSettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Business Profile</TabsTrigger>
-          <TabsTrigger value="roles">Job Roles</TabsTrigger>
-          <TabsTrigger value="locations">Locations</TabsTrigger>
-          <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="hours">Operating Hours</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 h-auto">
+          <TabsTrigger value="profile" className="text-xs md:text-sm p-2 min-h-[44px]">
+            <span className="truncate">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs md:text-sm p-2 min-h-[44px]">
+            <span className="truncate">Roles</span>
+          </TabsTrigger>
+          <TabsTrigger value="locations" className="text-xs md:text-sm p-2 min-h-[44px]">
+            <span className="truncate">Locations</span>
+          </TabsTrigger>
+          <TabsTrigger value="departments" className="text-xs md:text-sm p-2 min-h-[44px]">
+            <span className="truncate">Departments</span>
+          </TabsTrigger>
+          <TabsTrigger value="hours" className="text-xs md:text-sm p-2 min-h-[44px] col-span-2 md:col-span-1">
+            <span className="truncate">Operating Hours</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">

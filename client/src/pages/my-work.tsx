@@ -321,7 +321,7 @@ export default function MyWork() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Next Shift</CardTitle>
@@ -379,22 +379,22 @@ export default function MyWork() {
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="schedule" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="schedule" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Schedule
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="schedule" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="truncate">Schedule</span>
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            Assignments
+          <TabsTrigger value="assignments" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Briefcase className="h-4 w-4 shrink-0" />
+            <span className="truncate">Tasks</span>
           </TabsTrigger>
-          <TabsTrigger value="timetracking" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Time Tracking
+          <TabsTrigger value="timetracking" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Clock className="h-4 w-4 shrink-0" />
+            <span className="truncate">Time</span>
           </TabsTrigger>
-          <TabsTrigger value="requests" className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Requests
+          <TabsTrigger value="requests" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <RefreshCw className="h-4 w-4 shrink-0" />
+            <span className="truncate">Requests</span>
           </TabsTrigger>
         </TabsList>
 
