@@ -52,14 +52,19 @@ export function DayShiftsModal({
   }, [date, isOpen, tenantId]);
 
   const fetchDayShifts = async () => {
-    if (!date || !tenantId) return;
+    if (!date || !tenantId) {
+      console.log('DayShiftsModal: Missing date or tenantId', { date, tenantId });
+      return;
+    }
     
+    console.log('DayShiftsModal: Fetching shifts for date:', date, 'tenant:', tenantId);
     setLoading(true);
     try {
       const shifts = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
+      console.log('DayShiftsModal: Received shifts:', shifts);
       setDayShifts(shifts);
     } catch (error) {
-      console.error("Failed to fetch shifts:", error);
+      console.error("DayShiftsModal: Failed to fetch shifts:", error);
       toast({
         title: "Error",
         description: "Failed to fetch shifts for this date",
