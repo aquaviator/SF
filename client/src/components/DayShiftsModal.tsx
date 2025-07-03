@@ -88,10 +88,44 @@ export function DayShiftsModal({
     setTimeout(refreshShifts, 500);
   };
 
-  const handleDuplicateShift = (shift: Shift) => {
-    onDuplicateShift(shift);
-    // Refresh after a short delay to see duplicated shift
-    setTimeout(refreshShifts, 500);
+  const handleDuplicateShift = async (shift: Shift) => {
+    try {
+      // Create a copy of the shift without the ID and reset some fields
+      const duplicateShiftData = {
+        tenantId: shift.tenantId,
+        date: shift.date,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        role: shift.role,
+        description: `${shift.description} (Copy)`,
+        location: shift.location,
+        assignedTo: null, // Reset assignment for copy
+        status: "open" as const,
+        assignmentType: shift.assignmentType,
+        requiredStaff: shift.requiredStaff,
+        claimedBy: null,
+        templateId: null,
+        notes: shift.notes,
+        createdBy: shift.createdBy
+      };
+
+      // Create the duplicate shift via API
+      await apiRequest("POST", `/api/shifts?tenantId=${tenantId}`, duplicateShiftData);
+      
+      // Refresh the shifts list to show the new copy
+      setTimeout(refreshShifts, 500);
+      
+      toast({
+        title: "Shift Duplicated",
+        description: "A copy of the shift has been created successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate shift",
+        variant: "destructive"
+      });
+    }
   };
 
   const openDeleteDialog = (shift: Shift) => {
