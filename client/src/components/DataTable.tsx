@@ -64,15 +64,15 @@ export function DataTable<T extends { id: string | number }>({
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="mb-2 sm:mb-0">{title}</CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="page-section__title sm:mb-0">{title}</CardTitle>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex min-h-[44px]">
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
             {onAdd && (
-              <Button onClick={onAdd} size="sm">
+              <Button onClick={onAdd} size="sm" className="flex-1 sm:flex-none min-h-[44px]">
                 <Plus className="w-4 h-4 mr-2" />
                 {addLabel}
               </Button>
@@ -92,26 +92,26 @@ export function DataTable<T extends { id: string | number }>({
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block table-scroll overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     {columns.map((column, index) => (
-                      <TableHead key={index}>{column.header}</TableHead>
+                      <TableHead key={index} className="min-w-[120px]">{column.header}</TableHead>
                     ))}
-                    {(onEdit || onDelete) && <TableHead>Actions</TableHead>}
+                    {(onEdit || onDelete) && <TableHead className="min-w-[120px]">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data && Array.isArray(data) && data.map((item) => (
                     <TableRow key={item.id}>
                       {columns.map((column, index) => (
-                        <TableCell key={index}>
+                        <TableCell key={index} className="min-w-[120px]">
                           {getCellValue(item, column)}
                         </TableCell>
                       ))}
                       {(onEdit || onDelete) && (
-                        <TableCell>
+                        <TableCell className="min-w-[120px]">
                           <div className="flex items-center gap-2">
                             {onEdit && (
                               <Button

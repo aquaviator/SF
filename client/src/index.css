@@ -188,3 +188,79 @@ select {
     gap: 1rem;
   }
 }
+
+/* Page Section Title and Tab Strip Mobile Improvements */
+.page-section__title {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-strip .tab {
+  flex: 1 1 auto;
+  min-width: 5rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-first responsive tab layouts */
+@media (max-width: 768px) {
+  /* Ensure tabs never overlap with headings */
+  .flex.items-center.justify-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  /* Tab container improvements */
+  [role="tablist"] {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* Individual tab improvements */
+  [role="tab"] {
+    flex: 1 1 auto;
+    min-width: 5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+}
+
+/* Ultra-narrow screens - stack tabs vertically */
+@media (max-width: 360px) {
+  .tab-strip {
+    flex-direction: column;
+  }
+  
+  .tab-strip .tab,
+  [role="tab"] {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  /* Ensure page titles have breathing room */
+  h1, h2, .page-section__title {
+    margin-bottom: 1rem;
+  }
+}
