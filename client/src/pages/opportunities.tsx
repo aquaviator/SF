@@ -24,9 +24,9 @@ export default function Opportunities() {
     },
   });
 
-  const applyMutation = useMutation({
+  const claimMutation = useMutation({
     mutationFn: async (opportunityId: number) => {
-      return apiRequest("POST", `/api/opportunities/${opportunityId}/apply`, {
+      return apiRequest("POST", `/api/opportunities/${opportunityId}/claim`, {
         tenantId,
         userId: parseInt(user?.id || "1"),
       });
@@ -34,21 +34,22 @@ export default function Opportunities() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Application submitted successfully!",
+        description: "Opportunity claimed successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts", tenantId] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to apply for opportunity",
+        description: error.message || "Failed to claim opportunity",
         variant: "destructive",
       });
     },
   });
 
-  const handleApply = (opportunity: Shift) => {
-    applyMutation.mutate(opportunity.id);
+  const handleClaim = (opportunity: Shift) => {
+    claimMutation.mutate(opportunity.id);
   };
 
   const columns: Column<Shift>[] = [
@@ -103,10 +104,10 @@ export default function Opportunities() {
       cell: (opportunity) => (
         <Button
           size="sm"
-          onClick={() => handleApply(opportunity)}
-          disabled={opportunity.status !== "open" || applyMutation.isPending}
+          onClick={() => handleClaim(opportunity)}
+          disabled={opportunity.status !== "open" || claimMutation.isPending}
         >
-          {applyMutation.isPending ? "Applying..." : "Apply"}
+          {claimMutation.isPending ? "Claiming..." : "Claim"}
         </Button>
       ),
     },
@@ -118,7 +119,7 @@ export default function Opportunities() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Shift Opportunities</h2>
-        <p className="text-gray-600">Find and apply for available shifts</p>
+        <p className="text-gray-600">Find and claim available shift opportunities</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

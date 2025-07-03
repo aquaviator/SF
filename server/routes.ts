@@ -319,23 +319,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/opportunities/:id/apply", async (req, res) => {
+  app.post("/api/opportunities/:id/claim", async (req, res) => {
     try {
-      const tenantId = req.headers.tenantid as string;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
+      const tenantId = req.body.tenantId as string;
+      const userId = req.body.userId as number;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
       }
       
       const id = parseInt(req.params.id);
-      const opportunity = await storage.getOpportunity(id);
+      const opportunity = await storage.getShift(id);
+      
       if (!opportunity) {
         return res.status(404).json({ message: "Opportunity not found" });
       }
       
-      // For now, just return success - could implement actual application logic
-      res.json({ message: "Successfully applied to opportunity", opportunityId: id });
+      if (opportunity.status !== "open") {
+        return res.status(400).json({ message: "Opportunity is no longer available" });
+      }
+      
+      if (opportunity.assignmentType !== "opportunity") {
+        return res.status(400).json({ message: "This is not an opportunity shift" });
+      }
+      
+      // Check if user can claim shifts (strike system validation)
+      const canClaim = await strikeService.canClaimShift(userId, tenantId);
+      if (!canClaim.canClaim) {
+        return res.status(403).json({ message: canClaim.reason || "Cannot claim shifts due to strikes" });
+      }
+      
+      // Convert opportunity to confirmed shift by updating the shift
+      const updatedShift = await storage.updateShift(id, {
+        assignedTo: userId,
+        assignmentType: "assigned",
+        status: "confirmed"
+      });
+      
+      res.json({ 
+        message: "Successfully claimed opportunity", 
+        shift: updatedShift 
+      });
     } catch (error) {
-      res.status(500).json({ message: "Failed to apply to opportunity" });
+      console.error("Error claiming opportunity:", error);
+      res.status(500).json({ message: "Failed to claim opportunity" });
     }
   });
 
