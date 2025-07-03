@@ -223,6 +223,25 @@ export default function MyWork() {
     },
   });
 
+  // Handle swap request actions (accept/decline)
+  const handleSwapAction = async (requestId: number, status: "approved" | "declined") => {
+    try {
+      await apiRequest("PUT", `/api/swap-requests/${requestId}`, { status });
+      toast({ 
+        title: status === "approved" ? "Swap request accepted!" : "Swap request declined",
+        description: status === "approved" ? "The shift swap has been approved." : "The swap request has been declined."
+      });
+      // Refresh swap requests data
+      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests", tenantId, user?.id] });
+    } catch (error) {
+      toast({ 
+        title: "Error updating swap request", 
+        variant: "destructive",
+        description: "Please try again."
+      });
+    }
+  };
+
   // Fetch time tracking policies
   const { data: timePolicy } = useQuery({
     queryKey: ["/api/shift-policy", tenantId],
@@ -1431,29 +1450,76 @@ export default function MyWork() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {swapRequests.map((request: any) => (
-                    <div key={request.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <p className="font-medium">Shift Swap Request</p>
-                          <p className="text-sm text-muted-foreground">
-                            Requested: {new Date(request.createdAt || Date.now()).toLocaleDateString()}
-                          </p>
+                  {swapRequests.map((request: any) => {
+                    // Determine if this is an incoming request (target shift belongs to current user)
+                    const userShifts = shifts.filter(shift => shift.assignedTo === user?.id);
+                    const isIncomingRequest = userShifts.some(shift => shift.id === request.targetShiftId);
+                    const isMyRequest = request.requesterId === user?.id;
+                    
+                    return (
+                      <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">
+                                {isIncomingRequest ? "Incoming Swap Request" : "My Swap Request"}
+                              </p>
+                              {isIncomingRequest && (
+                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                  Action Required
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {isIncomingRequest 
+                                ? `${request.requesterName || 'Someone'} wants to swap shifts with you`
+                                : `Requested: ${new Date(request.createdAt || Date.now()).toLocaleDateString()}`
+                              }
+                            </p>
+                          </div>
+                          <Badge variant={
+                            request.status === "pending" ? "default" :
+                            request.status === "approved" ? "secondary" : "destructive"
+                          }>
+                            {request.status}
+                          </Badge>
                         </div>
-                        <Badge variant={
-                          request.status === "pending" ? "default" :
-                          request.status === "approved" ? "secondary" : "destructive"
-                        }>
-                          {request.status}
-                        </Badge>
+                        
+                        {request.reason && (
+                          <p className="text-sm text-muted-foreground">
+                            <strong>Reason:</strong> {request.reason}
+                          </p>
+                        )}
+
+                        {/* Show action buttons for incoming pending requests */}
+                        {isIncomingRequest && request.status === "pending" && (
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleSwapAction(request.id, "approved")}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Accept Swap
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleSwapAction(request.id, "declined")}
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              Decline Swap
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Show shift details */}
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <p><strong>Original Shift:</strong> {request.originalShiftDate} ({request.originalShiftTime})</p>
+                          <p><strong>Target Shift:</strong> {request.targetShiftDate} ({request.targetShiftTime})</p>
+                        </div>
                       </div>
-                      {request.reason && (
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Reason:</strong> {request.reason}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
