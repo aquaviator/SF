@@ -6,6 +6,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import type { Shift } from "@shared/schema";
 
+// Role color mapping for calendar badges
+const roleColorMap: Record<string, string> = {
+  "Chef": "bg-green-100 border-green-300 text-green-800",
+  "Bar Staff": "bg-blue-100 border-blue-300 text-blue-800",
+  "Bartender": "bg-blue-100 border-blue-300 text-blue-800",
+  "Security": "bg-yellow-100 border-yellow-300 text-yellow-800",
+  "Supervisor": "bg-purple-100 border-purple-300 text-purple-800",
+  "Manager": "bg-purple-100 border-purple-300 text-purple-800",
+  "Server": "bg-indigo-100 border-indigo-300 text-indigo-800",
+  "Driver": "bg-orange-100 border-orange-300 text-orange-800",
+  "Warehouse Clerk": "bg-gray-100 border-gray-300 text-gray-800",
+  // Default fallback
+  "default": "bg-slate-100 border-slate-300 text-slate-800"
+};
+
+// Helper function to get role-based colors
+const getRoleColor = (role: string): string => {
+  return roleColorMap[role] || roleColorMap["default"];
+};
+
 interface CalendarViewProps {
   shifts: Shift[];
   onDateClick?: (date: Date) => void;
@@ -160,7 +180,7 @@ export function CalendarView({
                     {dayShifts.slice(0, 2).map(shift => (
                       <div
                         key={shift.id}
-                        className={`text-xs px-2 py-1 rounded text-center truncate ${getStatusColor(shift.status)}`}
+                        className={`text-xs px-2 py-1 rounded border text-center truncate ${getRoleColor(shift.role)}`}
                       >
                         {shift.role}
                       </div>
@@ -225,6 +245,9 @@ export function CalendarView({
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h4 className="font-medium">{shift.role}</h4>
+                            <div className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${getRoleColor(shift.role)}`}>
+                              {shift.role}
+                            </div>
                             <Badge className={getStatusColor(shift.status)}>
                               {shift.status.replace('_', ' ')}
                             </Badge>
