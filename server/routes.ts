@@ -681,19 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Time entry routes for clock-in/out functionality
-  app.get("/api/time-entries", async (req, res) => {
-    try {
-      const tenantId = req.query.tenantId as string;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
-      }
-      
-      const entries = await storage.getTimeEntriesByTenant(tenantId);
-      res.json(entries);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch time entries" });
-    }
-  });
+
 
   app.get("/api/time-entries/active", async (req, res) => {
     try {
@@ -1387,9 +1375,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(timeEntries || []);
     } catch (error) {
       console.error("Get time entries error:", error);
-      console.error("Error details:", error.message);
-      console.error("Stack trace:", error.stack);
-      res.status(500).json({ message: "Failed to fetch time entries", error: error.message });
+      console.error("Error details:", error?.message || error);
+      console.error("Stack trace:", error?.stack);
+      res.status(500).json({ message: "Failed to fetch time entries", error: error?.message || "Unknown error" });
     }
   });
 

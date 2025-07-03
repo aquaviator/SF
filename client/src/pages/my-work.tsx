@@ -29,6 +29,7 @@ export default function MyWork() {
   const { tenantId, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("overview");
   
   // Fetch my shifts
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
@@ -205,21 +206,21 @@ export default function MyWork() {
       title: "Submit Holiday Request",
       description: "Request time off for vacation or sick days",
       icon: Calendar,
-      action: () => window.location.href = "/holiday-requests",
+      action: () => setActiveTab("holiday-requests"),
       color: "bg-blue-500 hover:bg-blue-600",
     },
     {
       title: "View Schedule",
       description: "Check your upcoming shifts and assignments",
       icon: Clock,
-      action: () => window.location.href = "/my-shifts",
+      action: () => setActiveTab("my-shifts"),
       color: "bg-green-500 hover:bg-green-600",
     },
     {
       title: "Request Shift Swap",
       description: "Find someone to cover your shift",
       icon: RefreshCw,
-      action: () => window.location.href = "/swap-requests",
+      action: () => setActiveTab("swap-requests"),
       color: "bg-purple-500 hover:bg-purple-600",
     },
   ];
@@ -248,6 +249,54 @@ export default function MyWork() {
   });
   const hoursLastWeek = lastWeekEntries.reduce((total: number, entry: any) => total + (entry.totalHours || 0), 0);
   const hoursChange = hoursThisWeek - hoursLastWeek;
+
+  // Performance calculation functions
+  const calculateMonthlyHours = () => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyEntries = (timeEntries || []).filter((entry: any) => {
+      const entryDate = new Date(entry.clockInTime);
+      return entryDate >= startOfMonth && entryDate <= today;
+    });
+    return monthlyEntries.reduce((total: number, entry: any) => total + parseFloat(entry.totalHours || 0), 0).toFixed(1);
+  };
+
+  const calculateCompletedShifts = () => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const completedShifts = shifts.filter(shift => {
+      const shiftDate = new Date(shift.date);
+      return shiftDate >= startOfMonth && shiftDate <= today && shift.status === "completed";
+    });
+    return completedShifts.length;
+  };
+
+  const calculateAttendanceRate = () => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyShifts = shifts.filter(shift => {
+      const shiftDate = new Date(shift.date);
+      return shiftDate >= startOfMonth && shiftDate <= today;
+    });
+    
+    if (monthlyShifts.length === 0) return "100.0";
+    
+    const attendedShifts = monthlyShifts.filter(shift => 
+      shift.status === "completed" || shift.status === "clocked_out"
+    );
+    const rate = (attendedShifts.length / monthlyShifts.length) * 100;
+    return rate.toFixed(1);
+  };
+
+  const calculatePerformanceRating = () => {
+    const attendanceRate = parseFloat(calculateAttendanceRate());
+    const monthlyHours = parseFloat(calculateMonthlyHours());
+    
+    if (attendanceRate >= 95 && monthlyHours >= 120) return "Excellent";
+    if (attendanceRate >= 90 && monthlyHours >= 100) return "Good";
+    if (attendanceRate >= 85 && monthlyHours >= 80) return "Fair";
+    return "Needs Improvement";
+  };
   
   // Calculate attendance rate
   const completedShifts = shifts.filter(shift => shift.status === 'completed').length;
@@ -335,7 +384,7 @@ export default function MyWork() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="time-tracking">Time Tracking</TabsTrigger>
@@ -667,15 +716,15 @@ export default function MyWork() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Hours Worked</span>
-                      <Badge variant="outline">120h</Badge>
+                      <Badge variant="outline">{calculateMonthlyHours()}h</Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Shifts Completed</span>
-                      <Badge variant="outline">28</Badge>
+                      <Badge variant="outline">{calculateCompletedShifts()}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Attendance Rate</span>
-                      <Badge variant="outline" className="text-green-600">98.5%</Badge>
+                      <Badge variant="outline" className="text-green-600">{calculateAttendanceRate()}%</Badge>
                     </div>
                   </div>
                 </div>
@@ -693,7 +742,7 @@ export default function MyWork() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Performance Rating</span>
-                      <Badge variant="outline" className="text-blue-600">Excellent</Badge>
+                      <Badge variant="outline" className="text-blue-600">{calculatePerformanceRating()}</Badge>
                     </div>
                   </div>
                 </div>
