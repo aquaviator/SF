@@ -217,6 +217,10 @@ export const shiftPolicies = pgTable("shift_policies", {
   maxStrikePoints: integer("max_strike_points").notNull().default(5),
   strikePointsNoShow: integer("strike_points_no_show").notNull().default(2),
   strikePointsLateCancellation: integer("strike_points_late_cancellation").notNull().default(1),
+  resetPeriodDays: integer("reset_period_days").notNull().default(30), // Clean slate period
+  lateGracePeriodMinutes: integer("late_grace_period_minutes").notNull().default(15), // Grace period for clock-in
+  clockInBufferMinutes: integer("clock_in_buffer_minutes").notNull().default(30), // Time before marking as no-show
+  clockOutBufferMinutes: integer("clock_out_buffer_minutes").notNull().default(60), // Time before marking checkout as missing
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -278,6 +282,8 @@ export const insertShiftPolicySchema = createInsertSchema(shiftPolicies).omit({
   createdAt: true,
   updatedAt: true,
 });
+
+// Note: Time entry and staff strike schemas will be defined after their tables
 
 // Analytics tables
 export const analyticsReports = pgTable("analytics_reports", {
@@ -399,17 +405,39 @@ export const timeEntries = pgTable("time_entries", {
   tenantId: text("tenant_id").notNull(),
   userId: integer("user_id").notNull(),
   shiftId: integer("shift_id"),
-  clockInTime: timestamp("clock_in_time").notNull(),
+  clockInTime: timestamp("clock_in_time"),
   clockOutTime: timestamp("clock_out_time"),
   breakStartTime: timestamp("break_start_time"),
   breakEndTime: timestamp("break_end_time"),
   totalHours: text("total_hours"), // calculated field
-  status: text("status").notNull().$type<"clocked_in" | "on_break" | "clocked_out">(),
+  status: text("status").notNull().$type<"on_time" | "late" | "missing" | "early_exit" | "missing_checkout" | "adjusted" | "clocked_in" | "on_break" | "clocked_out">(),
+  lateByMinutes: integer("late_by_minutes"), // How late they clocked in
+  earlyByMinutes: integer("early_by_minutes"), // How early they clocked out
+  scheduledStartTime: timestamp("scheduled_start_time"), // From the shift
+  scheduledEndTime: timestamp("scheduled_end_time"), // From the shift
+  adjustedBy: integer("adjusted_by"), // Owner who made adjustments
+  adjustedAt: timestamp("adjusted_at"), // When adjustment was made
+  adjustmentReason: text("adjustment_reason"), // Why it was adjusted
   notes: text("notes"),
   approvedBy: integer("approved_by"),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Staff strikes table for policy enforcement
+export const staffStrikes = pgTable("staff_strikes", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull(),
+  points: integer("points").notNull().default(0),
+  reason: text("reason").notNull().$type<"no_show" | "late_cancellation" | "manual_adjustment">(),
+  shiftId: integer("shift_id"), // Reference to the shift that caused the strike
+  issuedBy: integer("issued_by"), // Owner who issued the strike (if manual)
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Based on resetPeriodDays policy
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 // Performance tracking tables
@@ -483,12 +511,6 @@ export const insertBillingInfoSchema = createInsertSchema(billingInfo).omit({
   updatedAt: true,
 });
 
-export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({
   id: true,
   recordedAt: true,
@@ -498,6 +520,17 @@ export const insertHolidayEntitlementSchema = createInsertSchema(holidayEntitlem
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertStaffStrikeSchema = createInsertSchema(staffStrikes).omit({
+  id: true,
+  issuedAt: true,
 });
 
 export type Assignment = typeof assignments.$inferSelect;
@@ -518,6 +551,10 @@ export type OperatingHours = typeof operatingHours.$inferSelect;
 export type InsertOperatingHours = z.infer<typeof insertOperatingHoursSchema>;
 export type ShiftPolicy = typeof shiftPolicies.$inferSelect;
 export type InsertShiftPolicy = z.infer<typeof insertShiftPolicySchema>;
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+export type StaffStrike = typeof staffStrikes.$inferSelect;
+export type InsertStaffStrike = z.infer<typeof insertStaffStrikeSchema>;
 
 // New types
 export type AnalyticsReport = typeof analyticsReports.$inferSelect;
@@ -536,8 +573,6 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type BillingInfo = typeof billingInfo.$inferSelect;
 export type InsertBillingInfo = z.infer<typeof insertBillingInfoSchema>;
-export type TimeEntry = typeof timeEntries.$inferSelect;
-export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
 export type HolidayEntitlement = typeof holidayEntitlements.$inferSelect;

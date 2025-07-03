@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 
-// Business Policy Schema
+// Business Policy Schema - Extended for time tracking and strike management
 const businessPolicySchema = z.object({
   minNoticeHours: z.number().min(0, "Must be at least 0 hours").max(168, "Must be less than 168 hours"),
   maxAdvanceBookingDays: z.number().min(1, "Must be at least 1 day").max(365, "Must be less than 365 days"),
@@ -21,6 +21,10 @@ const businessPolicySchema = z.object({
   maxStrikePoints: z.number().min(1, "Must be at least 1 point").max(20, "Must be less than 20 points"),
   strikePointsNoShow: z.number().min(0, "Must be at least 0 points").max(10, "Must be less than 10 points"),
   strikePointsLateCancellation: z.number().min(0, "Must be at least 0 points").max(10, "Must be less than 10 points"),
+  resetPeriodDays: z.number().min(1, "Must be at least 1 day").max(365, "Must be less than 365 days"),
+  lateGracePeriodMinutes: z.number().min(0, "Must be at least 0 minutes").max(60, "Must be less than 60 minutes"),
+  clockInBufferMinutes: z.number().min(5, "Must be at least 5 minutes").max(120, "Must be less than 120 minutes"),
+  clockOutBufferMinutes: z.number().min(5, "Must be at least 5 minutes").max(240, "Must be less than 240 minutes"),
 });
 
 type BusinessPolicyFormData = z.infer<typeof businessPolicySchema>;
@@ -34,6 +38,10 @@ interface BusinessPolicy {
   maxStrikePoints: number;
   strikePointsNoShow: number;
   strikePointsLateCancellation: number;
+  resetPeriodDays: number;
+  lateGracePeriodMinutes: number;
+  clockInBufferMinutes: number;
+  clockOutBufferMinutes: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -70,6 +78,10 @@ export default function Policies() {
         maxStrikePoints: policy.maxStrikePoints || 5,
         strikePointsNoShow: policy.strikePointsNoShow || 2,
         strikePointsLateCancellation: policy.strikePointsLateCancellation || 1,
+        resetPeriodDays: policy.resetPeriodDays || 90,
+        lateGracePeriodMinutes: policy.lateGracePeriodMinutes || 10,
+        clockInBufferMinutes: policy.clockInBufferMinutes || 15,
+        clockOutBufferMinutes: policy.clockOutBufferMinutes || 30,
       };
       policyForm.reset(formValues);
     } else if (!policyLoading) {
@@ -81,6 +93,10 @@ export default function Policies() {
         maxStrikePoints: 5,
         strikePointsNoShow: 2,
         strikePointsLateCancellation: 1,
+        resetPeriodDays: 90,
+        lateGracePeriodMinutes: 10,
+        clockInBufferMinutes: 15,
+        clockOutBufferMinutes: 30,
       };
       policyForm.reset(defaultValues);
     }
@@ -288,6 +304,105 @@ export default function Policies() {
                       <FormMessage />
                       <p className="text-xs text-muted-foreground">
                         Points given for cancelling within the deadline period
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="col-span-full">
+                  <div className="border-b pb-2 mb-4">
+                    <h3 className="text-lg font-semibold">Time Tracking Policies</h3>
+                    <p className="text-sm text-muted-foreground">Configure attendance and time tracking rules</p>
+                  </div>
+                </div>
+
+                <FormField
+                  control={policyForm.control}
+                  name="resetPeriodDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Strike Reset Period (Days)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="365"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 90)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Days after which strike points are automatically reset
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={policyForm.control}
+                  name="lateGracePeriodMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Late Grace Period (Minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="60"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 10)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Minutes after shift start before considered late
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={policyForm.control}
+                  name="clockInBufferMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clock-In Buffer (Minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="5"
+                          max="120"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 15)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Minutes before shift start when clock-in is allowed
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={policyForm.control}
+                  name="clockOutBufferMinutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clock-Out Buffer (Minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="5"
+                          max="240"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 30)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Minutes after shift end when clock-out is allowed
                       </p>
                     </FormItem>
                   )}

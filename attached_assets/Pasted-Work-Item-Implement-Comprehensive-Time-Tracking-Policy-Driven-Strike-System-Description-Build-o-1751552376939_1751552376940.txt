@@ -1,0 +1,79 @@
+Work Item: Implement Comprehensive Time-Tracking & Policy-Driven Strike System
+
+Description:
+Build out end-to-end support for:
+
+Shift time tracking (clock-in/out, auto-flags, owner overrides)
+
+Policy-driven strikes (no-show, late-cancel, threshold blocking & escalations)
+
+UI updates (staff “My Work” indicators & owner dashboards)
+
+Logging & console diagnostics at every step
+
+➤ Requirements & Acceptance Criteria
+1. Time-Tracking Scenarios
+#	Scenario	Staff View	Owner View	System Action
+1	On-time check-in	“Checked in at 09:00” (green)	Sees 09:00 log	Create time_entry with status="on_time"
+2	Late check-in	“Checked in at 09:30 (30 m late)” (red)	Sees late flag	status="late", record lateBy=30m
+3	Forgotten check-in	“Missed check-in” warning	“Missed check-in” alert	Scheduled job (shiftStart + buffer) → status="missing", flag entry
+4	Early check-out	“Checked out at 16:00 (1 h early)”	Sees early-out flag	status="early_exit", record earlyBy=1h
+5	Forgotten check-out	“Still clocked in” warning	Owner sees “Clock-out missing”	Scheduled job (shiftEnd + buffer) → status="missing_checkout"
+6	Owner override check-in	—	Owner clicks “Adjust”, sets new time	Update time_entry.timeIn, set status="adjusted", log change
+7	Owner manual entry	—	Owner clicks “Add Entry”	Create new time_entry record via UI
+
+2. Policy-Driven Strike Rules
+Rule	Trigger	Points	Outcome
+No-Show	No clock-in by cancelDeadline hrs before shift	ptsNoShow (e.g. 2)	status="no_show", add points
+Late Cancellation	Cancel shift < cancelDeadline hrs before start	ptsLateCancel (e.g. 1)	status="late_cancel", add points
+Excessive Points	strikes ≥ maxStrikePts	—	Block new claims (403), UI warning, notify owner
+Clean Slate	Every resetPeriodDays (e.g. 30 days)	—	Zero or reduce points per policy
+
+➤ Implementation Details
+Data Model
+
+shift_policies table (minNoticeHrs, cancelDeadlineHrs, maxStrikePts, ptsNoShow, ptsLateCancel, resetPeriodDays)
+
+staff_strikes table (userId, points, lastUpdated)
+
+Backend
+
+Time entries: endpoints to create/update time_entry with statuses & timestamps
+
+Scheduled jobs (cron) to mark missing check-ins/check-outs
+
+Strike endpoints:
+
+POST /api/shifts/:id/cancel → award late-cancel strikes
+
+background job → award no-show strikes
+
+GET /api/staff/:userId/strikes → returns { points, maxAllowed, warning }
+
+Claim guard in POST /api/shifts/:id/claim: block if strikes ≥ max
+
+Frontend
+
+Staff Dashboard “My Work”: display real-time check-in/out status, strike summary
+
+Owner Dashboard “Staff Management”: add Strikes column and time-entry override UI
+
+Modals & Logs: all actions (clockIn, clockOut, adjust, claim, strike) emit console.log("🛠 ACTION", details)
+
+Testing
+
+Unit: test each time-entry status transition, strike logic, guard rules
+
+Integration: simulate clock-in/out flows, cancellations, no-shows, and strike thresholds
+
+E2E (Cypress): verify UI updates, blocking behavior, owner overrides, notifications
+
+Non-Regression
+
+Isolate all new logic under its own modules (timeMonitor, strikeService)
+
+Add feature flags if needed
+
+Before merging, run full test suite and smoke tests for both Owner and Staff dashboards
+
+Please confirm or let me know any tweaks, and I’ll generate the detailed subtasks & API specs next.
