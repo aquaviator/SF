@@ -57,12 +57,16 @@ export default function OwnerRequestsPage() {
     queryFn: () => fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()),
     select: (data: any[]) => {
       console.log("OWNER REQUESTS: holiday requests data →", data);
-      return data.map((req: any) => ({
-        ...req,
-        name: req.firstName && req.lastName 
+      return data.map((req: any) => {
+        const displayName = req.name || (req.firstName && req.lastName 
           ? `${req.firstName} ${req.lastName}` 
-          : `User ${req.requesterId}`,
-      }));
+          : `User ${req.requesterId}`);
+        console.log(`OWNER REQUESTS: processing request ${req.id} - firstName: ${req.firstName}, lastName: ${req.lastName}, name: ${req.name}, final displayName: ${displayName}`);
+        return {
+          ...req,
+          name: displayName,
+        };
+      });
     },
     enabled: !!tenantId,
   });
