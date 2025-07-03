@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { User, Shift } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, Column } from "@/components/DataTable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Users, 
   Calendar, 
@@ -44,6 +51,12 @@ interface RecentActivity {
 
 export default function OwnerDashboard() {
   const { tenantId } = useAuth();
+
+  // Modal state management
+  const [isCreateShiftOpen, setIsCreateShiftOpen] = useState(false);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [isApproveRequestsOpen, setIsApproveRequestsOpen] = useState(false);
+  const [isViewReportsOpen, setIsViewReportsOpen] = useState(false);
 
   // Fetch real staff data for metrics
   const { data: staffData = [], isLoading: metricsStaffLoading } = useQuery<User[]>({
@@ -302,25 +315,102 @@ export default function OwnerDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2"
+              onClick={() => setIsCreateShiftOpen(true)}
+            >
               <Plus className="w-6 h-6" />
               <span>Create Shift</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2"
+              onClick={() => setIsAddStaffOpen(true)}
+            >
               <Users className="w-6 h-6" />
               <span>Add Staff</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2"
+              onClick={() => setIsApproveRequestsOpen(true)}
+            >
               <CheckCircle className="w-6 h-6" />
               <span>Approve Requests</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2"
+              onClick={() => setIsViewReportsOpen(true)}
+            >
               <Eye className="w-6 h-6" />
               <span>View Reports</span>
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick Action Modals */}
+      <Dialog open={isCreateShiftOpen} onOpenChange={setIsCreateShiftOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Shift</DialogTitle>
+            <DialogDescription>
+              Quick shift creation functionality.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 text-center text-gray-500">
+            <p>Shift creation form will be implemented here.</p>
+            <p className="text-sm mt-2">This modal connects to the full Scheduling module.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Staff Member</DialogTitle>
+            <DialogDescription>
+              Add new staff to your team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 text-center text-gray-500">
+            <p>Staff registration form will be implemented here.</p>
+            <p className="text-sm mt-2">This modal connects to the Staff management module.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isApproveRequestsOpen} onOpenChange={setIsApproveRequestsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve Requests</DialogTitle>
+            <DialogDescription>
+              Review and approve pending staff requests.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 text-center text-gray-500">
+            <p>Request approval interface will be implemented here.</p>
+            <p className="text-sm mt-2">This modal connects to Holiday Requests and other approval workflows.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewReportsOpen} onOpenChange={setIsViewReportsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>View Reports</DialogTitle>
+            <DialogDescription>
+              Access detailed analytics and reports.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 text-center text-gray-500">
+            <p>Quick reports overview will be implemented here.</p>
+            <p className="text-sm mt-2">This modal connects to the full Analytics module.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

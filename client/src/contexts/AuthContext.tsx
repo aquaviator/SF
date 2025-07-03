@@ -32,17 +32,53 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<UserRole>("owner");
   const [tenantId] = useState("acme-corp"); // Stubbed tenant ID
-  const [user] = useState({
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@acme-corp.com",
-  });
+  const [user, setUser] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null>(null);
 
   const switchRole = (newRole: UserRole) => {
     setRole(newRole);
     localStorage.setItem("dev-role", newRole);
   };
+
+  // Fetch user data from API
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/users/1'); // Fixed user ID for demo
+        if (response.ok) {
+          const userData = await response.json();
+          setUser({
+            id: userData.id.toString(),
+            firstName: userData.firstName || "User",
+            lastName: userData.lastName || "",
+            email: userData.email || "user@example.com"
+          });
+        } else {
+          // Fallback to default user if API fails
+          setUser({
+            id: "1",
+            firstName: "Demo",
+            lastName: "User",
+            email: "demo@acme-corp.com"
+          });
+        }
+      } catch (error) {
+        console.log("User data fetch failed, using fallback");
+        setUser({
+          id: "1",
+          firstName: "Demo", 
+          lastName: "User",
+          email: "demo@acme-corp.com"
+        });
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     const savedRole = localStorage.getItem("dev-role") as UserRole;
