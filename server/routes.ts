@@ -1368,17 +1368,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string;
       const date = req.query.date as string;
       
+      console.log("Time entries request:", { tenantId, userId, date });
+      
       if (!tenantId || !userId) {
         return res.status(400).json({ message: "Tenant ID and User ID are required" });
       }
       
       let timeEntries;
       if (date) {
+        console.log("Fetching time entries by user and date");
         timeEntries = await storage.getTimeEntriesByUserAndDate(tenantId, parseInt(userId), date);
       } else {
+        console.log("Fetching time entries by user");
         timeEntries = await storage.getTimeEntriesByUser(tenantId, parseInt(userId));
       }
       
+      console.log("Time entries result:", timeEntries);
       res.json(timeEntries);
     } catch (error) {
       console.error("Get time entries error:", error);

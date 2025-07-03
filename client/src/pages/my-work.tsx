@@ -60,14 +60,22 @@ export default function MyWork() {
     },
   });
 
-  // Fetch current time entries for today
+  // Fetch current time entries for today - with fallback to empty array on error
   const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
     queryKey: ["/api/time-entries", tenantId, user?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}&date=${today}`);
-      if (!response.ok) throw new Error("Failed to fetch time entries");
-      return response.json();
+      try {
+        const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}&date=${today}`);
+        if (!response.ok) {
+          console.warn("Time entries API not available, using empty array");
+          return [];
+        }
+        return response.json();
+      } catch (error) {
+        console.warn("Time entries API error:", error);
+        return [];
+      }
     },
   });
 
@@ -156,21 +164,21 @@ export default function MyWork() {
       title: "Submit Holiday Request",
       description: "Request time off for vacation or sick days",
       icon: Calendar,
-      action: () => console.log("Navigate to holiday requests"),
+      action: () => window.location.href = "/holiday-requests",
       color: "bg-blue-500 hover:bg-blue-600",
     },
     {
       title: "View Schedule",
       description: "Check your upcoming shifts and assignments",
       icon: Clock,
-      action: () => console.log("Navigate to my shifts"),
+      action: () => window.location.href = "/my-shifts",
       color: "bg-green-500 hover:bg-green-600",
     },
     {
       title: "Request Shift Swap",
       description: "Find someone to cover your shift",
       icon: RefreshCw,
-      action: () => console.log("Navigate to swap requests"),
+      action: () => window.location.href = "/swap-requests",
       color: "bg-purple-500 hover:bg-purple-600",
     },
   ];

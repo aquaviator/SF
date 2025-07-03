@@ -1209,7 +1209,34 @@ export class MemStorage implements IStorage {
 
 // Initialize database connection
 const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql);
+const db = drizzle(sql, { 
+  schema: {
+    users,
+    shifts,
+    opportunities,
+    swapRequests,
+    assignments,
+    holidayRequests,
+    scheduleTemplates,
+    businessProfiles,
+    jobRoles,
+    locations,
+    departments,
+    operatingHours,
+    shiftPolicies,
+    analyticsReports,
+    analyticsMetrics,
+    activityLogs,
+    subscriptions,
+    subscriptionPlans,
+    usageMetrics,
+    invoices,
+    billingInfo,
+    timeEntries,
+    performanceMetrics,
+    holidayEntitlements
+  }
+});
 
 export class DatabaseStorage implements IStorage {
   // User operations
