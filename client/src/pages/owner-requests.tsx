@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Search, Calendar, Users, CheckCircle, XCircle, Clock, AlertCircle, Bell } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HolidayRequest {
   id: number;
@@ -48,12 +49,14 @@ export default function OwnerRequestsPage() {
   const [filterText, setFilterText] = useState("");
   const [selectedTab, setSelectedTab] = useState("holiday");
   const queryClient = useQueryClient();
+  const { tenantId } = useAuth();
 
   console.log("OWNER REQUESTS: Loading requests dashboard...");
 
   // Fetch holiday requests
   const { data: holidayRequests = [], isLoading: holidayLoading } = useQuery({
-    queryKey: ["/api/holiday-requests"],
+    queryKey: ["/api/holiday-requests", tenantId],
+    queryFn: () => fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()),
     select: (data: any[]) => {
       console.log("OWNER REQUESTS: holiday requests data →", data);
       return data.map((req: any) => ({
@@ -61,15 +64,18 @@ export default function OwnerRequestsPage() {
         name: `${req.firstName} ${req.lastName}`,
       }));
     },
+    enabled: !!tenantId,
   });
 
   // Fetch swap requests
   const { data: swapRequests = [], isLoading: swapLoading } = useQuery({
-    queryKey: ["/api/swap-requests"],
+    queryKey: ["/api/swap-requests", tenantId],
+    queryFn: () => fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()),
     select: (data: any[]) => {
       console.log("OWNER REQUESTS: swap requests data →", data);
       return data;
     },
+    enabled: !!tenantId,
   });
 
   // Filter requests based on search
