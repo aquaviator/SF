@@ -132,42 +132,78 @@ export default function Workforce() {
     }
   };
 
-  // Mock performance data
-  const performanceData: PerformanceMetric[] = [
-    {
-      id: 1,
-      staffId: 2,
-      name: "Sarah Anderson",
-      attendance: 98,
-      punctuality: 95,
-      efficiency: 92,
-      customerRating: 4.8,
-      totalHours: 160,
-      shiftsCompleted: 20,
-    },
-    {
-      id: 2,
-      staffId: 3,
-      name: "Mike Johnson",
-      attendance: 94,
-      punctuality: 88,
-      efficiency: 89,
-      customerRating: 4.5,
-      totalHours: 155,
-      shiftsCompleted: 18,
-    },
-    {
-      id: 3,
-      staffId: 4,
-      name: "Emily Davis",
-      attendance: 96,
-      punctuality: 92,
-      efficiency: 94,
-      customerRating: 4.9,
-      totalHours: 162,
-      shiftsCompleted: 21,
-    },
-  ];
+  // Get performance data from database
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ["/api/time-entries", tenantId],
+    queryFn: () => fetch(`/api/time-entries?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
+
+  const { data: shifts = [] } = useQuery({
+    queryKey: ["/api/shifts", tenantId],
+    queryFn: () => fetch(`/api/shifts?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
+
+  // Calculate performance metrics from real data
+  const performanceData: PerformanceMetric[] = React.useMemo(() => {
+    return staff.filter(member => member.role === 'staff').map(member => {
+      // Get member's shifts in last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const memberShifts = shifts.filter(shift => 
+        shift.assignedTo === member.id && 
+        new Date(shift.date) >= thirtyDaysAgo
+      );
+
+      const memberTimeEntries = timeEntries.filter(entry => 
+        entry.userId === member.id &&
+        new Date(entry.date) >= thirtyDaysAgo
+      );
+
+      // Calculate metrics
+      const totalShifts = memberShifts.length;
+      const completedShifts = memberTimeEntries.filter(entry => 
+        entry.status === 'clocked_out' || entry.status === 'completed'
+      ).length;
+
+      const onTimeEntries = memberTimeEntries.filter(entry => {
+        if (!entry.clockInTime) return false;
+        const shift = memberShifts.find(s => s.id === entry.shiftId);
+        if (!shift) return true; // No shift data, assume on time
+        
+        const clockInTime = new Date(`${entry.date} ${entry.clockInTime}`);
+        const shiftStartTime = new Date(`${shift.date} ${shift.startTime}`);
+        return clockInTime <= shiftStartTime;
+      }).length;
+
+      const totalHours = memberTimeEntries.reduce((total, entry) => {
+        if (entry.clockInTime && entry.clockOutTime) {
+          const clockIn = new Date(`${entry.date} ${entry.clockInTime}`);
+          const clockOut = new Date(`${entry.date} ${entry.clockOutTime}`);
+          const hours = (clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60);
+          return total + hours;
+        }
+        return total;
+      }, 0);
+
+      const attendance = totalShifts > 0 ? Math.round((completedShifts / totalShifts) * 100) : 100;
+      const punctuality = memberTimeEntries.length > 0 ? Math.round((onTimeEntries / memberTimeEntries.length) * 100) : 100;
+
+      return {
+        id: member.id,
+        staffId: member.id,
+        name: `${member.firstName} ${member.lastName}`,
+        attendance,
+        punctuality,
+        efficiency: 100, // Default efficiency as we don't track this yet
+        customerRating: 5.0, // Default rating as we don't track this yet
+        totalHours: Math.round(totalHours),
+        shiftsCompleted: completedShifts,
+      };
+    });
+  }, [staff, shifts, timeEntries]);
 
   // Holiday entitlements data fetching
   const [holidayFilter, setHolidayFilter] = React.useState("");
@@ -441,7 +477,14 @@ export default function Workforce() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">New This Month</p>
-                    <p className="text-2xl font-bold text-purple-600">2</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {staff.filter(s => {
+                        const hireDate = s.hireDate ? new Date(s.hireDate) : new Date(s.createdAt || Date.now());
+                        const now = new Date();
+                        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                        return hireDate >= thisMonth;
+                      }).length}
+                    </p>
                   </div>
                   <UserPlus className="w-8 h-8 text-purple-600" />
                 </div>

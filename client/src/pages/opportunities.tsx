@@ -143,7 +143,7 @@ export default function Opportunities() {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Applications</p>
-                <p className="text-lg font-semibold text-gray-900">3</p>
+                <p className="text-lg font-semibold text-gray-900">0</p>
               </div>
             </div>
           </CardContent>
