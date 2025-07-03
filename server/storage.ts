@@ -3,6 +3,7 @@ import {
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, subscriptionPlans,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
+  staffStrikes,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -14,7 +15,7 @@ import {
   type SubscriptionPlan, type InsertSubscriptionPlan, type UsageMetric, type InsertUsageMetric,
   type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
-  type HolidayEntitlement, type InsertHolidayEntitlement
+  type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike
 } from "../shared/schema";
 import { db as database } from './db';
 import { eq, and } from 'drizzle-orm';
@@ -197,6 +198,16 @@ export interface IStorage {
   updateHolidayEntitlement(id: number, entitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined>;
   updateHolidayEntitlementByUser(tenantId: string, userId: number, year: number, entitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined>;
   deleteHolidayEntitlement(id: number): Promise<boolean>;
+
+  // Staff strikes operations
+  getStaffStrike(id: number): Promise<StaffStrike | undefined>;
+  getStaffStrikesByTenant(tenantId: string): Promise<StaffStrike[]>;
+  getStaffStrikesByUser(tenantId: string, userId: number): Promise<StaffStrike[]>;
+  getTotalStrikePoints(tenantId: string, userId: number): Promise<number>;
+  createStaffStrike(strike: InsertStaffStrike): Promise<StaffStrike>;
+  updateStaffStrike(id: number, strike: InsertStaffStrike): Promise<StaffStrike | undefined>;
+  deleteStaffStrike(id: number): Promise<boolean>;
+  resetExpiredStrikes(tenantId: string): Promise<number>;
 
   // Debug operations
   clearAllData(): Promise<void>;
@@ -2011,6 +2022,68 @@ export class DatabaseStorage implements IStorage {
   async deleteHolidayEntitlement(id: number): Promise<boolean> {
     const result = await database.delete(holidayEntitlements).where(eq(holidayEntitlements.id, id));
     return result.rowCount > 0;
+  }
+
+  // Staff strikes operations
+  async getStaffStrike(id: number): Promise<StaffStrike | undefined> {
+    const result = await database.select().from(staffStrikes).where(eq(staffStrikes.id, id));
+    return result[0];
+  }
+
+  async getStaffStrikesByTenant(tenantId: string): Promise<StaffStrike[]> {
+    return await database.select().from(staffStrikes).where(eq(staffStrikes.tenantId, tenantId));
+  }
+
+  async getStaffStrikesByUser(tenantId: string, userId: number): Promise<StaffStrike[]> {
+    return await database.select().from(staffStrikes).where(
+      and(eq(staffStrikes.tenantId, tenantId), eq(staffStrikes.userId, userId))
+    );
+  }
+
+  async getTotalStrikePoints(tenantId: string, userId: number): Promise<number> {
+    const strikes = await database.select().from(staffStrikes).where(
+      and(
+        eq(staffStrikes.tenantId, tenantId), 
+        eq(staffStrikes.userId, userId),
+        eq(staffStrikes.isActive, true)
+      )
+    );
+    return strikes.reduce((total, strike) => total + strike.points, 0);
+  }
+
+  async createStaffStrike(insertStrike: InsertStaffStrike): Promise<StaffStrike> {
+    const result = await database.insert(staffStrikes).values(insertStrike).returning();
+    return result[0];
+  }
+
+  async updateStaffStrike(id: number, insertStrike: InsertStaffStrike): Promise<StaffStrike | undefined> {
+    const result = await database.update(staffStrikes).set(insertStrike).where(eq(staffStrikes.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteStaffStrike(id: number): Promise<boolean> {
+    const result = await database.delete(staffStrikes).where(eq(staffStrikes.id, id));
+    return result.rowCount > 0;
+  }
+
+  async resetExpiredStrikes(tenantId: string): Promise<number> {
+    // Get current date
+    const now = new Date();
+    
+    // Deactivate expired strikes based on expiresAt date
+    const result = await database
+      .update(staffStrikes)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(staffStrikes.tenantId, tenantId),
+          eq(staffStrikes.isActive, true),
+          // Only reset strikes that have expired
+          database.sql`expires_at < ${now.toISOString()}`
+        )
+      );
+    
+    return result.rowCount || 0;
   }
 
   async clearAllData(): Promise<void> {

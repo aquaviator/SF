@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, type HolidayRequest, type InsertHolidayRequest } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest } from "../shared/schema";
 import { z } from "zod";
+import { strikeService } from "./strike-service";
 
 // Helper function to calculate days between dates
 function calculateRequestDays(startDate: string, endDate: string): number {
@@ -1437,6 +1438,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to clear data:", error);
       res.status(500).json({ message: "Failed to clear data" });
+    }
+  });
+
+  // Staff strikes endpoints
+  app.get("/api/staff/:userId/strikes", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("🏷️ GET_STRIKES", { userId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      const strikes = await storage.getStaffStrikesByUser(tenantId, userId);
+      const totalPoints = await storage.getTotalStrikePoints(tenantId, userId);
+      
+      res.json({ 
+        totalPoints, 
+        strikes: strikes.map(strike => ({
+          id: strike.id,
+          points: strike.points,
+          reason: strike.reason,
+          issuedAt: strike.issuedAt,
+          notes: strike.notes,
+          isActive: strike.isActive
+        }))
+      });
+    } catch (error) {
+      console.error("Error getting strikes:", error);
+      res.status(500).json({ message: "Failed to get strikes" });
+    }
+  });
+
+  // Enhanced claim endpoint with strike validation
+  app.post("/api/shifts/:id/claim", async (req, res) => {
+    try {
+      const shiftId = parseInt(req.params.id);
+      const { userId, tenantId } = req.body;
+      
+      if (!userId || !tenantId) {
+        return res.status(400).json({ message: "userId and tenantId are required" });
+      }
+      
+      // Check strike points before allowing claim
+      const claimCheck = await strikeService.canClaimShift(tenantId, userId);
+      
+      if (!claimCheck.canClaim) {
+        console.log("🚫 CLAIM_BLOCKED", { 
+          userId, 
+          shiftId, 
+          totalPoints: await storage.getTotalStrikePoints(tenantId, userId), 
+          timestamp: new Date() 
+        });
+        return res.status(403).json({ message: claimCheck.reason });
+      }
+      
+      // Get the shift to update
+      const shift = await storage.getShift(shiftId);
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      // Update shift status to claimed and assign to user
+      const updatedShift = await storage.updateShift(shiftId, {
+        ...shift,
+        status: "claimed",
+        assignedTo: userId
+      });
+      
+      res.json(updatedShift);
+    } catch (error) {
+      console.error("Error claiming shift:", error);
+      res.status(500).json({ message: "Failed to claim shift" });
+    }
+  });
+
+  // Enhanced shift cancellation with late cancellation strike logic
+  app.post("/api/shifts/:id/cancel", async (req, res) => {
+    try {
+      const shiftId = parseInt(req.params.id);
+      const { userId, tenantId, reason } = req.body;
+      
+      if (!userId || !tenantId) {
+        return res.status(400).json({ message: "userId and tenantId are required" });
+      }
+      
+      // Get the shift to check timing
+      const shift = await storage.getShift(shiftId);
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      // Check if this is a late cancellation
+      const shiftDateTime = new Date(`${shift.date} ${shift.startTime}`);
+      const currentTime = new Date();
+      const hoursUntilShift = (shiftDateTime.getTime() - currentTime.getTime()) / (1000 * 60 * 60);
+      
+      // Get policy to check cancellation deadline
+      const policy = await storage.getShiftPolicyByTenant(tenantId);
+      const cancellationDeadlineHours = policy?.minNoticeHours || 24;
+      
+      if (hoursUntilShift < cancellationDeadlineHours) {
+        // This is a late cancellation - assign strike
+        await strikeService.assignLateCancellationStrike(tenantId, userId, shiftId);
+      }
+      
+      // Cancel the shift
+      const updatedShift = await storage.updateShift(shiftId, {
+        ...shift,
+        status: "cancelled",
+        notes: reason ? `Cancelled: ${reason}` : "Cancelled by staff member"
+      });
+      
+      res.json(updatedShift);
+    } catch (error) {
+      console.error("Error cancelling shift:", error);
+      res.status(500).json({ message: "Failed to cancel shift" });
+    }
+  });
+
+  // Test endpoint for manual strike assignment (development only)
+  app.post("/api/test/assign-strike", async (req, res) => {
+    try {
+      const { tenantId, userId, reason, shiftId } = req.body;
+      
+      if (reason === 'no_show') {
+        await strikeService.assignNoShowStrike(tenantId, userId, shiftId);
+      } else if (reason === 'late_cancellation') {
+        await strikeService.assignLateCancellationStrike(tenantId, userId, shiftId);
+      }
+      
+      res.json({ message: "Strike assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning test strike:", error);
+      res.status(500).json({ message: "Failed to assign strike" });
     }
   });
 
