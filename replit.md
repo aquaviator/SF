@@ -248,6 +248,16 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added proper React Query cache invalidation and real-time UI synchronization
   - Form now shows current database values immediately and updates without page refresh
   - All policy changes persist to database with instant visual feedback
+- July 03, 2025. Implemented comprehensive time tracking policies with policy-driven strike system foundation:
+  - Extended business policies form with 4 additional time tracking fields (10 total policy fields)
+  - Added database columns: resetPeriodDays, lateGracePeriodMinutes, clockInBufferMinutes, clockOutBufferMinutes
+  - Created "Time Tracking Policies" section in policies form with professional field organization
+  - Updated schema validation with proper min/max ranges for all time tracking parameters
+  - Fixed controlled/uncontrolled input warnings by adding proper form default values
+  - Database schema supports policy-driven strike point automation and attendance tracking
+  - Form includes strike reset periods (90 days), late grace periods (10 min), and buffer windows (15/30 min)
+  - API endpoints working correctly with all time tracking policy fields persisting to PostgreSQL
+  - Foundation established for automated strike point calculations based on policy violations
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

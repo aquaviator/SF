@@ -65,6 +65,10 @@ export default function Policies() {
       maxStrikePoints: 5,
       strikePointsNoShow: 2,
       strikePointsLateCancellation: 1,
+      resetPeriodDays: 90,
+      lateGracePeriodMinutes: 10,
+      clockInBufferMinutes: 15,
+      clockOutBufferMinutes: 30,
     },
   });
 

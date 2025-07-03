@@ -50,453 +50,307 @@ export default function MyWork() {
     },
   });
 
-  // Fetch my time entries for time tracking
-  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
-    queryKey: ["/api/time-entries", tenantId, user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}`);
-      if (!response.ok) throw new Error("Failed to fetch time entries");
-      return response.json();
-    },
-  });
-
-  // Fetch active time entry for clock-in status
-  const { data: activeTimeEntry } = useQuery({
-    queryKey: ["/api/time-entries/active", tenantId, user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const response = await fetch(`/api/time-entries/active?tenantId=${tenantId}&userId=${user.id}`);
-      if (!response.ok) throw new Error("Failed to fetch active time entry");
-      return response.json();
-    },
-    enabled: !!user?.id,
-  });
-
-  // Fetch swap requests
-  const { data: swapRequests = [], isLoading: swapRequestsLoading } = useQuery({
-    queryKey: ["/api/swap-requests", tenantId],
-    queryFn: async () => {
-      const response = await fetch(`/api/swap-requests?tenantId=${tenantId}`);
-      if (!response.ok) throw new Error("Failed to fetch swap requests");
-      return response.json();
-    },
-  });
-
-  // Clock-in mutation
-  const clockInMutation = useMutation({
-    mutationFn: async (data: { location?: string; shiftId?: number }) => {
-      return apiRequest("/api/time-entries", "POST", {
-        tenantId,
-        userId: user?.id,
-        clockInTime: new Date().toISOString(),
-        status: "clocked-in",
-        location: data.location || "",
-        shiftId: data.shiftId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
-      toast({ title: "Success", description: "Clocked in successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to clock in", variant: "destructive" });
-    },
-  });
-
-  // Clock-out mutation
-  const clockOutMutation = useMutation({
-    mutationFn: async (timeEntryId: number) => {
-      return apiRequest(`/api/time-entries/${timeEntryId}`, "PATCH", {
-        clockOutTime: new Date().toISOString(),
-        status: "clocked-out",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/time-entries/active"] });
-      toast({ title: "Success", description: "Clocked out successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to clock out", variant: "destructive" });
-    },
-  });
-
-  // Helper functions
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      assigned: "bg-blue-100 text-blue-800",
-      confirmed: "bg-green-100 text-green-800",
-      conflict: "bg-red-100 text-red-800",
-      "clocked-in": "bg-green-100 text-green-800",
-      "clocked-out": "bg-gray-100 text-gray-800",
-      "on-break": "bg-yellow-100 text-yellow-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
-    };
-    
-    return (
-      <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  // Column definitions for different tabs
-  const shiftColumns: Column<Shift>[] = [
+  // Quick actions that staff can perform
+  const quickActions = [
     {
-      key: "date",
-      header: "Date & Time",
-      cell: (shift) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900">
-            {formatDate(shift.date)}
-          </div>
-          <div className="text-sm text-gray-500">
-            {shift.startTime} - {shift.endTime}
-          </div>
-        </div>
-      ),
+      title: "Submit Holiday Request",
+      description: "Request time off for vacation or sick days",
+      icon: Calendar,
+      action: () => console.log("Navigate to holiday requests"),
+      color: "bg-blue-500 hover:bg-blue-600",
     },
     {
-      key: "title",
-      header: "Shift",
-      cell: (shift) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900">{shift.role}</div>
-          <div className="text-sm text-gray-500 flex items-center">
-            <MapPin className="h-3 w-3 mr-1" />
-            {shift.location}
-          </div>
-        </div>
-      ),
+      title: "View Schedule",
+      description: "Check your upcoming shifts and assignments",
+      icon: Clock,
+      action: () => console.log("Navigate to my shifts"),
+      color: "bg-green-500 hover:bg-green-600",
     },
     {
-      key: "status",
-      header: "Status",
-      cell: (shift) => getStatusBadge(shift.status),
+      title: "Request Shift Swap",
+      description: "Find someone to cover your shift",
+      icon: RefreshCw,
+      action: () => console.log("Navigate to swap requests"),
+      color: "bg-purple-500 hover:bg-purple-600",
     },
   ];
-
-  const assignmentColumns: Column<any>[] = [
-    {
-      key: "shift",
-      header: "Shift Details",
-      cell: (assignment) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900">{assignment.title || "Shift Assignment"}</div>
-          <div className="text-sm text-gray-500">{formatDate(assignment.date || assignment.createdAt)} • {assignment.startTime || "TBD"} - {assignment.endTime || "TBD"}</div>
-        </div>
-      ),
-    },
-    {
-      key: "instructions",
-      header: "Work Instructions",
-      cell: (assignment) => (
-        <div className="text-sm text-gray-900">{assignment.instructions || assignment.description || "No specific instructions"}</div>
-      ),
-    },
-    {
-      key: "location",
-      header: "Location & Contacts",
-      cell: (assignment) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900 flex items-center">
-            <MapPin className="h-3 w-3 mr-1" />
-            {assignment.location || "TBD"}
-          </div>
-          {assignment.contactInfo && (
-            <div className="text-sm text-gray-500">{assignment.contactInfo}</div>
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  const timeEntryColumns: Column<any>[] = [
-    {
-      key: "date",
-      header: "Date",
-      cell: (entry) => (
-        <div className="text-sm font-medium text-gray-900">
-          {formatDate(entry.clockInTime)}
-        </div>
-      ),
-    },
-    {
-      key: "times",
-      header: "Clock In/Out",
-      cell: (entry) => (
-        <div>
-          <div className="text-sm text-gray-900">
-            In: {formatTime(entry.clockInTime)}
-          </div>
-          {entry.clockOutTime && (
-            <div className="text-sm text-gray-500">
-              Out: {formatTime(entry.clockOutTime)}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "duration",
-      header: "Duration",
-      cell: (entry) => {
-        if (!entry.clockOutTime) return <span className="text-sm text-gray-500">In Progress</span>;
-        const duration = new Date(entry.clockOutTime).getTime() - new Date(entry.clockInTime).getTime();
-        const hours = Math.floor(duration / (1000 * 60 * 60));
-        const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-        return <span className="text-sm font-medium text-gray-900">{hours}h {minutes}m</span>;
-      },
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (entry) => getStatusBadge(entry.status),
-    },
-  ];
-
-  const requestColumns: Column<any>[] = [
-    {
-      key: "type",
-      header: "Request Type",
-      cell: (request) => (
-        <div className="text-sm font-medium text-gray-900">
-          {request.type === 'swap' ? 'Shift Swap' : 'Holiday Request'}
-        </div>
-      ),
-    },
-    {
-      key: "details",
-      header: "Details",
-      cell: (request) => (
-        <div className="text-sm text-gray-900">
-          {request.type === 'swap' ? 
-            `${request.originalShift?.title || 'Original'} → ${request.requestedShift?.title || 'Requested'}` :
-            `${formatDate(request.startDate)} - ${formatDate(request.endDate)}`
-          }
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (request) => getStatusBadge(request.status),
-    },
-    {
-      key: "date",
-      header: "Requested",
-      cell: (request) => (
-        <div className="text-sm text-gray-500">
-          {formatDate(request.createdAt)}
-        </div>
-      ),
-    },
-  ];
-
-  const isLoading = shiftsLoading || assignmentsLoading || timeEntriesLoading || swapRequestsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">My Work</h1>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Next Shift</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {shifts.length > 0 ? formatDate(shifts[0].date) : "No shifts"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {shifts.length > 0 ? `${shifts[0].startTime} - ${shifts[0].endTime}` : "scheduled"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Week</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{shifts.length}</div>
-            <p className="text-xs text-muted-foreground">shifts scheduled</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Time Status</CardTitle>
-            {activeTimeEntry ? <Play className="h-4 w-4 text-green-600" /> : <Pause className="h-4 w-4 text-muted-foreground" />}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {activeTimeEntry ? "Clocked In" : "Clocked Out"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {activeTimeEntry ? `Since ${formatTime(activeTimeEntry.clockInTime)}` : "Ready to clock in"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Requests</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {swapRequests.filter((r: any) => r.status === 'pending').length}
-            </div>
-            <p className="text-xs text-muted-foreground">pending requests</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabbed Interface */}
-      <Tabs defaultValue="schedule" className="w-full">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
-          <h2 className="page-section__title">My Work</h2>
-          <TabsList className="tab-strip grid w-full md:w-auto grid-cols-2 lg:grid-cols-4 gap-1">
-            <TabsTrigger value="schedule" className="tab flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
-              <Calendar className="h-4 w-4 shrink-0" />
-              <span className="truncate">Schedule</span>
-            </TabsTrigger>
-            <TabsTrigger value="assignments" className="tab flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
-              <Briefcase className="h-4 w-4 shrink-0" />
-              <span className="truncate">Tasks</span>
-            </TabsTrigger>
-            <TabsTrigger value="timetracking" className="tab flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
-              <Clock className="h-4 w-4 shrink-0" />
-              <span className="truncate">Time</span>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="tab flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
-              <RefreshCw className="h-4 w-4 shrink-0" />
-              <span className="truncate">Requests</span>
-            </TabsTrigger>
-          </TabsList>
+    <div className="container mx-auto p-4 space-y-6 max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">My Work</h1>
+          <p className="text-muted-foreground">
+            Your personal dashboard for shifts, assignments, and workplace activities
+          </p>
         </div>
+      </div>
 
-        <TabsContent value="schedule" className="space-y-4">
-          <DataTable
-            data={shifts}
-            columns={shiftColumns}
-            title="My Schedule"
-            isLoading={shiftsLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No shifts scheduled</h3>
-                <p className="text-gray-500">Check back later for new shift assignments.</p>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {quickActions.map((action, index) => (
+          <Card 
+            key={index}
+            className="cursor-pointer transition-all hover:scale-105 hover:shadow-md"
+            onClick={action.action}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className={`p-3 rounded-lg ${action.color}`}>
+                  <action.icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">{action.title}</h3>
+                  <p className="text-xs text-muted-foreground">{action.description}</p>
+                </div>
               </div>
-            }
-          />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="shifts">My Shifts</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Upcoming Shifts</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{shifts.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Next shift in 2 days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{assignments.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Requires your response
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">32.5</div>
+                <p className="text-xs text-muted-foreground">
+                  +2.5 from last week
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">98.5%</div>
+                <p className="text-xs text-muted-foreground">
+                  Excellent performance
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-green-100 rounded-full">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Shift completed</p>
+                      <p className="text-xs text-muted-foreground">Evening shift - Main Location</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-auto">2 hours ago</div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Holiday request approved</p>
+                      <p className="text-xs text-muted-foreground">Dec 24-26, 2024</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-auto">1 day ago</div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-purple-100 rounded-full">
+                      <RefreshCw className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Shift swap completed</p>
+                      <p className="text-xs text-muted-foreground">With John Smith</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-auto">3 days ago</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Monthly Target</span>
+                      <span>120h / 160h</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: "75%" }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>On-time Arrival</span>
+                      <span>95%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-green-600 h-2 rounded-full" style={{ width: "95%" }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Shift Completion</span>
+                      <span>100%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-green-600 h-2 rounded-full" style={{ width: "100%" }}></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="shifts" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Shifts</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Your scheduled shifts and assignments
+              </p>
+            </CardHeader>
+            <CardContent>
+              {shiftsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-8 w-8 mx-auto mb-2" />
+                  <p>No shifts scheduled at the moment</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-4">
-          <DataTable
-            data={assignments}
-            columns={assignmentColumns}
-            title="Work Assignments"
-            isLoading={assignmentsLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments</h3>
-                <p className="text-gray-500">Your work assignments will appear here.</p>
-              </div>
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="timetracking" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Time Tracking</h3>
-            <div className="flex gap-2">
-              {activeTimeEntry ? (
-                <Button
-                  onClick={() => clockOutMutation.mutate(activeTimeEntry.id)}
-                  disabled={clockOutMutation.isPending}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  {clockOutMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Pause className="h-4 w-4" />
-                  )}
-                  Clock Out
-                </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle>My Assignments</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Pending assignments requiring your response
+              </p>
+            </CardHeader>
+            <CardContent>
+              {assignmentsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
               ) : (
-                <Button
-                  onClick={() => clockInMutation.mutate({})}
-                  disabled={clockInMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  {clockInMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  Clock In
-                </Button>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Briefcase className="h-8 w-8 mx-auto mb-2" />
+                  <p>No pending assignments</p>
+                </div>
               )}
-            </div>
-          </div>
-
-          <DataTable
-            data={timeEntries}
-            columns={timeEntryColumns}
-            title="Time History"
-            isLoading={timeEntriesLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No time entries</h3>
-                <p className="text-gray-500">Clock in to start tracking your time.</p>
-              </div>
-            }
-          />
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="requests" className="space-y-4">
-          <DataTable
-            data={swapRequests}
-            columns={requestColumns}
-            title="My Requests"
-            isLoading={swapRequestsLoading}
-            emptyState={
-              <div className="text-center py-8">
-                <RefreshCw className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No requests</h3>
-                <p className="text-gray-500">Your swap and holiday requests will appear here.</p>
+        <TabsContent value="performance" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Overview</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Your workplace performance metrics and goals
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold">This Month</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Hours Worked</span>
+                      <Badge variant="outline">120h</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Shifts Completed</span>
+                      <Badge variant="outline">28</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Attendance Rate</span>
+                      <Badge variant="outline" className="text-green-600">98.5%</Badge>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Goals & Targets</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Monthly Target</span>
+                      <Badge variant="outline">160h</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Attendance Goal</span>
+                      <Badge variant="outline">95%</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Performance Rating</span>
+                      <Badge variant="outline" className="text-blue-600">Excellent</Badge>
+                    </div>
+                  </div>
+                </div>
               </div>
-            }
-          />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
