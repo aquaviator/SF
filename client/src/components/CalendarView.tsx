@@ -14,6 +14,7 @@ interface CalendarViewProps {
   onEditShift: (shift: Shift) => void;
   onDuplicateShift: (shift: Shift) => void;
   onDeleteShift: (shiftId: number) => void;
+  onRoleClick?: (role: string) => void;
   userRole: "owner" | "staff";
 }
 
@@ -24,6 +25,7 @@ export function CalendarView({
   onEditShift, 
   onDuplicateShift, 
   onDeleteShift,
+  onRoleClick,
   userRole 
 }: CalendarViewProps) {
   const { getRoleColorByTitle, getRoleDotColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
@@ -162,24 +164,28 @@ export function CalendarView({
                     {dayShifts.slice(0, 2).map(shift => (
                       <div 
                         key={shift.id} 
-                        className="flex items-center justify-center cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditShift(shift);
-                        }}
+                        className="flex items-center justify-center"
                       >
                         {/* Desktop: badge with role initial */}
                         <span
-                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium hover:shadow-sm transition-shadow ${getRoleColorByTitle(shift.role)}`}
-                          title={`${getRoleLabelByTitle(shift.role)} - Click to edit`}
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium hover:shadow-sm transition-shadow cursor-pointer ${getRoleColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)} - Click to view role info`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRoleClick?.(shift.role);
+                          }}
                         >
                           {getRoleInitialByTitle(shift.role)}
                         </span>
 
                         {/* Mobile: colored dot only */}
                         <span
-                          className={`inline-block md:hidden w-3 h-3 rounded-full hover:shadow-sm transition-shadow ${getRoleDotColorByTitle(shift.role)}`}
-                          title={`${getRoleLabelByTitle(shift.role)} - Tap to edit`}
+                          className={`inline-block md:hidden w-3 h-3 rounded-full hover:shadow-sm transition-shadow cursor-pointer ${getRoleDotColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)} - Tap to view role info`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRoleClick?.(shift.role);
+                          }}
                         />
                       </div>
                     ))}
