@@ -8,6 +8,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRoleColors } from "@/hooks/useRoleColors";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Shift } from "@shared/schema";
 
 interface DayShiftsModalProps {
@@ -32,6 +34,7 @@ export function DayShiftsModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getRoleColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
+  const { tenantId } = useAuth();
   
   const [dayShifts, setDayShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,23 +47,18 @@ export function DayShiftsModal({
       console.log('DayShiftsModal opening for date:', date);
       fetchDayShifts();
     }
-  }, [date, isOpen]);
+  }, [date, isOpen, tenantId]);
 
   const fetchDayShifts = async () => {
-    if (!date) return;
+    if (!date || !tenantId) return;
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/shifts?date=${date}`, {
-        headers: {
-          'x-tenant-id': 'acme-corp'
-        }
-      });
-      if (response.ok) {
-        const shifts = await response.json();
-        setDayShifts(shifts);
-      }
+      const response = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
+      const shifts = await response.json();
+      setDayShifts(shifts);
     } catch (error) {
+      console.error("Failed to fetch shifts:", error);
       toast({
         title: "Error",
         description: "Failed to fetch shifts for this date",
@@ -105,24 +103,18 @@ export function DayShiftsModal({
     if (!shiftToDelete) return;
     
     try {
-      const response = await fetch(`/api/shifts/${shiftToDelete.id}`, {
-        method: "DELETE"
-      });
+      await apiRequest("DELETE", `/api/shifts/${shiftToDelete.id}?tenantId=${tenantId}`);
       
-      if (response.ok) {
-        // Remove from local state
-        setDayShifts(prev => prev.filter(s => s.id !== shiftToDelete.id));
-        
-        // Invalidate queries to update calendar
-        queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
-        
-        toast({
-          title: "Shift Deleted",
-          description: "The shift has been successfully deleted."
-        });
-      } else {
-        throw new Error("Failed to delete shift");
-      }
+      // Remove from local state
+      setDayShifts(prev => prev.filter(s => s.id !== shiftToDelete.id));
+      
+      // Invalidate queries to update calendar
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
+      
+      toast({
+        title: "Shift Deleted",
+        description: "The shift has been successfully deleted."
+      });
     } catch (error) {
       toast({
         title: "Error",
