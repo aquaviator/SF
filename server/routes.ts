@@ -1243,6 +1243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/shift-policy", async (req, res) => {
     try {
+      console.log("=== SHIFT POLICY UPDATE DEBUG ===");
+      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
+      
       const normalizedData = {
         tenantId: req.body.tenantId,
         minNoticeHours: parseInt(req.body.minNoticeHours),
@@ -1251,13 +1254,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxStrikePoints: parseInt(req.body.maxStrikePoints),
         strikePointsNoShow: parseInt(req.body.strikePointsNoShow),
         strikePointsLateCancellation: parseInt(req.body.strikePointsLateCancellation),
+        resetPeriodDays: parseInt(req.body.resetPeriodDays),
+        lateGracePeriodMinutes: parseInt(req.body.lateGracePeriodMinutes),
+        clockInBufferMinutes: parseInt(req.body.clockInBufferMinutes),
+        clockOutBufferMinutes: parseInt(req.body.clockOutBufferMinutes),
       };
+      
+      console.log("Normalized data for database:", JSON.stringify(normalizedData, null, 2));
       
       if (!normalizedData.tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
       const policy = await storage.upsertShiftPolicy(normalizedData);
+      console.log("Database response:", JSON.stringify(policy, null, 2));
+      console.log("=== END SHIFT POLICY UPDATE DEBUG ===");
+      
       res.json(policy);
     } catch (error) {
       console.error("Shift policy update error:", error);

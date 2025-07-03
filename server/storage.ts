@@ -1824,17 +1824,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertShiftPolicy(insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy> {
+    console.log("=== SQL QUERY DEBUG FOR SHIFT POLICY ===");
+    console.log("Input data to upsertShiftPolicy:", JSON.stringify(insertPolicy, null, 2));
+    
     const existing = await this.getShiftPolicyByTenant(insertPolicy.tenantId);
+    console.log("Existing policy found:", existing ? "YES" : "NO");
+    
     if (existing) {
       // Update existing policy
-      const result = await db.update(shiftPolicies).set({
+      const updateData = {
         ...insertPolicy,
         updatedAt: new Date(),
-      }).where(eq(shiftPolicies.tenantId, insertPolicy.tenantId)).returning();
+      };
+      console.log("SQL UPDATE operation with data:", JSON.stringify(updateData, null, 2));
+      console.log("SQL UPDATE WHERE tenantId =", insertPolicy.tenantId);
+      
+      const result = await db.update(shiftPolicies).set(updateData).where(eq(shiftPolicies.tenantId, insertPolicy.tenantId)).returning();
+      console.log("SQL UPDATE result:", JSON.stringify(result[0], null, 2));
+      console.log("=== END SQL QUERY DEBUG ===");
       return result[0];
     } else {
       // Create new policy
+      console.log("SQL INSERT operation with data:", JSON.stringify(insertPolicy, null, 2));
       const result = await db.insert(shiftPolicies).values(insertPolicy).returning();
+      console.log("SQL INSERT result:", JSON.stringify(result[0], null, 2));
+      console.log("=== END SQL QUERY DEBUG ===");
       return result[0];
     }
   }
