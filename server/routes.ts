@@ -1,8 +1,77 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, type HolidayRequest, type InsertHolidayRequest } from "../shared/schema";
 import { z } from "zod";
+
+// Helper function to calculate days between dates
+function calculateRequestDays(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const timeDiff = end.getTime() - start.getTime();
+  return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+}
+
+// Helper function to update holiday entitlements when request status changes
+async function updateHolidayEntitlements(
+  originalRequest: HolidayRequest, 
+  updatedData: InsertHolidayRequest, 
+  storage: any
+): Promise<void> {
+  const currentYear = new Date().getFullYear();
+  const requestDays = calculateRequestDays(originalRequest.startDate, originalRequest.endDate);
+  
+  console.log(`ENTITLEMENTS: Request ${originalRequest.id} status change: ${originalRequest.status} → ${updatedData.status}, ${requestDays} days`);
+
+  // Get current entitlements for the user
+  const entitlements = await storage.getHolidayEntitlementByUser(
+    originalRequest.tenantId, 
+    originalRequest.requesterId, 
+    currentYear
+  );
+  
+  if (!entitlements) {
+    console.log(`ENTITLEMENTS: No entitlement found for user ${originalRequest.requesterId}`);
+    return;
+  }
+
+  let newUsedDays = entitlements.usedDays;
+  let newPendingDays = entitlements.pendingDays;
+
+  // Handle status transitions
+  if (originalRequest.status === 'pending' && updatedData.status === 'approved') {
+    // Pending → Approved: Move from pending to used
+    newPendingDays = Math.max(0, newPendingDays - requestDays);
+    newUsedDays = newUsedDays + requestDays;
+    console.log(`ENTITLEMENTS: Approved - Moving ${requestDays} days from pending to used`);
+  } else if (originalRequest.status === 'pending' && updatedData.status === 'rejected') {
+    // Pending → Rejected: Remove from pending
+    newPendingDays = Math.max(0, newPendingDays - requestDays);
+    console.log(`ENTITLEMENTS: Rejected - Removing ${requestDays} days from pending`);
+  } else if (originalRequest.status === 'approved' && updatedData.status === 'rejected') {
+    // Approved → Rejected: Move from used back to available
+    newUsedDays = Math.max(0, newUsedDays - requestDays);
+    console.log(`ENTITLEMENTS: Approved→Rejected - Returning ${requestDays} days from used`);
+  } else if (originalRequest.status === 'approved' && updatedData.status === 'pending') {
+    // Approved → Pending: Move from used to pending
+    newUsedDays = Math.max(0, newUsedDays - requestDays);
+    newPendingDays = newPendingDays + requestDays;
+    console.log(`ENTITLEMENTS: Approved→Pending - Moving ${requestDays} days from used to pending`);
+  }
+
+  // Update the entitlements
+  await storage.updateHolidayEntitlementByUser(
+    originalRequest.tenantId,
+    originalRequest.requesterId,
+    currentYear,
+    {
+      usedDays: newUsedDays,
+      pendingDays: newPendingDays,
+    }
+  );
+  
+  console.log(`ENTITLEMENTS: Updated - Used: ${newUsedDays}, Pending: ${newPendingDays}`);
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Shifts routes
@@ -446,10 +515,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const normalizedData = normalizeHolidayRequestData(req.body);
       const validatedData = insertHolidayRequestSchema.parse(normalizedData);
+      
+      // Get the original request to compare status changes
+      const originalRequest = await storage.getHolidayRequest(id);
+      if (!originalRequest) {
+        return res.status(404).json({ message: "Holiday request not found" });
+      }
+      
       const holidayRequest = await storage.updateHolidayRequest(id, validatedData);
       if (!holidayRequest) {
         return res.status(404).json({ message: "Holiday request not found" });
       }
+
+      // Update holiday entitlements if status changed
+      if (originalRequest.status !== validatedData.status) {
+        await updateHolidayEntitlements(originalRequest, validatedData, storage);
+      }
+      
       res.json(holidayRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
