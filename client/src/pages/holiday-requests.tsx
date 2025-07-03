@@ -178,15 +178,17 @@ export default function HolidayRequests() {
     },
     {
       key: "status",
-      header: "Status & Reviewer",
+      header: "Status",
+      cell: (request) => getStatusBadge(request.status),
+    },
+    {
+      key: "reviewedBy",
+      header: "Reviewer",
       cell: (request) => (
-        <div className="space-y-1">
-          {getStatusBadge(request.status)}
-          <div className="text-xs text-gray-500">
-            {request.status === 'approved' ? 'Dave Clarke (Owner)' : 
-             request.status === 'rejected' ? 'Dave Clarke (Owner)' : 
-             'Awaiting Review'}
-          </div>
+        <div className="text-sm text-gray-600">
+          {request.status === 'approved' ? 'Dave Clarke (Owner)' : 
+           request.status === 'rejected' ? 'Dave Clarke (Owner)' : 
+           'Awaiting Review'}
         </div>
       ),
     },
