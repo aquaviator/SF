@@ -1,0 +1,110 @@
+Below is a Jest test scaffold for your storage-layer functions (server/storage.ts). You can drop this into tests/holiday-requests-storage.test.ts, tweak the import paths, and wire up an in-memory or test PostgreSQL (via TEST_DATABASE_URL) before running.
+
+ts
+Copy
+Edit
+// tests/holiday-requests-storage.test.ts
+
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import {
+  createHolidayRequest,
+  getHolidayRequestsByTenant,
+  updateHolidayRequest,
+  deleteHolidayRequest,
+} from '../server/storage';   // ← adjust path as needed
+import { holidayRequests } from '../shared/schema'; // Drizzle schema
+
+let db: ReturnType<typeof drizzle>;
+let pool: Pool;
+
+beforeAll(async () => {
+  // 1) Spin up a real or in-memory Postgres instance for testing.
+  //    You can use TEST_DATABASE_URL pointing to a test DB.
+  pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+  db = drizzle(pool, { schema: { holiday_requests: holidayRequests } });
+
+  // 2) Ensure the table exists in test DB
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS holiday_requests (
+      id SERIAL PRIMARY KEY,
+      tenant_id TEXT NOT NULL,
+      requester_id INTEGER NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      reason TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      reviewed_by INTEGER,
+      reviewed_at TIMESTAMP,
+      review_notes TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+  `);
+});
+
+afterAll(async () => {
+  // Clean up: drop test data and close connections
+  await pool.query(`DROP TABLE IF EXISTS holiday_requests;`);
+  await pool.end();
+});
+
+describe('HolidayRequest Storage Layer', () => {
+  let createdId: number;
+  const testPayload = {
+    tenantId: 'test-tenant',
+    requesterId: 123,
+    startDate: '2025-08-01',
+    endDate: '2025-08-03',
+    reason: 'Family vacation',
+  };
+
+  it('creates a new holiday request', async () => {
+    const hr = await createHolidayRequest(db, testPayload);
+    expect(hr).toMatchObject({
+      tenantId: testPayload.tenantId,
+      requesterId: testPayload.requesterId,
+      startDate: testPayload.startDate,
+      endDate: testPayload.endDate,
+      reason: testPayload.reason,
+      status: 'pending'
+    });
+    expect(typeof hr.id).toBe('number');
+    createdId = hr.id;
+  });
+
+  it('fetches requests by tenant', async () => {
+    const list = await getHolidayRequestsByTenant(db, testPayload.tenantId);
+    expect(Array.isArray(list)).toBe(true);
+    const found = list.find(r => r.id === createdId);
+    expect(found).toBeDefined();
+    expect(found?.tenantId).toBe(testPayload.tenantId);
+  });
+
+  it('updates a holiday request', async () => {
+    const updates = { status: 'approved', reviewedBy: 999, reviewNotes: 'Looks good' };
+    const updated = await updateHolidayRequest(db, createdId, updates);
+    expect(updated.status).toBe('approved');
+    expect(updated.reviewedBy).toBe(999);
+    expect(updated.reviewNotes).toBe('Looks good');
+  });
+
+  it('deletes a holiday request', async () => {
+    const res = await deleteHolidayRequest(db, createdId);
+    expect(res).toEqual({ success: true });
+    const remaining = await getHolidayRequestsByTenant(db, testPayload.tenantId);
+    expect(remaining.find(r => r.id === createdId)).toBeUndefined();
+  });
+});
+Next steps before running:
+
+Ensure your server/storage.ts functions accept a db instance (or refactor so they can).
+
+Set TEST_DATABASE_URL in your environment to point at a throw-away test database.
+
+Run:
+
+bash
+Copy
+Edit
+npx jest tests/holiday-requests-storage.test.ts --verbose
+Confirm 100% coverage for that file before touching the schema.
