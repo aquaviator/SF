@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, Column } from "@/components/DataTable";
 import { CalendarView } from "@/components/CalendarView";
+import { CalendarLegend } from "@/components/CalendarLegend";
 import { useCrud } from "@/hooks/useCrud";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -532,7 +533,11 @@ export default function Scheduling() {
               <CardHeader>
                 <CardTitle>Calendar View</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Role Legend */}
+                <CalendarLegend />
+                
+                {/* Calendar View */}
                 <CalendarView 
                   shifts={shifts} 
                   onDateClick={(date) => console.log("Date clicked:", date)}
