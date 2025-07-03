@@ -338,11 +338,16 @@ export default function BusinessSettingsPage() {
         // Get current user data to preserve other fields
         const currentUser = await apiRequest("GET", `/api/users/${user.id}`);
         
-        // Update user with new name
+        // Update user with new name while preserving all existing fields
         await apiRequest("PUT", `/api/users/${user.id}`, {
-          ...currentUser,
-          firstName: firstName || "",
-          lastName: lastName || "",
+          username: currentUser.username,
+          password: currentUser.password, // Preserve existing password
+          email: currentUser.email,
+          role: currentUser.role,
+          tenantId: currentUser.tenantId,
+          isActive: currentUser.isActive,
+          firstName: firstName || currentUser.firstName || "",
+          lastName: lastName || currentUser.lastName || "",
         });
       }
       
