@@ -271,6 +271,11 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Fixed Quick Actions to have actual navigation functionality instead of placeholder console logs
   - Added graceful error handling for time entries API with fallback to prevent UI crashes
   - Staff can now clock in/out with policy-enforced timing restrictions and view real-time policy information
+- July 03, 2025. Database reset to clean state per user request:
+  - Completely cleared all database tables of existing data while preserving table structure
+  - Removed all test data including shifts, time entries, staff profiles, and business information
+  - Database now contains only single basic tenant owner user (Sarah Johnson for acme-corp)
+  - System ready for fresh data population or authentic business configuration
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
