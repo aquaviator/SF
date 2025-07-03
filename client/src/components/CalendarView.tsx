@@ -64,8 +64,6 @@ export function CalendarView({
     const dateStr = formatDate(day);
     const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     
-    console.log('Day clicked:', day, 'dateStr:', dateStr, 'dayModalOpen will be set to true');
-    
     if (onDateClick) {
       onDateClick(dateObj);
     } else {

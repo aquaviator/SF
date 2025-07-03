@@ -559,8 +559,7 @@ export default function Scheduling() {
                 
                 {/* Calendar View */}
                 <CalendarView 
-                  shifts={shifts} 
-                  onDateClick={(date) => console.log("Date clicked:", date)}
+                  shifts={shifts}
                   onCreateShift={(date: Date) => {
                     // Convert Date object to YYYY-MM-DD string format
                     const dateString = date.toISOString().split('T')[0];
