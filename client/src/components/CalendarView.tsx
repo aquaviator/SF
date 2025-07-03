@@ -5,10 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Shift } from "@shared/schema";
-import { getRoleColor, getRoleDotColor } from "@/utils/roleColors";
-
-// Export for backward compatibility
-export { getRoleColor, getRoleDotColor };
+import { useRoleColors } from "@/hooks/useRoleColors";
 
 interface CalendarViewProps {
   shifts: Shift[];
@@ -29,6 +26,7 @@ export function CalendarView({
   onDeleteShift,
   userRole 
 }: CalendarViewProps) {
+  const { getRoleColorByTitle, getRoleDotColorByTitle, getRoleLabelByTitle } = useRoleColors();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayModalOpen, setDayModalOpen] = useState(false);
@@ -165,16 +163,16 @@ export function CalendarView({
                       <div key={shift.id} className="flex items-center justify-center">
                         {/* Desktop: badge with role initial */}
                         <span
-                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium ${getRoleColor(shift.role)}`}
-                          title={shift.role}
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium ${getRoleColorByTitle(shift.role)}`}
+                          title={getRoleLabelByTitle(shift.role)}
                         >
-                          {shift.role.charAt(0).toUpperCase()}
+                          {getRoleLabelByTitle(shift.role).charAt(0).toUpperCase()}
                         </span>
 
                         {/* Mobile: colored dot only */}
                         <span
-                          className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColor(shift.role)}`}
-                          title={shift.role}
+                          className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColorByTitle(shift.role)}`}
+                          title={getRoleLabelByTitle(shift.role)}
                         />
                       </div>
                     ))}
@@ -213,7 +211,7 @@ export function CalendarView({
               <Button 
                 onClick={() => {
                   if (selectedDate) {
-                    onCreateShift(selectedDate);
+                    onCreateShift(new Date(selectedDate));
                     setDayModalOpen(false);
                   }
                 }}
@@ -238,8 +236,8 @@ export function CalendarView({
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h4 className="font-medium">{shift.role}</h4>
-                            <div className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${getRoleColor(shift.role)}`}>
-                              {shift.role}
+                            <div className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${getRoleColorByTitle(shift.role)}`}>
+                              {getRoleLabelByTitle(shift.role)}
                             </div>
                             <Badge className={getStatusColor(shift.status)}>
                               {shift.status.replace('_', ' ')}

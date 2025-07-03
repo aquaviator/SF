@@ -76,7 +76,7 @@ const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
 type EnhancedTemplateData = z.infer<typeof enhancedTemplateSchema>;
 
 export default function Scheduling() {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -557,11 +557,20 @@ export default function Scheduling() {
                 <CalendarView 
                   shifts={shifts} 
                   onDateClick={(date) => console.log("Date clicked:", date)}
-                  onCreateShift={openCreateShiftModal}
+                  onCreateShift={(date: Date) => {
+                    // Convert Date object to YYYY-MM-DD string format
+                    const dateString = date.toISOString().split('T')[0];
+                    openCreateShiftModal();
+                    // Pre-fill the date in the form
+                    shiftForm.setValue('date', dateString);
+                  }}
                   onEditShift={openEditShiftModal}
                   onDuplicateShift={handleShiftDuplicate}
-                  onDeleteShift={handleShiftDelete}
-                  userRole={user?.role || "staff"}
+                  onDeleteShift={(shiftId: number) => {
+                    const shift = shifts.find(s => s.id === shiftId);
+                    if (shift) handleShiftDelete(shift);
+                  }}
+                  userRole={role || "staff"}
                 />
               </CardContent>
             </Card>

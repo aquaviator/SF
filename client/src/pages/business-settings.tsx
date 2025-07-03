@@ -523,9 +523,9 @@ export default function BusinessSettingsPage() {
         responsibilities: role.responsibilities,
         requirements: role.requirements,
         isActive: role.isActive,
-        legendLabel: role.legendLabel || "",
-        legendColor: role.legendColor || "slate",
-        legendIcon: role.legendIcon || "",
+        legendLabel: (role as any).legend_label || "",
+        legendColor: (role as any).legend_color || "slate", 
+        legendIcon: (role as any).legend_icon || "",
       });
     } else {
       setEditingRole(null);
