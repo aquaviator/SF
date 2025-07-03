@@ -1,5 +1,6 @@
 import { X, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +17,13 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
   const { role, user, tenantId, switchRole } = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
   const moreMenuItems = getMoreMenuForRole(role);
+
+  // Fetch business profile for real business name
+  const { data: businessProfile } = useQuery({
+    queryKey: ["/api/business-profile", tenantId],
+    queryFn: () => fetch(`/api/business-profile?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
 
   // Generate user initials for avatar
   const getUserInitials = () => {
@@ -123,9 +131,9 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
                 )}>
                   {role === 'owner' ? 'Owner' : 'Staff'}
                 </span>
-                {tenantId && (
+                {(businessProfile?.name || tenantId) && (
                   <span className="text-xs text-gray-500 truncate">
-                    {tenantId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {businessProfile?.name || tenantId?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
@@ -9,6 +10,13 @@ export function SidebarNav() {
   
   const menuItems = getMenuForRole(role);
   const moreMenuItems = getMoreMenuForRole(role);
+
+  // Fetch business profile for real business name
+  const { data: businessProfile } = useQuery({
+    queryKey: ["/api/business-profile", tenantId],
+    queryFn: () => fetch(`/api/business-profile?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
   
   const isActiveRoute = (route: string) => {
     // Handle special cases for route matching
@@ -68,9 +76,9 @@ export function SidebarNav() {
               )}>
                 {role === 'owner' ? 'Owner' : 'Staff'}
               </span>
-              {tenantId && (
+              {(businessProfile?.name || tenantId) && (
                 <span className="text-xs text-gray-500 truncate">
-                  {tenantId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {businessProfile?.name || tenantId?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </span>
               )}
             </div>

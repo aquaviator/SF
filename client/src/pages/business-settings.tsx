@@ -253,13 +253,15 @@ export default function BusinessSettingsPage() {
   const { data: businessProfile, isLoading: profileLoading } = useQuery<BusinessProfile>({
     queryKey: ["/api/business-profile", tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/business-profile?tenantId=${tenantId}`);
+      const response = await fetch(`/api/business-profile?tenantId=${tenantId}&_=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch business profile');
       }
       return response.json();
     },
     enabled: !!tenantId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch Job Roles

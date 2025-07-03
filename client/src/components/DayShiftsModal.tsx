@@ -56,8 +56,7 @@ export function DayShiftsModal({
     
     setLoading(true);
     try {
-      const response = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
-      const shifts = await response.json();
+      const shifts = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
       setDayShifts(shifts);
     } catch (error) {
       console.error("Failed to fetch shifts:", error);
@@ -75,8 +74,7 @@ export function DayShiftsModal({
     if (!tenantId) return;
     
     try {
-      const response = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
-      const staffData = await response.json();
+      const staffData = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
       setStaff(staffData);
     } catch (error) {
       console.error("Failed to fetch staff:", error);

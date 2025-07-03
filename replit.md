@@ -223,6 +223,9 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added proper "not implemented" indicators for Approve Requests and View Reports modals
   - Fixed data synchronization between business_profiles.owner_name and users.first_name/last_name
   - Sidebar profile now displays authentic user data (Sarah Johnson) with proper initials and role badges
+  - Fixed DayShiftsModal API response parsing errors by removing duplicate .json() calls
+  - Updated SidebarNav and MoreDrawer to display real business names from database instead of formatted tenant IDs
+  - Resolved React Query caching issues in business settings by adding cache-busting parameters and forced refetch options
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
