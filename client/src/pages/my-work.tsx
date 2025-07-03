@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { staffApi, type StrikeData } from "@/lib/staffApi";
 import { 
   Calendar, 
   Clock, 
@@ -31,7 +32,9 @@ import {
   Briefcase,
   RefreshCw,
   Loader2,
-  Plus
+  Plus,
+  Shield,
+  AlertTriangle
 } from "lucide-react";
 import type { Shift } from "@shared/schema";
 
@@ -132,6 +135,32 @@ export default function MyWork() {
       return response.json();
     },
     enabled: !!tenantId,
+  });
+
+  // Fetch strike data
+  const { data: strikeData, isLoading: strikesLoading, error: strikesError } = useQuery<StrikeData>({
+    queryKey: ["/api/strikes", tenantId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !tenantId) throw new Error("User ID and tenant ID required");
+      console.log("🔍 LOAD_MY_STRIKES", { userId: user.id, tenantId, timestamp: new Date() });
+      return await staffApi.getStrikes(Number(user.id), tenantId);
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
+  // Check if user can claim shifts based on strike status
+  const { data: canClaimShifts, isLoading: canClaimLoading } = useQuery({
+    queryKey: ["/api/can-claim-shifts", tenantId, user?.id],
+    queryFn: async () => {
+      if (!user?.id || !tenantId) return { canClaim: true };
+      try {
+        return await staffApi.canClaimShift(Number(user.id), tenantId);
+      } catch (error) {
+        console.error("Failed to check claim eligibility:", error);
+        return { canClaim: true };
+      }
+    },
+    enabled: !!user?.id && !!tenantId,
   });
 
   // Mutations for form submissions
@@ -506,10 +535,11 @@ export default function MyWork() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="time-tracking">Time Tracking</TabsTrigger>
           <TabsTrigger value="my-shifts">My Shifts</TabsTrigger>
+          <TabsTrigger value="my-strikes">My Strikes</TabsTrigger>
           <TabsTrigger value="holiday-requests">Holiday Requests</TabsTrigger>
           <TabsTrigger value="swap-requests">Swap Requests</TabsTrigger>
         </TabsList>
@@ -797,6 +827,164 @@ export default function MyWork() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="my-strikes" className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">My Strikes</h2>
+            
+            {/* Strike Alert Banner */}
+            {strikeData && !canClaimShifts?.canClaim && (
+              <div className="mb-6">
+                <div 
+                  role="alert" 
+                  className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg"
+                >
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-red-800 dark:text-red-200">
+                      Strike Limit Reached
+                    </h3>
+                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                      You have {strikeData.totalPoints} strike points. You cannot claim new shifts until some strikes expire or are resolved.
+                      {canClaimShifts?.reason && ` Reason: ${canClaimShifts.reason}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Strike Summary Card */}
+            <Card className="mb-6">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Strike Summary</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {strikesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading strike data...</span>
+                  </div>
+                ) : strikesError ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Failed to load strike data</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        {strikeData?.totalPoints || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Total Points</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {strikeData?.strikes.filter(s => s.isActive).length || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Active Strikes</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {strikeData?.strikes.filter(s => !s.isActive).length || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Expired</div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Strike History */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Strike History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {strikesLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-muted rounded w-1/2"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !strikeData?.strikes.length ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No strikes recorded</p>
+                    <p className="text-xs text-muted-foreground mt-1">Keep up the great work!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Desktop: Table Layout */}
+                    <div className="hidden md:block">
+                      <div className="rounded-md border">
+                        <div className="grid grid-cols-5 gap-4 p-3 border-b bg-muted/50 text-sm font-medium">
+                          <div>Date</div>
+                          <div>Reason</div>
+                          <div>Points</div>
+                          <div>Status</div>
+                          <div>Expires</div>
+                        </div>
+                        {strikeData.strikes.map((strike) => (
+                          <div key={strike.id} className="grid grid-cols-5 gap-4 p-3 border-b last:border-b-0 text-sm">
+                            <div>{new Date(strike.issuedAt).toLocaleDateString()}</div>
+                            <div className="capitalize">
+                              {strike.reason.replace('_', ' ')}
+                            </div>
+                            <div className="font-medium">{strike.points}</div>
+                            <div>
+                              <Badge variant={strike.isActive ? "destructive" : "secondary"}>
+                                {strike.isActive ? "Active" : "Expired"}
+                              </Badge>
+                            </div>
+                            <div className="text-muted-foreground">
+                              {strike.expiresAt ? new Date(strike.expiresAt).toLocaleDateString() : "N/A"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mobile: Card Layout */}
+                    <div className="md:hidden space-y-3">
+                      {strikeData.strikes.map((strike) => (
+                        <Card key={strike.id} className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="font-medium capitalize">
+                              {strike.reason.replace('_', ' ')}
+                            </div>
+                            <Badge variant={strike.isActive ? "destructive" : "secondary"}>
+                              {strike.isActive ? "Active" : "Expired"}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <div>
+                              <span className="font-medium text-foreground">{strike.points}</span> points
+                            </div>
+                            <div>{new Date(strike.issuedAt).toLocaleDateString()}</div>
+                          </div>
+                          {strike.expiresAt && (
+                            <div className="text-xs text-muted-foreground mt-2">
+                              Expires: {new Date(strike.expiresAt).toLocaleDateString()}
+                            </div>
+                          )}
+                          {strike.notes && (
+                            <div className="text-xs text-muted-foreground mt-2 italic">
+                              {strike.notes}
+                            </div>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-4">
