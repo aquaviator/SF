@@ -9,7 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, User, Mail, Loader2, Clock, Upload, Camera, X } from "lucide-react";
+import { Edit, User, Mail, Loader2, Clock, Upload, Camera, X, AlertCircle, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -317,6 +317,10 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <label className="text-sm font-medium text-gray-500">Employee ID</label>
+              <p className="text-lg font-medium">{userData?.employeeId || 'N/A'}</p>
+            </div>
+            <div>
               <label className="text-sm font-medium text-gray-500">Role</label>
               <div className="flex items-center mt-1">
                 <User className="w-4 h-4 mr-2 text-gray-400" />
@@ -324,6 +328,12 @@ export default function Profile() {
                   {userData?.role}
                 </Badge>
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Hire Date</label>
+              <p className="text-lg font-medium">
+                {userData?.hireDate ? new Date(userData.hireDate).toLocaleDateString() : 'N/A'}
+              </p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Status</label>
@@ -336,6 +346,68 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Additional Profile Information */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <User className="w-5 h-5 mr-2" />
+              Contact Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Phone Number</label>
+              <p className="text-lg font-medium">{userData?.phone || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Address</label>
+              <p className="text-sm text-gray-700">{userData?.address || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Date of Birth</label>
+              <p className="text-lg font-medium">
+                {userData?.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString() : 'Not provided'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              Emergency Contact
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Contact Name</label>
+              <p className="text-lg font-medium">{userData?.emergencyContactName || 'Not provided'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Contact Phone</label>
+              <p className="text-lg font-medium">{userData?.emergencyContactPhone || 'Not provided'}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bio Section */}
+      {userData?.bio && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              About Me
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">{userData.bio}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <ModalForm
         isOpen={isModalOpen}

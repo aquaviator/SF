@@ -13,6 +13,15 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  dateOfBirth: text("date_of_birth"), // Using text for date for compatibility
+  hireDate: text("hire_date"),
+  employeeId: varchar("employee_id", { length: 20 }),
+  emergencyContactName: varchar("emergency_contact_name", { length: 100 }),
+  emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
+  photoUrl: text("photo_url"),
+  bio: text("bio"),
 });
 
 // Shifts table
