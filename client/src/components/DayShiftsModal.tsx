@@ -60,7 +60,8 @@ export function DayShiftsModal({
     console.log('DayShiftsModal: Fetching shifts for date:', date, 'tenant:', tenantId);
     setLoading(true);
     try {
-      const shifts = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
+      const response = await apiRequest("GET", `/api/shifts?date=${date}&tenantId=${tenantId}`);
+      const shifts = await response.json();
       console.log('DayShiftsModal: Received shifts:', shifts);
       setDayShifts(shifts);
     } catch (error) {
@@ -79,10 +80,12 @@ export function DayShiftsModal({
     if (!tenantId) return;
     
     try {
-      const staffData = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
+      const response = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
+      const staffData = await response.json();
+      console.log('DayShiftsModal: Received staff:', staffData);
       setStaff(staffData);
     } catch (error) {
-      console.error("Failed to fetch staff:", error);
+      console.error("DayShiftsModal: Failed to fetch staff:", error);
     }
   };
 
@@ -93,7 +96,7 @@ export function DayShiftsModal({
 
   // Helper function to find staff member by ID
   const getStaffById = (staffId: number | null) => {
-    if (!staffId) return null;
+    if (!staffId || !Array.isArray(staff)) return null;
     return staff.find(s => s.id === staffId);
   };
 
