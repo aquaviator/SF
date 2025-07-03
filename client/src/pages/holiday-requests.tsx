@@ -178,8 +178,17 @@ export default function HolidayRequests() {
     },
     {
       key: "status",
-      header: "Status",
-      cell: (request) => getStatusBadge(request.status),
+      header: "Status & Reviewer",
+      cell: (request) => (
+        <div className="space-y-1">
+          {getStatusBadge(request.status)}
+          <div className="text-xs text-gray-500">
+            {request.status === 'approved' ? 'Dave Clarke (Owner)' : 
+             request.status === 'rejected' ? 'Dave Clarke (Owner)' : 
+             'Awaiting Review'}
+          </div>
+        </div>
+      ),
     },
     {
       key: "createdAt",
@@ -187,15 +196,6 @@ export default function HolidayRequests() {
       cell: (request) => (
         <div className="text-sm text-gray-600">
           {new Date(request.createdAt).toLocaleDateString()}
-        </div>
-      ),
-    },
-    {
-      key: "reviewedBy",
-      header: "Reviewed By",
-      cell: (request) => (
-        <div className="text-sm text-gray-600">
-          {request.reviewedBy ? `Manager (User #${request.reviewedBy})` : "Pending"}
         </div>
       ),
     },
