@@ -1361,6 +1361,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Time Entries routes
+  app.get("/api/time-entries", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      const date = req.query.date as string;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      let timeEntries;
+      if (date) {
+        timeEntries = await storage.getTimeEntriesByUserAndDate(tenantId, parseInt(userId), date);
+      } else {
+        timeEntries = await storage.getTimeEntriesByUser(tenantId, parseInt(userId));
+      }
+      
+      res.json(timeEntries);
+    } catch (error) {
+      console.error("Get time entries error:", error);
+      res.status(500).json({ message: "Failed to fetch time entries" });
+    }
+  });
+
+  app.post("/api/time-entries", async (req, res) => {
+    try {
+      const timeEntryData = {
+        tenantId: req.body.tenantId,
+        userId: parseInt(req.body.userId),
+        date: req.body.date,
+        clockInTime: req.body.clockInTime,
+        shiftId: req.body.shiftId || null,
+      };
+      
+      if (!timeEntryData.tenantId || !timeEntryData.userId || !timeEntryData.date) {
+        return res.status(400).json({ message: "Tenant ID, User ID, and date are required" });
+      }
+      
+      const timeEntry = await storage.createTimeEntry(timeEntryData);
+      res.status(201).json(timeEntry);
+    } catch (error) {
+      console.error("Create time entry error:", error);
+      res.status(500).json({ message: "Failed to create time entry" });
+    }
+  });
+
+  app.put("/api/time-entries/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = {
+        clockOutTime: req.body.clockOutTime,
+        breakMinutes: req.body.breakMinutes,
+        notes: req.body.notes,
+      };
+      
+      const timeEntry = await storage.updateTimeEntry(id, updateData);
+      if (!timeEntry) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      
+      res.json(timeEntry);
+    } catch (error) {
+      console.error("Update time entry error:", error);
+      res.status(500).json({ message: "Failed to update time entry" });
+    }
+  });
+
   // Debug endpoint to clear all data
   app.delete("/api/debug/clear-all", async (req, res) => {
     try {

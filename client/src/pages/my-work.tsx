@@ -50,6 +50,106 @@ export default function MyWork() {
     },
   });
 
+  // Fetch time tracking policies
+  const { data: timePolicy } = useQuery({
+    queryKey: ["/api/shift-policy", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/shift-policy?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch time policy");
+      return response.json();
+    },
+  });
+
+  // Fetch current time entries for today
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
+    queryKey: ["/api/time-entries", tenantId, user?.id],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}&date=${today}`);
+      if (!response.ok) throw new Error("Failed to fetch time entries");
+      return response.json();
+    },
+  });
+
+  // Current clock status
+  const currentEntry = timeEntries?.find((entry: any) => !entry.clockOutTime);
+  const isClockedIn = !!currentEntry;
+
+  // Clock In Mutation
+  const clockInMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/time-entries", {
+        tenantId,
+        userId: user?.id,
+        clockInTime: new Date().toISOString(),
+        date: new Date().toISOString().split('T')[0],
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      toast({ title: "Clocked In", description: "You have successfully clocked in for your shift." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Clock In Failed", description: error.message || "Failed to clock in", variant: "destructive" });
+    },
+  });
+
+  // Clock Out Mutation
+  const clockOutMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentEntry) throw new Error("No active clock-in session found");
+      const response = await apiRequest("PUT", `/api/time-entries/${currentEntry.id}`, {
+        clockOutTime: new Date().toISOString(),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      toast({ title: "Clocked Out", description: "You have successfully clocked out." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Clock Out Failed", description: error.message || "Failed to clock out", variant: "destructive" });
+    },
+  });
+
+  // Calculate if clock-in is allowed based on policy
+  const canClockIn = () => {
+    if (!timePolicy || isClockedIn) return false;
+    
+    // Check if there's a shift today that allows clock-in
+    const today = new Date().toISOString().split('T')[0];
+    const todayShifts = shifts.filter(shift => shift.date === today);
+    
+    if (todayShifts.length === 0) return false;
+    
+    // Check if we're within the clock-in buffer window
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    return todayShifts.some(shift => {
+      const [shiftHour, shiftMinute] = shift.startTime.split(':').map(Number);
+      const shiftStartMinutes = shiftHour * 60 + shiftMinute;
+      const bufferMinutes = timePolicy.clockInBufferMinutes || 30;
+      
+      // Can clock in up to bufferMinutes before shift starts
+      return currentTime >= (shiftStartMinutes - bufferMinutes) && currentTime <= shiftStartMinutes + 15;
+    });
+  };
+
+  // Calculate time worked today
+  const calculateTimeWorked = () => {
+    if (!currentEntry) return "Not clocked in";
+    
+    const clockInTime = new Date(currentEntry.clockInTime);
+    const now = new Date();
+    const diffMs = now.getTime() - clockInTime.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
+  };
+
   // Quick actions that staff can perform
   const quickActions = [
     {
@@ -111,8 +211,9 @@ export default function MyWork() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="time-tracking">Time Tracking</TabsTrigger>
           <TabsTrigger value="shifts">My Shifts</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -255,6 +356,131 @@ export default function MyWork() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="time-tracking" className="space-y-6">
+          {/* Clock In/Out Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Time Tracking
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Clock in and out of your shifts with policy-driven controls
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Current Status */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Current Status</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {isClockedIn ? "Clocked In" : "Not Clocked In"}
+                  </p>
+                  {isClockedIn && currentEntry && (
+                    <p className="text-xs text-muted-foreground">
+                      Since {new Date(currentEntry.clockInTime).toLocaleTimeString()}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-sm font-medium">Time Worked Today</p>
+                  <p className="text-lg font-bold">{calculateTimeWorked()}</p>
+                </div>
+              </div>
+
+              {/* Clock In/Out Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button
+                  onClick={() => clockInMutation.mutate()}
+                  disabled={!canClockIn() || clockInMutation.isPending}
+                  className="h-16 text-lg"
+                  variant={canClockIn() ? "default" : "secondary"}
+                >
+                  {clockInMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <Play className="h-5 w-5 mr-2" />
+                  )}
+                  Clock In
+                </Button>
+                
+                <Button
+                  onClick={() => clockOutMutation.mutate()}
+                  disabled={!isClockedIn || clockOutMutation.isPending}
+                  className="h-16 text-lg"
+                  variant={isClockedIn ? "destructive" : "secondary"}
+                >
+                  {clockOutMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <Pause className="h-5 w-5 mr-2" />
+                  )}
+                  Clock Out
+                </Button>
+              </div>
+
+              {/* Policy Information */}
+              {timePolicy && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Early Clock-In</p>
+                    <p className="text-sm font-bold">{timePolicy.clockInBufferMinutes} minutes</p>
+                    <p className="text-xs text-muted-foreground">Before shift start</p>
+                  </div>
+                  
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-xs font-medium text-green-700 dark:text-green-300">Grace Period</p>
+                    <p className="text-sm font-bold">{timePolicy.lateGracePeriodMinutes} minutes</p>
+                    <p className="text-xs text-muted-foreground">Late arrival tolerance</p>
+                  </div>
+                  
+                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <p className="text-xs font-medium text-orange-700 dark:text-orange-300">Clock-Out Buffer</p>
+                    <p className="text-sm font-bold">{timePolicy.clockOutBufferMinutes} minutes</p>
+                    <p className="text-xs text-muted-foreground">After shift end</p>
+                  </div>
+                  
+                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <p className="text-xs font-medium text-purple-700 dark:text-purple-300">Strike Reset</p>
+                    <p className="text-sm font-bold">{timePolicy.resetPeriodDays} days</p>
+                    <p className="text-xs text-muted-foreground">Clean slate period</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Today's Time Entries */}
+              {timeEntries?.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Today's Time Entries</h4>
+                  <div className="space-y-2">
+                    {timeEntries.map((entry: any) => (
+                      <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            Clock In: {new Date(entry.clockInTime).toLocaleTimeString()}
+                          </p>
+                          {entry.clockOutTime && (
+                            <p className="text-sm text-muted-foreground">
+                              Clock Out: {new Date(entry.clockOutTime).toLocaleTimeString()}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {entry.clockOutTime ? (
+                            <Badge variant="secondary">Completed</Badge>
+                          ) : (
+                            <Badge variant="default">Active</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="shifts" className="space-y-4">

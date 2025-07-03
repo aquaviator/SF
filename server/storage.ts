@@ -176,6 +176,7 @@ export interface IStorage {
   getTimeEntry(id: number): Promise<TimeEntry | undefined>;
   getTimeEntriesByTenant(tenantId: string): Promise<TimeEntry[]>;
   getTimeEntriesByUser(tenantId: string, userId: number): Promise<TimeEntry[]>;
+  getTimeEntriesByUserAndDate(tenantId: string, userId: number, date: string): Promise<TimeEntry[]>;
   getActiveTimeEntry(tenantId: string, userId: number): Promise<TimeEntry | undefined>;
   createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry>;
   updateTimeEntry(id: number, entry: InsertTimeEntry): Promise<TimeEntry | undefined>;
@@ -1739,7 +1740,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTimeEntriesByUser(tenantId: string, userId: number): Promise<TimeEntry[]> {
-    return await db.select().from(timeEntries).where(eq(timeEntries.tenantId, tenantId));
+    return await db.select().from(timeEntries).where(and(eq(timeEntries.tenantId, tenantId), eq(timeEntries.userId, userId)));
+  }
+
+  async getTimeEntriesByUserAndDate(tenantId: string, userId: number, date: string): Promise<TimeEntry[]> {
+    const result = await db.select().from(timeEntries).where(
+      and(
+        eq(timeEntries.tenantId, tenantId), 
+        eq(timeEntries.userId, userId),
+        eq(timeEntries.date, date)
+      )
+    );
+    return result;
   }
 
   async getActiveTimeEntry(tenantId: string, userId: number): Promise<TimeEntry | undefined> {
