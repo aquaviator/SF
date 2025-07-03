@@ -137,6 +137,9 @@ export default function Policies() {
   });
 
   const onSubmit = (data: BusinessPolicyFormData) => {
+    console.log("=== CLIENT FORM SUBMISSION DEBUG ===");
+    console.log("Form data being submitted:", JSON.stringify(data, null, 2));
+    console.log("=== END CLIENT FORM SUBMISSION DEBUG ===");
     policyUpdateMutation.mutate(data);
   };
 
