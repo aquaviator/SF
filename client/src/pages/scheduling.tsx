@@ -49,7 +49,6 @@ import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/sc
 import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useRoleColors } from "@/hooks/useRoleColors";
 
 // Define shift form schema
 const shiftFormSchema = z.object({
@@ -80,7 +79,6 @@ export default function Scheduling() {
   const { user, tenantId, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { getRoleColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
 
   // Template modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -95,9 +93,7 @@ export default function Scheduling() {
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [calendarEditMode, setCalendarEditMode] = useState(false);
   
-  // Role modal state
-  const [roleModalOpen, setRoleModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
 
   // Shift CRUD functionality
   const {
@@ -283,16 +279,7 @@ export default function Scheduling() {
     setTemplateDeleteDialogOpen(true);
   };
 
-  // Role modal handlers
-  const openRoleModal = (role: string) => {
-    setSelectedRole(role);
-    setRoleModalOpen(true);
-  };
 
-  const closeRoleModal = () => {
-    setRoleModalOpen(false);
-    setSelectedRole(null);
-  };
 
   const confirmTemplateDelete = async () => {
     if (!templateToDelete) return;
@@ -587,7 +574,7 @@ export default function Scheduling() {
                     const shift = shifts.find(s => s.id === shiftId);
                     if (shift) handleShiftDelete(shift);
                   }}
-                  onRoleClick={openRoleModal}
+
                   userRole={role || "staff"}
                 />
               </CardContent>
@@ -1083,46 +1070,7 @@ export default function Scheduling() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Role Modal */}
-      <Dialog open={roleModalOpen} onOpenChange={closeRoleModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Role Information</DialogTitle>
-          </DialogHeader>
-          
-          {selectedRole && (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${getRoleColorByTitle(selectedRole)}`}>
-                  {getRoleInitialByTitle(selectedRole)}
-                </div>
-                <div>
-                  <h3 className="font-medium text-lg">{getRoleLabelByTitle(selectedRole)}</h3>
-                  <p className="text-sm text-muted-foreground">Role Badge</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-medium">Color Code:</p>
-                  <div className={`w-full h-8 rounded border ${getRoleColorByTitle(selectedRole)}`}></div>
-                </div>
-                <div>
-                  <p className="font-medium">Initial:</p>
-                  <div className={`w-8 h-8 rounded border flex items-center justify-center font-semibold ${getRoleColorByTitle(selectedRole)}`}>
-                    {getRoleInitialByTitle(selectedRole)}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p>This role appears on the calendar with the color and initial shown above. 
-                Role colors and labels can be customized in Business Settings.</p>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
     </>
   );
 }

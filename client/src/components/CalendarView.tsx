@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Plus, Edit, Copy, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import type { Shift } from "@shared/schema";
 import { useRoleColors } from "@/hooks/useRoleColors";
+import { DayShiftsModal } from "./DayShiftsModal";
 
 interface CalendarViewProps {
   shifts: Shift[];
@@ -14,7 +13,7 @@ interface CalendarViewProps {
   onEditShift: (shift: Shift) => void;
   onDuplicateShift: (shift: Shift) => void;
   onDeleteShift: (shiftId: number) => void;
-  onRoleClick?: (role: string) => void;
+
   userRole: "owner" | "staff";
 }
 
@@ -25,7 +24,6 @@ export function CalendarView({
   onEditShift, 
   onDuplicateShift, 
   onDeleteShift,
-  onRoleClick,
   userRole 
 }: CalendarViewProps) {
   const { getRoleColorByTitle, getRoleDotColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
@@ -101,7 +99,7 @@ export function CalendarView({
     }
   };
 
-  const selectedDateShifts = selectedDate ? shifts.filter(shift => shift.date === selectedDate) : [];
+
 
   return (
     <div className="space-y-4">
@@ -168,24 +166,16 @@ export function CalendarView({
                       >
                         {/* Desktop: badge with role initial */}
                         <span
-                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium hover:shadow-sm transition-shadow cursor-pointer ${getRoleColorByTitle(shift.role)}`}
-                          title={`${getRoleLabelByTitle(shift.role)} - Click to view role info`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRoleClick?.(shift.role);
-                          }}
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium ${getRoleColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)}`}
                         >
                           {getRoleInitialByTitle(shift.role)}
                         </span>
 
                         {/* Mobile: colored dot only */}
                         <span
-                          className={`inline-block md:hidden w-3 h-3 rounded-full hover:shadow-sm transition-shadow cursor-pointer ${getRoleDotColorByTitle(shift.role)}`}
-                          title={`${getRoleLabelByTitle(shift.role)} - Tap to view role info`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRoleClick?.(shift.role);
-                          }}
+                          className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)}`}
                         />
                       </div>
                     ))}
@@ -202,122 +192,17 @@ export function CalendarView({
         </CardContent>
       </Card>
 
-      {/* Day Detail Modal */}
-      <Dialog open={dayModalOpen} onOpenChange={setDayModalOpen}>
-        <DialogContent className="max-w-2xl" aria-describedby="day-modal-description">
-          <DialogHeader>
-            <DialogTitle>
-              Shifts for {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </DialogTitle>
-          </DialogHeader>
-          <div id="day-modal-description" className="sr-only">
-            View and manage shifts scheduled for this date
-          </div>
 
-          <div className="space-y-4">
-            {userRole === 'owner' && (
-              <Button 
-                onClick={() => {
-                  if (selectedDate) {
-                    onCreateShift(new Date(selectedDate));
-                    setDayModalOpen(false);
-                  }
-                }}
-                className="w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Shift
-              </Button>
-            )}
-
-            {selectedDateShifts.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No shifts scheduled for this day</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {selectedDateShifts.map((shift, index) => (
-                  <Card key={`shift-${shift.id}-${index}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-medium">{shift.role}</h4>
-                            <div className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${getRoleColorByTitle(shift.role)}`}>
-                              {getRoleLabelByTitle(shift.role)}
-                            </div>
-                            <Badge className={getStatusColor(shift.status)}>
-                              {shift.status.replace('_', ' ')}
-                            </Badge>
-                            {shift.assignmentType === 'opportunity' && (
-                              <Badge variant="outline">Open Opportunity</Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p>{shift.startTime} - {shift.endTime}</p>
-                            <p>{shift.location}</p>
-                            <p>{shift.description}</p>
-                            {shift.requiredStaff > 1 && (
-                              <p>Required staff: {shift.requiredStaff}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {userRole === 'owner' && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                onEditShift(shift);
-                                setDayModalOpen(false);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                onDuplicateShift(shift);
-                                setDayModalOpen(false);
-                              }}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                onDeleteShift(shift.id);
-                                setDayModalOpen(false);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-
-                        {userRole === 'staff' && shift.assignmentType === 'opportunity' && shift.status === 'open' && (
-                          <Button size="sm">
-                            Claim Shift
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Day Shifts Modal */}
+      <DayShiftsModal 
+        date={selectedDate}
+        isOpen={dayModalOpen}
+        onClose={() => setDayModalOpen(false)}
+        onCreateShift={onCreateShift}
+        onEditShift={onEditShift}
+        onDuplicateShift={onDuplicateShift}
+        userRole={userRole}
+      />
     </div>
   );
 }

@@ -1,0 +1,290 @@
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Edit, Copy, Trash2, Clock, MapPin, User } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRoleColors } from "@/hooks/useRoleColors";
+import type { Shift } from "@shared/schema";
+
+interface DayShiftsModalProps {
+  date: string | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onCreateShift: (date: Date) => void;
+  onEditShift: (shift: Shift) => void;
+  onDuplicateShift: (shift: Shift) => void;
+  userRole: "owner" | "staff";
+}
+
+export function DayShiftsModal({
+  date,
+  isOpen,
+  onClose,
+  onCreateShift,
+  onEditShift,
+  onDuplicateShift,
+  userRole
+}: DayShiftsModalProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { getRoleColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
+  
+  const [dayShifts, setDayShifts] = useState<Shift[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [shiftToDelete, setShiftToDelete] = useState<Shift | null>(null);
+
+  // Fetch shifts for the selected date
+  useEffect(() => {
+    if (date && isOpen) {
+      fetchDayShifts();
+    }
+  }, [date, isOpen]);
+
+  const fetchDayShifts = async () => {
+    if (!date) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/shifts?date=${date}`);
+      if (response.ok) {
+        const shifts = await response.json();
+        setDayShifts(shifts);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch shifts for this date",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateShift = () => {
+    if (date) {
+      onCreateShift(new Date(date + 'T00:00:00'));
+      onClose();
+    }
+  };
+
+  const handleEditShift = (shift: Shift) => {
+    onEditShift(shift);
+    onClose();
+  };
+
+  const handleDuplicateShift = (shift: Shift) => {
+    onDuplicateShift(shift);
+    onClose();
+  };
+
+  const openDeleteDialog = (shift: Shift) => {
+    setShiftToDelete(shift);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!shiftToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/shifts/${shiftToDelete.id}`, {
+        method: "DELETE"
+      });
+      
+      if (response.ok) {
+        // Remove from local state
+        setDayShifts(prev => prev.filter(s => s.id !== shiftToDelete.id));
+        
+        // Invalidate queries to update calendar
+        queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
+        
+        toast({
+          title: "Shift Deleted",
+          description: "The shift has been successfully deleted."
+        });
+      } else {
+        throw new Error("Failed to delete shift");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete shift",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setShiftToDelete(null);
+    }
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Shifts for {date && formatDate(date)}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Create Shift Button */}
+            {userRole === 'owner' && (
+              <Button 
+                onClick={handleCreateShift}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Shift
+              </Button>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Loading shifts...</p>
+              </div>
+            )}
+
+            {/* No Shifts State */}
+            {!loading && dayShifts.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No shifts scheduled for this date</p>
+              </div>
+            )}
+
+            {/* Shifts List */}
+            {!loading && dayShifts.length > 0 && (
+              <div className="space-y-3">
+                {dayShifts.map((shift) => (
+                  <Card key={shift.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {/* Role Badge */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${getRoleColorByTitle(shift.role)}`}>
+                          {getRoleInitialByTitle(shift.role)}
+                        </div>
+                        
+                        {/* Shift Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-medium">{getRoleLabelByTitle(shift.role)}</h3>
+                            <Badge variant="secondary" className="text-xs">
+                              {shift.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-4 h-4" />
+                              <span>{formatTime(shift.startTime)} - {formatTime(shift.endTime)}</span>
+                            </div>
+                            
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{shift.location}</span>
+                            </div>
+                            
+                            {shift.assignedTo && (
+                              <div className="flex items-center space-x-1">
+                                <User className="w-4 h-4" />
+                                <span>Assigned</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {shift.description && (
+                            <p className="text-sm text-muted-foreground mt-1 truncate">
+                              {shift.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      {userRole === 'owner' && (
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditShift(shift)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDuplicateShift(shift)}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteDialog(shift)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {shiftToDelete?.role} shift on {date && formatDate(date)}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
