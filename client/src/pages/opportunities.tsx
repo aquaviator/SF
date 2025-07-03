@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataTable, Column } from "@/components/DataTable";
@@ -24,14 +24,22 @@ export default function Opportunities() {
     },
   });
 
+  const [claimingIds, setClaimingIds] = useState<Set<number>>(new Set());
+
   const claimMutation = useMutation({
     mutationFn: async (opportunityId: number) => {
+      setClaimingIds(prev => new Set(prev).add(opportunityId));
       return apiRequest("POST", `/api/opportunities/${opportunityId}/claim`, {
         tenantId,
         userId: parseInt(user?.id || "1"),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, opportunityId) => {
+      setClaimingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(opportunityId);
+        return newSet;
+      });
       toast({
         title: "Success",
         description: "Opportunity claimed successfully!",
@@ -39,7 +47,12 @@ export default function Opportunities() {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["/api/shifts", tenantId] });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, opportunityId) => {
+      setClaimingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(opportunityId);
+        return newSet;
+      });
       toast({
         title: "Error",
         description: error.message || "Failed to claim opportunity",
@@ -105,9 +118,9 @@ export default function Opportunities() {
         <Button
           size="sm"
           onClick={() => handleClaim(opportunity)}
-          disabled={opportunity.status !== "open" || claimMutation.isPending}
+          disabled={opportunity.status !== "open" || claimingIds.has(opportunity.id)}
         >
-          {claimMutation.isPending ? "Claiming..." : "Claim"}
+          {claimingIds.has(opportunity.id) ? "Claiming..." : "Claim"}
         </Button>
       ),
     },
@@ -171,19 +184,90 @@ export default function Opportunities() {
         </Card>
       </div>
 
-      <DataTable
-        data={opportunities || []}
-        columns={columns}
-        title="Available Opportunities"
-        isLoading={isLoading}
-        emptyState={
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <DataTable
+          data={opportunities || []}
+          columns={columns}
+          title="Available Opportunities"
+          isLoading={isLoading}
+          emptyState={
+            <div className="text-center py-8">
+              <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No opportunities available</p>
+              <p className="text-sm text-gray-400">Check back later for new openings</p>
+            </div>
+          }
+        />
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-8 bg-gray-200 rounded w-full"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : activeOpportunities.length === 0 ? (
           <div className="text-center py-8">
             <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No opportunities available</p>
             <p className="text-sm text-gray-400">Check back later for new openings</p>
           </div>
-        }
-      />
+        ) : (
+          activeOpportunities.map((opportunity) => (
+            <Card key={opportunity.id} className="border border-gray-200">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{opportunity.role}</h3>
+                    <p className="text-sm text-gray-600">{opportunity.location}</p>
+                  </div>
+                  <Badge 
+                    variant={opportunity.status === "open" ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    {opportunity.status === "open" ? "Available" : "Closed"}
+                  </Badge>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span>📅 {new Date(opportunity.date).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span>🕐 {opportunity.startTime} - {opportunity.endTime}</span>
+                  </div>
+                </div>
+                
+                {opportunity.description && (
+                  <p className="text-sm text-gray-600">{opportunity.description}</p>
+                )}
+                
+                <div className="pt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleClaim(opportunity)}
+                    disabled={opportunity.status !== "open" || claimingIds.has(opportunity.id)}
+                    className="w-full min-h-[44px]" // Ensure minimum touch target size
+                  >
+                    {claimingIds.has(opportunity.id) ? "Claiming..." : "Claim"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
