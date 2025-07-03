@@ -239,6 +239,15 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added toast notifications and error handling for robust user experience
   - Replaced all static holiday data with dynamic PostgreSQL-backed content
   - Verified full functionality with successful entitlement updates and real-time UI sync
+- July 03, 2025. Completed single business policy system with real-time form updates:
+  - Replaced complex multi-policy system with single policy per tenant
+  - Updated shift_policies table schema with specific fields (minNoticeHours, maxAdvanceBookingDays, etc.)
+  - Implemented GET /api/shift-policy and PUT /api/shift-policy endpoints with upsert functionality
+  - Created simple 6-field business policy form with proper validation and pre-population
+  - Fixed form refresh issue by implementing immediate form reset after successful API updates
+  - Added proper React Query cache invalidation and real-time UI synchronization
+  - Form now shows current database values immediately and updates without page refresh
+  - All policy changes persist to database with instant visual feedback
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

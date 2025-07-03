@@ -89,10 +89,22 @@ export default function Policies() {
   // Policy Update Mutation
   const policyUpdateMutation = useMutation({
     mutationFn: async (data: BusinessPolicyFormData) => {
-      return await apiRequest("PUT", `/api/shift-policy`, { ...data, tenantId });
+      const response = await apiRequest("PUT", `/api/shift-policy`, { ...data, tenantId });
+      return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/shift-policy", tenantId] });
+    onSuccess: (updatedPolicy) => {
+      // Update the form with the latest values from the server
+      policyForm.reset({
+        minNoticeHours: updatedPolicy.minNoticeHours,
+        maxAdvanceBookingDays: updatedPolicy.maxAdvanceBookingDays,
+        cancellationDeadlineHours: updatedPolicy.cancellationDeadlineHours,
+        maxStrikePoints: updatedPolicy.maxStrikePoints,
+        strikePointsNoShow: updatedPolicy.strikePointsNoShow,
+        strikePointsLateCancellation: updatedPolicy.strikePointsLateCancellation,
+      });
+      
+      // Invalidate and refetch the query
+      queryClient.invalidateQueries({ queryKey: [`/api/shift-policy?tenantId=${tenantId}`] });
       toast({ title: "Business policy updated successfully" });
     },
     onError: (error: Error) => {
