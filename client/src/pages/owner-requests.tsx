@@ -402,7 +402,12 @@ export default function OwnerRequestsPage() {
                     
                     <div className="mb-4">
                       <p className="text-sm font-medium text-gray-700 mb-1">Requested</p>
-                      <p className="text-sm text-gray-600">{format(new Date(request.createdAt), "MMM d, yyyy")}</p>
+                      <p className="text-sm text-gray-600">
+                        {request.createdAt 
+                          ? format(new Date(request.createdAt), "MMM d, yyyy")
+                          : "Date not available"
+                        }
+                      </p>
                     </div>
 
                     {request.reason && (
