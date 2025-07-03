@@ -48,7 +48,7 @@ const holidayRequestFormSchema = z.object({
 });
 
 const swapRequestFormSchema = z.object({
-  myShiftId: z.string().min(1, "Please select your shift"),
+  originalShiftId: z.string().min(1, "Please select your shift"),
   targetShiftId: z.string().min(1, "Please select shift to swap with"),
   reason: z.string().min(1, "Please provide a reason for the swap"),
 });
@@ -79,7 +79,7 @@ export default function MyWork() {
   const swapForm = useForm<SwapRequestFormData>({
     resolver: zodResolver(swapRequestFormSchema),
     defaultValues: {
-      myShiftId: "",
+      originalShiftId: "",
       targetShiftId: "",
       reason: "",
     },
@@ -193,14 +193,11 @@ export default function MyWork() {
     mutationFn: async (data: SwapRequestFormData) => {
       const submitData = {
         tenantId,
-        requestingUserId: user?.id || 1,
-        requestedShiftId: parseInt(data.myShiftId),
+        requesterId: user?.id || 1,
+        originalShiftId: parseInt(data.originalShiftId),
         targetShiftId: parseInt(data.targetShiftId),
         reason: data.reason,
         status: "pending" as const,
-        reviewedBy: null,
-        reviewedAt: null,
-        reviewNotes: null,
       };
       return apiRequest("POST", "/api/swap-requests", submitData);
     },
@@ -1253,7 +1250,7 @@ export default function MyWork() {
                       <form onSubmit={swapForm.handleSubmit((data) => swapRequestMutation.mutate(data))} className="space-y-4">
                         <FormField
                           control={swapForm.control}
-                          name="myShiftId"
+                          name="originalShiftId"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>My Shift to Swap</FormLabel>
