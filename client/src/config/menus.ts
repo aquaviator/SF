@@ -11,7 +11,8 @@ import {
   Settings,
   Shield,
   CreditCard,
-  TrendingUp
+  TrendingUp,
+  Bell
 } from "lucide-react";
 import { ComponentType } from "react";
 
@@ -40,6 +41,12 @@ export const ownerMenu: MenuItem[] = [
     route: "/owner/workforce",
     icon: Users,
     description: "Staff management and assignments"
+  },
+  {
+    label: "Requests",
+    route: "/owner/requests",
+    icon: Bell,
+    description: "Review and action staff requests"
   },
   {
     label: "Analytics",

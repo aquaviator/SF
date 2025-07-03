@@ -18,6 +18,7 @@ import Profile from "@/pages/profile";
 import OwnerDashboard from "@/pages/owner-dashboard";
 import Scheduling from "@/pages/scheduling";
 import Workforce from "@/pages/workforce";
+import OwnerRequests from "@/pages/owner-requests";
 import BusinessSettings from "@/pages/business-settings";
 import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
@@ -52,6 +53,7 @@ function Router() {
               <Route path="/owner/dashboard" component={OwnerDashboard} />
               <Route path="/owner/scheduling" component={Scheduling} />
               <Route path="/owner/workforce" component={Workforce} />
+              <Route path="/owner/requests" component={OwnerRequests} />
               <Route path="/owner/settings" component={BusinessSettings} />
               <Route path="/owner/policies" component={Policies} />
               <Route path="/owner/analytics" component={Analytics} />
