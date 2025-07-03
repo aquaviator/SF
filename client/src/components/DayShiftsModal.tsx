@@ -41,6 +41,7 @@ export function DayShiftsModal({
   // Fetch shifts for the selected date
   useEffect(() => {
     if (date && isOpen) {
+      console.log('DayShiftsModal opening for date:', date);
       fetchDayShifts();
     }
   }, [date, isOpen]);
