@@ -16,8 +16,7 @@ import {
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
   type HolidayEntitlement, type InsertHolidayEntitlement
 } from "../shared/schema";
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
+import { db as database } from './db';
 import { eq, and } from 'drizzle-orm';
 
 export interface IStorage {
@@ -1208,304 +1207,276 @@ export class MemStorage implements IStorage {
 }
 
 // Initialize database connection
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql, { 
-  schema: {
-    users,
-    shifts,
-    opportunities,
-    swapRequests,
-    assignments,
-    holidayRequests,
-    scheduleTemplates,
-    businessProfiles,
-    jobRoles,
-    locations,
-    departments,
-    operatingHours,
-    shiftPolicies,
-    analyticsReports,
-    analyticsMetrics,
-    activityLogs,
-    subscriptions,
-    subscriptionPlans,
-    usageMetrics,
-    invoices,
-    billingInfo,
-    timeEntries,
-    performanceMetrics,
-    holidayEntitlements
-  }
-});
+// Using the shared database connection from server/database.ts
 
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const result = await database.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    const result = await database.select().from(users).where(eq(users.username, username)).limit(1);
     return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
+    const result = await database.insert(users).values(insertUser).returning();
     return result[0];
   }
 
   async updateUser(id: number, insertUser: InsertUser): Promise<User | undefined> {
-    const result = await db.update(users).set(insertUser).where(eq(users.id, id)).returning();
+    const result = await database.update(users).set(insertUser).where(eq(users.id, id)).returning();
     return result[0];
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const result = await db.delete(users).where(eq(users.id, id));
+    const result = await database.delete(users).where(eq(users.id, id));
     return result.rowCount > 0;
   }
 
   async getStaffByTenant(tenantId: string): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.tenantId, tenantId));
+    return await database.select().from(users).where(eq(users.tenantId, tenantId));
   }
 
   // Business profile operations
   async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {
-    const result = await db.select().from(businessProfiles).where(eq(businessProfiles.tenantId, tenantId)).limit(1);
+    const result = await database.select().from(businessProfiles).where(eq(businessProfiles.tenantId, tenantId)).limit(1);
     return result[0];
   }
 
   async createBusinessProfile(insertProfile: InsertBusinessProfile): Promise<BusinessProfile> {
-    const result = await db.insert(businessProfiles).values(insertProfile).returning();
+    const result = await database.insert(businessProfiles).values(insertProfile).returning();
     return result[0];
   }
 
   async updateBusinessProfile(tenantId: string, insertProfile: InsertBusinessProfile): Promise<BusinessProfile | undefined> {
-    const result = await db.update(businessProfiles).set(insertProfile).where(eq(businessProfiles.tenantId, tenantId)).returning();
+    const result = await database.update(businessProfiles).set(insertProfile).where(eq(businessProfiles.tenantId, tenantId)).returning();
     return result[0];
   }
 
   async deleteBusinessProfile(tenantId: string): Promise<boolean> {
-    const result = await db.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenantId));
+    const result = await database.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenantId));
     return result.rowCount > 0;
   }
 
   // Job role operations
   async getJobRole(id: number): Promise<JobRole | undefined> {
-    const result = await db.select().from(jobRoles).where(eq(jobRoles.id, id)).limit(1);
+    const result = await database.select().from(jobRoles).where(eq(jobRoles.id, id)).limit(1);
     return result[0];
   }
 
   async getJobRolesByTenant(tenantId: string): Promise<JobRole[]> {
-    return await db.select().from(jobRoles).where(eq(jobRoles.tenantId, tenantId));
+    return await database.select().from(jobRoles).where(eq(jobRoles.tenantId, tenantId));
   }
 
   async createJobRole(insertRole: InsertJobRole): Promise<JobRole> {
-    const result = await db.insert(jobRoles).values(insertRole).returning();
+    const result = await database.insert(jobRoles).values(insertRole).returning();
     return result[0];
   }
 
   async updateJobRole(id: number, insertRole: InsertJobRole): Promise<JobRole | undefined> {
-    const result = await db.update(jobRoles).set(insertRole).where(eq(jobRoles.id, id)).returning();
+    const result = await database.update(jobRoles).set(insertRole).where(eq(jobRoles.id, id)).returning();
     return result[0];
   }
 
   async deleteJobRole(id: number): Promise<boolean> {
-    const result = await db.delete(jobRoles).where(eq(jobRoles.id, id));
+    const result = await database.delete(jobRoles).where(eq(jobRoles.id, id));
     return result.rowCount > 0;
   }
 
   // Location operations
   async getLocation(id: number): Promise<Location | undefined> {
-    const result = await db.select().from(locations).where(eq(locations.id, id)).limit(1);
+    const result = await database.select().from(locations).where(eq(locations.id, id)).limit(1);
     return result[0];
   }
 
   async getLocationsByTenant(tenantId: string): Promise<Location[]> {
-    return await db.select().from(locations).where(eq(locations.tenantId, tenantId));
+    return await database.select().from(locations).where(eq(locations.tenantId, tenantId));
   }
 
   async createLocation(insertLocation: InsertLocation): Promise<Location> {
-    const result = await db.insert(locations).values(insertLocation).returning();
+    const result = await database.insert(locations).values(insertLocation).returning();
     return result[0];
   }
 
   async updateLocation(id: number, insertLocation: InsertLocation): Promise<Location | undefined> {
-    const result = await db.update(locations).set(insertLocation).where(eq(locations.id, id)).returning();
+    const result = await database.update(locations).set(insertLocation).where(eq(locations.id, id)).returning();
     return result[0];
   }
 
   async deleteLocation(id: number): Promise<boolean> {
-    const result = await db.delete(locations).where(eq(locations.id, id));
+    const result = await database.delete(locations).where(eq(locations.id, id));
     return result.rowCount > 0;
   }
 
   // Department operations
   async getDepartment(id: number): Promise<Department | undefined> {
-    const result = await db.select().from(departments).where(eq(departments.id, id)).limit(1);
+    const result = await database.select().from(departments).where(eq(departments.id, id)).limit(1);
     return result[0];
   }
 
   async getDepartmentsByTenant(tenantId: string): Promise<Department[]> {
-    return await db.select().from(departments).where(eq(departments.tenantId, tenantId));
+    return await database.select().from(departments).where(eq(departments.tenantId, tenantId));
   }
 
   async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
-    const result = await db.insert(departments).values(insertDepartment).returning();
+    const result = await database.insert(departments).values(insertDepartment).returning();
     return result[0];
   }
 
   async updateDepartment(id: number, insertDepartment: InsertDepartment): Promise<Department | undefined> {
-    const result = await db.update(departments).set(insertDepartment).where(eq(departments.id, id)).returning();
+    const result = await database.update(departments).set(insertDepartment).where(eq(departments.id, id)).returning();
     return result[0];
   }
 
   async deleteDepartment(id: number): Promise<boolean> {
-    const result = await db.delete(departments).where(eq(departments.id, id));
+    const result = await database.delete(departments).where(eq(departments.id, id));
     return result.rowCount > 0;
   }
 
   // Operating hours operations
   async getOperatingHours(id: number): Promise<OperatingHours | undefined> {
-    const result = await db.select().from(operatingHours).where(eq(operatingHours.id, id)).limit(1);
+    const result = await database.select().from(operatingHours).where(eq(operatingHours.id, id)).limit(1);
     return result[0];
   }
 
   async getOperatingHoursByTenant(tenantId: string): Promise<OperatingHours[]> {
-    return await db.select().from(operatingHours).where(eq(operatingHours.tenantId, tenantId));
+    return await database.select().from(operatingHours).where(eq(operatingHours.tenantId, tenantId));
   }
 
   async createOperatingHours(insertHours: InsertOperatingHours): Promise<OperatingHours> {
-    const result = await db.insert(operatingHours).values(insertHours).returning();
+    const result = await database.insert(operatingHours).values(insertHours).returning();
     return result[0];
   }
 
   async updateOperatingHours(id: number, insertHours: InsertOperatingHours): Promise<OperatingHours | undefined> {
-    const result = await db.update(operatingHours).set(insertHours).where(eq(operatingHours.id, id)).returning();
+    const result = await database.update(operatingHours).set(insertHours).where(eq(operatingHours.id, id)).returning();
     return result[0];
   }
 
   async deleteOperatingHours(id: number): Promise<boolean> {
-    const result = await db.delete(operatingHours).where(eq(operatingHours.id, id));
+    const result = await database.delete(operatingHours).where(eq(operatingHours.id, id));
     return result.rowCount > 0;
   }
 
   // Shift operations
   async getShift(id: number): Promise<Shift | undefined> {
-    const result = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
+    const result = await database.select().from(shifts).where(eq(shifts.id, id)).limit(1);
     return result[0];
   }
 
   async getShiftsByTenant(tenantId: string): Promise<Shift[]> {
-    return await db.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+    return await database.select().from(shifts).where(eq(shifts.tenantId, tenantId));
   }
 
   async getShiftsByTenantAndDate(tenantId: string, date: string): Promise<Shift[]> {
-    return await db.select().from(shifts).where(and(eq(shifts.tenantId, tenantId), eq(shifts.date, date)));
+    return await database.select().from(shifts).where(and(eq(shifts.tenantId, tenantId), eq(shifts.date, date)));
   }
 
   async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
-    return await db.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+    return await database.select().from(shifts).where(eq(shifts.tenantId, tenantId));
   }
 
   async createShift(insertShift: InsertShift): Promise<Shift> {
-    const result = await db.insert(shifts).values(insertShift).returning();
+    const result = await database.insert(shifts).values(insertShift).returning();
     return result[0];
   }
 
   async updateShift(id: number, insertShift: InsertShift): Promise<Shift | undefined> {
-    const result = await db.update(shifts).set(insertShift).where(eq(shifts.id, id)).returning();
+    const result = await database.update(shifts).set(insertShift).where(eq(shifts.id, id)).returning();
     return result[0];
   }
 
   async deleteShift(id: number): Promise<boolean> {
-    const result = await db.delete(shifts).where(eq(shifts.id, id));
+    const result = await database.delete(shifts).where(eq(shifts.id, id));
     return result.rowCount > 0;
   }
 
   // Opportunity operations
   async getOpportunity(id: number): Promise<Opportunity | undefined> {
-    const result = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
+    const result = await database.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
     return result[0];
   }
 
   async getOpportunitiesByTenant(tenantId: string): Promise<Opportunity[]> {
-    return await db.select().from(opportunities).where(eq(opportunities.tenantId, tenantId));
+    return await database.select().from(opportunities).where(eq(opportunities.tenantId, tenantId));
   }
 
   async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {
-    const result = await db.insert(opportunities).values(insertOpportunity).returning();
+    const result = await database.insert(opportunities).values(insertOpportunity).returning();
     return result[0];
   }
 
   async updateOpportunity(id: number, insertOpportunity: InsertOpportunity): Promise<Opportunity | undefined> {
-    const result = await db.update(opportunities).set(insertOpportunity).where(eq(opportunities.id, id)).returning();
+    const result = await database.update(opportunities).set(insertOpportunity).where(eq(opportunities.id, id)).returning();
     return result[0];
   }
 
   async deleteOpportunity(id: number): Promise<boolean> {
-    const result = await db.delete(opportunities).where(eq(opportunities.id, id));
+    const result = await database.delete(opportunities).where(eq(opportunities.id, id));
     return result.rowCount > 0;
   }
 
   // Swap request operations
   async getSwapRequest(id: number): Promise<SwapRequest | undefined> {
-    const result = await db.select().from(swapRequests).where(eq(swapRequests.id, id)).limit(1);
+    const result = await database.select().from(swapRequests).where(eq(swapRequests.id, id)).limit(1);
     return result[0];
   }
 
   async getSwapRequestsByTenant(tenantId: string): Promise<SwapRequest[]> {
-    return await db.select().from(swapRequests).where(eq(swapRequests.tenantId, tenantId));
+    return await database.select().from(swapRequests).where(eq(swapRequests.tenantId, tenantId));
   }
 
   async createSwapRequest(insertSwapRequest: InsertSwapRequest): Promise<SwapRequest> {
-    const result = await db.insert(swapRequests).values(insertSwapRequest).returning();
+    const result = await database.insert(swapRequests).values(insertSwapRequest).returning();
     return result[0];
   }
 
   async updateSwapRequest(id: number, insertSwapRequest: InsertSwapRequest): Promise<SwapRequest | undefined> {
-    const result = await db.update(swapRequests).set(insertSwapRequest).where(eq(swapRequests.id, id)).returning();
+    const result = await database.update(swapRequests).set(insertSwapRequest).where(eq(swapRequests.id, id)).returning();
     return result[0];
   }
 
   async deleteSwapRequest(id: number): Promise<boolean> {
-    const result = await db.delete(swapRequests).where(eq(swapRequests.id, id));
+    const result = await database.delete(swapRequests).where(eq(swapRequests.id, id));
     return result.rowCount > 0;
   }
 
   // Assignment operations
   async getAssignment(id: number): Promise<Assignment | undefined> {
-    const result = await db.select().from(assignments).where(eq(assignments.id, id)).limit(1);
+    const result = await database.select().from(assignments).where(eq(assignments.id, id)).limit(1);
     return result[0];
   }
 
   async getAssignmentsByTenant(tenantId: string): Promise<Assignment[]> {
-    return await db.select().from(assignments).where(eq(assignments.tenantId, tenantId));
+    return await database.select().from(assignments).where(eq(assignments.tenantId, tenantId));
   }
 
   async createAssignment(insertAssignment: InsertAssignment): Promise<Assignment> {
-    const result = await db.insert(assignments).values(insertAssignment).returning();
+    const result = await database.insert(assignments).values(insertAssignment).returning();
     return result[0];
   }
 
   async updateAssignment(id: number, insertAssignment: InsertAssignment): Promise<Assignment | undefined> {
-    const result = await db.update(assignments).set(insertAssignment).where(eq(assignments.id, id)).returning();
+    const result = await database.update(assignments).set(insertAssignment).where(eq(assignments.id, id)).returning();
     return result[0];
   }
 
   async deleteAssignment(id: number): Promise<boolean> {
-    const result = await db.delete(assignments).where(eq(assignments.id, id));
+    const result = await database.delete(assignments).where(eq(assignments.id, id));
     return result.rowCount > 0;
   }
 
   // Holiday request operations
   async getHolidayRequest(id: number): Promise<HolidayRequest | undefined> {
-    const result = await db.select().from(holidayRequests).where(eq(holidayRequests.id, id)).limit(1);
+    const result = await database.select().from(holidayRequests).where(eq(holidayRequests.id, id)).limit(1);
     return result[0];
   }
 
   async getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]> {
-    const result = await db
+    const result = await database
       .select({
         // Holiday request fields
         id: holidayRequests.id,
@@ -1539,42 +1510,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createHolidayRequest(insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest> {
-    const result = await db.insert(holidayRequests).values(insertHolidayRequest).returning();
+    const result = await database.insert(holidayRequests).values(insertHolidayRequest).returning();
     return result[0];
   }
 
   async updateHolidayRequest(id: number, insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined> {
-    const result = await db.update(holidayRequests).set(insertHolidayRequest).where(eq(holidayRequests.id, id)).returning();
+    const result = await database.update(holidayRequests).set(insertHolidayRequest).where(eq(holidayRequests.id, id)).returning();
     return result[0];
   }
 
   async deleteHolidayRequest(id: number): Promise<boolean> {
-    const result = await db.delete(holidayRequests).where(eq(holidayRequests.id, id));
+    const result = await database.delete(holidayRequests).where(eq(holidayRequests.id, id));
     return result.rowCount > 0;
   }
 
   // Schedule template operations
   async getScheduleTemplate(id: number): Promise<ScheduleTemplate | undefined> {
-    const result = await db.select().from(scheduleTemplates).where(eq(scheduleTemplates.id, id)).limit(1);
+    const result = await database.select().from(scheduleTemplates).where(eq(scheduleTemplates.id, id)).limit(1);
     return result[0];
   }
 
   async getScheduleTemplatesByTenant(tenantId: string): Promise<ScheduleTemplate[]> {
-    return await db.select().from(scheduleTemplates).where(eq(scheduleTemplates.tenantId, tenantId));
+    return await database.select().from(scheduleTemplates).where(eq(scheduleTemplates.tenantId, tenantId));
   }
 
   async createScheduleTemplate(insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate> {
-    const result = await db.insert(scheduleTemplates).values(insertTemplate).returning();
+    const result = await database.insert(scheduleTemplates).values(insertTemplate).returning();
     return result[0];
   }
 
   async updateScheduleTemplate(id: number, insertTemplate: InsertScheduleTemplate): Promise<ScheduleTemplate | undefined> {
-    const result = await db.update(scheduleTemplates).set(insertTemplate).where(eq(scheduleTemplates.id, id)).returning();
+    const result = await database.update(scheduleTemplates).set(insertTemplate).where(eq(scheduleTemplates.id, id)).returning();
     return result[0];
   }
 
   async deleteScheduleTemplate(id: number): Promise<boolean> {
-    const result = await db.delete(scheduleTemplates).where(eq(scheduleTemplates.id, id));
+    const result = await database.delete(scheduleTemplates).where(eq(scheduleTemplates.id, id));
     return result.rowCount > 0;
   }
 
@@ -1649,216 +1620,222 @@ export class DatabaseStorage implements IStorage {
 
   // Subscription operations
   async getSubscription(tenantId: string): Promise<Subscription | undefined> {
-    const result = await db.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).limit(1);
+    const result = await database.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).limit(1);
     return result[0];
   }
 
   async createSubscription(insertSubscription: InsertSubscription): Promise<Subscription> {
-    const result = await db.insert(subscriptions).values(insertSubscription).returning();
+    const result = await database.insert(subscriptions).values(insertSubscription).returning();
     return result[0];
   }
 
   async updateSubscription(tenantId: string, insertSubscription: InsertSubscription): Promise<Subscription | undefined> {
-    const result = await db.update(subscriptions).set(insertSubscription).where(eq(subscriptions.tenantId, tenantId)).returning();
+    const result = await database.update(subscriptions).set(insertSubscription).where(eq(subscriptions.tenantId, tenantId)).returning();
     return result[0];
   }
 
   async deleteSubscription(tenantId: string): Promise<boolean> {
-    const result = await db.delete(subscriptions).where(eq(subscriptions.tenantId, tenantId));
+    const result = await database.delete(subscriptions).where(eq(subscriptions.tenantId, tenantId));
     return result.rowCount > 0;
   }
 
   async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
-    const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
+    const result = await database.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
     return result[0];
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-    return await db.select().from(subscriptionPlans);
+    return await database.select().from(subscriptionPlans);
   }
 
   async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
-    const result = await db.insert(subscriptionPlans).values(insertPlan).returning();
+    const result = await database.insert(subscriptionPlans).values(insertPlan).returning();
     return result[0];
   }
 
   async updateSubscriptionPlan(id: string, insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan | undefined> {
-    const result = await db.update(subscriptionPlans).set(insertPlan).where(eq(subscriptionPlans.id, id)).returning();
+    const result = await database.update(subscriptionPlans).set(insertPlan).where(eq(subscriptionPlans.id, id)).returning();
     return result[0];
   }
 
   async deleteSubscriptionPlan(id: string): Promise<boolean> {
-    const result = await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    const result = await database.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
     return result.rowCount > 0;
   }
 
   // Analytics operations
   async getAnalyticsReport(id: number): Promise<AnalyticsReport | undefined> {
-    const result = await db.select().from(analyticsReports).where(eq(analyticsReports.id, id)).limit(1);
+    const result = await database.select().from(analyticsReports).where(eq(analyticsReports.id, id)).limit(1);
     return result[0];
   }
 
   async getAnalyticsReportsByTenant(tenantId: string): Promise<AnalyticsReport[]> {
-    return await db.select().from(analyticsReports).where(eq(analyticsReports.tenantId, tenantId));
+    return await database.select().from(analyticsReports).where(eq(analyticsReports.tenantId, tenantId));
   }
 
   async createAnalyticsReport(insertReport: InsertAnalyticsReport): Promise<AnalyticsReport> {
-    const result = await db.insert(analyticsReports).values(insertReport).returning();
+    const result = await database.insert(analyticsReports).values(insertReport).returning();
     return result[0];
   }
 
   async updateAnalyticsReport(id: number, insertReport: InsertAnalyticsReport): Promise<AnalyticsReport | undefined> {
-    const result = await db.update(analyticsReports).set(insertReport).where(eq(analyticsReports.id, id)).returning();
+    const result = await database.update(analyticsReports).set(insertReport).where(eq(analyticsReports.id, id)).returning();
     return result[0];
   }
 
   async deleteAnalyticsReport(id: number): Promise<boolean> {
-    const result = await db.delete(analyticsReports).where(eq(analyticsReports.id, id));
+    const result = await database.delete(analyticsReports).where(eq(analyticsReports.id, id));
     return result.rowCount > 0;
   }
 
   async getAnalyticsMetric(id: number): Promise<AnalyticsMetric | undefined> {
-    const result = await db.select().from(analyticsMetrics).where(eq(analyticsMetrics.id, id)).limit(1);
+    const result = await database.select().from(analyticsMetrics).where(eq(analyticsMetrics.id, id)).limit(1);
     return result[0];
   }
 
   async getAnalyticsMetricsByTenant(tenantId: string): Promise<AnalyticsMetric[]> {
-    return await db.select().from(analyticsMetrics).where(eq(analyticsMetrics.tenantId, tenantId));
+    return await database.select().from(analyticsMetrics).where(eq(analyticsMetrics.tenantId, tenantId));
   }
 
   async createAnalyticsMetric(insertMetric: InsertAnalyticsMetric): Promise<AnalyticsMetric> {
-    const result = await db.insert(analyticsMetrics).values(insertMetric).returning();
+    const result = await database.insert(analyticsMetrics).values(insertMetric).returning();
     return result[0];
   }
 
   async updateAnalyticsMetric(id: number, insertMetric: InsertAnalyticsMetric): Promise<AnalyticsMetric | undefined> {
-    const result = await db.update(analyticsMetrics).set(insertMetric).where(eq(analyticsMetrics.id, id)).returning();
+    const result = await database.update(analyticsMetrics).set(insertMetric).where(eq(analyticsMetrics.id, id)).returning();
     return result[0];
   }
 
   async deleteAnalyticsMetric(id: number): Promise<boolean> {
-    const result = await db.delete(analyticsMetrics).where(eq(analyticsMetrics.id, id));
+    const result = await database.delete(analyticsMetrics).where(eq(analyticsMetrics.id, id));
     return result.rowCount > 0;
   }
 
   // Activity log operations
   async getActivityLog(id: number): Promise<ActivityLog | undefined> {
-    const result = await db.select().from(activityLogs).where(eq(activityLogs.id, id)).limit(1);
+    const result = await database.select().from(activityLogs).where(eq(activityLogs.id, id)).limit(1);
     return result[0];
   }
 
   async getActivityLogsByTenant(tenantId: string): Promise<ActivityLog[]> {
-    return await db.select().from(activityLogs).where(eq(activityLogs.tenantId, tenantId));
+    return await database.select().from(activityLogs).where(eq(activityLogs.tenantId, tenantId));
   }
 
   async createActivityLog(insertLog: InsertActivityLog): Promise<ActivityLog> {
-    const result = await db.insert(activityLogs).values(insertLog).returning();
+    const result = await database.insert(activityLogs).values(insertLog).returning();
     return result[0];
   }
 
   // Time entry operations  
   async getTimeEntry(id: number): Promise<TimeEntry | undefined> {
-    const result = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
+    const result = await database.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
     return result[0];
   }
 
   async getTimeEntriesByTenant(tenantId: string): Promise<TimeEntry[]> {
-    return await db.select().from(timeEntries).where(eq(timeEntries.tenantId, tenantId));
+    return await database.select().from(timeEntries).where(eq(timeEntries.tenantId, tenantId));
   }
 
   async getTimeEntriesByUser(tenantId: string, userId: number): Promise<TimeEntry[]> {
-    return await db.select().from(timeEntries).where(and(eq(timeEntries.tenantId, tenantId), eq(timeEntries.userId, userId)));
+    return await database.select().from(timeEntries).where(and(eq(timeEntries.tenantId, tenantId), eq(timeEntries.userId, userId)));
   }
 
   async getTimeEntriesByUserAndDate(tenantId: string, userId: number, date: string): Promise<TimeEntry[]> {
-    const result = await db.select().from(timeEntries).where(
+    // Since the database doesn't have a date column, we'll filter by clock_in_time date
+    const result = await database.select().from(timeEntries).where(
       and(
         eq(timeEntries.tenantId, tenantId), 
-        eq(timeEntries.userId, userId),
-        eq(timeEntries.date, date)
+        eq(timeEntries.userId, userId)
       )
     );
-    return result;
+    
+    // Filter by date on the clock_in_time field
+    return result.filter(entry => {
+      if (!entry.clockInTime) return false;
+      const entryDate = entry.clockInTime.toISOString().split('T')[0];
+      return entryDate === date;
+    });
   }
 
   async getActiveTimeEntry(tenantId: string, userId: number): Promise<TimeEntry | undefined> {
-    const result = await db.select().from(timeEntries)
+    const result = await database.select().from(timeEntries)
       .where(eq(timeEntries.tenantId, tenantId))
       .limit(1);
     return result[0];
   }
 
   async createTimeEntry(insertEntry: InsertTimeEntry): Promise<TimeEntry> {
-    const result = await db.insert(timeEntries).values(insertEntry).returning();
+    const result = await database.insert(timeEntries).values(insertEntry).returning();
     return result[0];
   }
 
   async updateTimeEntry(id: number, insertEntry: InsertTimeEntry): Promise<TimeEntry | undefined> {
-    const result = await db.update(timeEntries).set(insertEntry).where(eq(timeEntries.id, id)).returning();
+    const result = await database.update(timeEntries).set(insertEntry).where(eq(timeEntries.id, id)).returning();
     return result[0];
   }
 
   async deleteTimeEntry(id: number): Promise<boolean> {
-    const result = await db.delete(timeEntries).where(eq(timeEntries.id, id));
+    const result = await database.delete(timeEntries).where(eq(timeEntries.id, id));
     return result.rowCount > 0;
   }
 
   // Performance metrics operations
   async getPerformanceMetric(id: number): Promise<PerformanceMetric | undefined> {
-    const result = await db.select().from(performanceMetrics).where(eq(performanceMetrics.id, id)).limit(1);
+    const result = await database.select().from(performanceMetrics).where(eq(performanceMetrics.id, id)).limit(1);
     return result[0];
   }
 
   async getPerformanceMetricsByTenant(tenantId: string): Promise<PerformanceMetric[]> {
-    return await db.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
+    return await database.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
   }
 
   async getPerformanceMetricsByUser(tenantId: string, userId: number): Promise<PerformanceMetric[]> {
-    return await db.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
+    return await database.select().from(performanceMetrics).where(eq(performanceMetrics.tenantId, tenantId));
   }
 
   async createPerformanceMetric(insertMetric: InsertPerformanceMetric): Promise<PerformanceMetric> {
-    const result = await db.insert(performanceMetrics).values(insertMetric).returning();
+    const result = await database.insert(performanceMetrics).values(insertMetric).returning();
     return result[0];
   }
 
   async updatePerformanceMetric(id: number, insertMetric: InsertPerformanceMetric): Promise<PerformanceMetric | undefined> {
-    const result = await db.update(performanceMetrics).set(insertMetric).where(eq(performanceMetrics.id, id)).returning();
+    const result = await database.update(performanceMetrics).set(insertMetric).where(eq(performanceMetrics.id, id)).returning();
     return result[0];
   }
 
   async deletePerformanceMetric(id: number): Promise<boolean> {
-    const result = await db.delete(performanceMetrics).where(eq(performanceMetrics.id, id));
+    const result = await database.delete(performanceMetrics).where(eq(performanceMetrics.id, id));
     return result.rowCount > 0;
   }
 
   // Shift policy operations
   async getShiftPolicy(id: number): Promise<ShiftPolicy | undefined> {
-    const result = await db.select().from(shiftPolicies).where(eq(shiftPolicies.id, id)).limit(1);
+    const result = await database.select().from(shiftPolicies).where(eq(shiftPolicies.id, id)).limit(1);
     return result[0];
   }
 
   async getShiftPoliciesByTenant(tenantId: string): Promise<ShiftPolicy[]> {
-    return await db.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId));
+    return await database.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId));
   }
 
   async createShiftPolicy(insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy> {
-    const result = await db.insert(shiftPolicies).values(insertPolicy).returning();
+    const result = await database.insert(shiftPolicies).values(insertPolicy).returning();
     return result[0];
   }
 
   async updateShiftPolicy(id: number, insertPolicy: InsertShiftPolicy): Promise<ShiftPolicy | undefined> {
-    const result = await db.update(shiftPolicies).set(insertPolicy).where(eq(shiftPolicies.id, id)).returning();
+    const result = await database.update(shiftPolicies).set(insertPolicy).where(eq(shiftPolicies.id, id)).returning();
     return result[0];
   }
 
   async deleteShiftPolicy(id: number): Promise<boolean> {
-    const result = await db.delete(shiftPolicies).where(eq(shiftPolicies.id, id));
+    const result = await database.delete(shiftPolicies).where(eq(shiftPolicies.id, id));
     return result.rowCount > 0;
   }
 
   async getShiftPolicyByTenant(tenantId: string): Promise<ShiftPolicy | undefined> {
-    const result = await db.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId)).limit(1);
+    const result = await database.select().from(shiftPolicies).where(eq(shiftPolicies.tenantId, tenantId)).limit(1);
     return result[0];
   }
 
@@ -1878,14 +1855,14 @@ export class DatabaseStorage implements IStorage {
       console.log("SQL UPDATE operation with data:", JSON.stringify(updateData, null, 2));
       console.log("SQL UPDATE WHERE tenantId =", insertPolicy.tenantId);
       
-      const result = await db.update(shiftPolicies).set(updateData).where(eq(shiftPolicies.tenantId, insertPolicy.tenantId)).returning();
+      const result = await database.update(shiftPolicies).set(updateData).where(eq(shiftPolicies.tenantId, insertPolicy.tenantId)).returning();
       console.log("SQL UPDATE result:", JSON.stringify(result[0], null, 2));
       console.log("=== END SQL QUERY DEBUG ===");
       return result[0];
     } else {
       // Create new policy
       console.log("SQL INSERT operation with data:", JSON.stringify(insertPolicy, null, 2));
-      const result = await db.insert(shiftPolicies).values(insertPolicy).returning();
+      const result = await database.insert(shiftPolicies).values(insertPolicy).returning();
       console.log("SQL INSERT result:", JSON.stringify(result[0], null, 2));
       console.log("=== END SQL QUERY DEBUG ===");
       return result[0];
@@ -1894,74 +1871,74 @@ export class DatabaseStorage implements IStorage {
 
   // Usage metrics operations
   async getUsageMetrics(tenantId: string): Promise<UsageMetric | undefined> {
-    const result = await db.select().from(usageMetrics).where(eq(usageMetrics.tenantId, tenantId)).limit(1);
+    const result = await database.select().from(usageMetrics).where(eq(usageMetrics.tenantId, tenantId)).limit(1);
     return result[0];
   }
 
   async createUsageMetrics(insertMetrics: InsertUsageMetric): Promise<UsageMetric> {
-    const result = await db.insert(usageMetrics).values(insertMetrics).returning();
+    const result = await database.insert(usageMetrics).values(insertMetrics).returning();
     return result[0];
   }
 
   async updateUsageMetrics(tenantId: string, insertMetrics: InsertUsageMetric): Promise<UsageMetric | undefined> {
-    const result = await db.update(usageMetrics).set(insertMetrics).where(eq(usageMetrics.tenantId, tenantId)).returning();
+    const result = await database.update(usageMetrics).set(insertMetrics).where(eq(usageMetrics.tenantId, tenantId)).returning();
     return result[0];
   }
 
   // Invoice operations
   async getInvoice(id: number): Promise<Invoice | undefined> {
-    const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    const result = await database.select().from(invoices).where(eq(invoices.id, id)).limit(1);
     return result[0];
   }
 
   async getInvoicesByTenant(tenantId: string): Promise<Invoice[]> {
-    return await db.select().from(invoices).where(eq(invoices.tenantId, tenantId));
+    return await database.select().from(invoices).where(eq(invoices.tenantId, tenantId));
   }
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
-    const result = await db.insert(invoices).values(insertInvoice).returning();
+    const result = await database.insert(invoices).values(insertInvoice).returning();
     return result[0];
   }
 
   async updateInvoice(id: number, insertInvoice: InsertInvoice): Promise<Invoice | undefined> {
-    const result = await db.update(invoices).set(insertInvoice).where(eq(invoices.id, id)).returning();
+    const result = await database.update(invoices).set(insertInvoice).where(eq(invoices.id, id)).returning();
     return result[0];
   }
 
   async deleteInvoice(id: number): Promise<boolean> {
-    const result = await db.delete(invoices).where(eq(invoices.id, id));
+    const result = await database.delete(invoices).where(eq(invoices.id, id));
     return result.rowCount > 0;
   }
 
   // Billing info operations
   async getBillingInfo(tenantId: string): Promise<BillingInfo | undefined> {
-    const result = await db.select().from(billingInfo).where(eq(billingInfo.tenantId, tenantId)).limit(1);
+    const result = await database.select().from(billingInfo).where(eq(billingInfo.tenantId, tenantId)).limit(1);
     return result[0];
   }
 
   async createBillingInfo(insertBilling: InsertBillingInfo): Promise<BillingInfo> {
-    const result = await db.insert(billingInfo).values(insertBilling).returning();
+    const result = await database.insert(billingInfo).values(insertBilling).returning();
     return result[0];
   }
 
   async updateBillingInfo(tenantId: string, insertBilling: InsertBillingInfo): Promise<BillingInfo | undefined> {
-    const result = await db.update(billingInfo).set(insertBilling).where(eq(billingInfo.tenantId, tenantId)).returning();
+    const result = await database.update(billingInfo).set(insertBilling).where(eq(billingInfo.tenantId, tenantId)).returning();
     return result[0];
   }
 
   async deleteBillingInfo(tenantId: string): Promise<boolean> {
-    const result = await db.delete(billingInfo).where(eq(billingInfo.tenantId, tenantId));
+    const result = await database.delete(billingInfo).where(eq(billingInfo.tenantId, tenantId));
     return result.rowCount > 0;
   }
 
   // Holiday entitlement operations
   async getHolidayEntitlement(id: number): Promise<HolidayEntitlement | undefined> {
-    const result = await db.select().from(holidayEntitlements).where(eq(holidayEntitlements.id, id)).limit(1);
+    const result = await database.select().from(holidayEntitlements).where(eq(holidayEntitlements.id, id)).limit(1);
     return result[0];
   }
 
   async getHolidayEntitlementsByTenant(tenantId: string): Promise<HolidayEntitlement[]> {
-    const result = await db
+    const result = await database
       .select({
         id: holidayEntitlements.id,
         tenantId: holidayEntitlements.tenantId,
@@ -1989,7 +1966,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHolidayEntitlementByUser(tenantId: string, userId: number, year: number): Promise<HolidayEntitlement | undefined> {
-    const result = await db
+    const result = await database
       .select()
       .from(holidayEntitlements)
       .where(
@@ -2004,17 +1981,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createHolidayEntitlement(insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement> {
-    const result = await db.insert(holidayEntitlements).values(insertEntitlement).returning();
+    const result = await database.insert(holidayEntitlements).values(insertEntitlement).returning();
     return result[0];
   }
 
   async updateHolidayEntitlement(id: number, insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined> {
-    const result = await db.update(holidayEntitlements).set(insertEntitlement).where(eq(holidayEntitlements.id, id)).returning();
+    const result = await database.update(holidayEntitlements).set(insertEntitlement).where(eq(holidayEntitlements.id, id)).returning();
     return result[0];
   }
 
   async updateHolidayEntitlementByUser(tenantId: string, userId: number, year: number, insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined> {
-    const result = await db
+    const result = await database
       .update(holidayEntitlements)
       .set({
         ...insertEntitlement,
@@ -2032,23 +2009,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteHolidayEntitlement(id: number): Promise<boolean> {
-    const result = await db.delete(holidayEntitlements).where(eq(holidayEntitlements.id, id));
+    const result = await database.delete(holidayEntitlements).where(eq(holidayEntitlements.id, id));
     return result.rowCount > 0;
   }
 
   async clearAllData(): Promise<void> {
-    await db.delete(holidayRequests);
-    await db.delete(assignments);
-    await db.delete(swapRequests);
-    await db.delete(opportunities);
-    await db.delete(shifts);
-    await db.delete(scheduleTemplates);
-    await db.delete(operatingHours);
-    await db.delete(departments);
-    await db.delete(locations);
-    await db.delete(jobRoles);
-    await db.delete(businessProfiles);
-    await db.delete(users);
+    await database.delete(holidayRequests);
+    await database.delete(assignments);
+    await database.delete(swapRequests);
+    await database.delete(opportunities);
+    await database.delete(shifts);
+    await database.delete(scheduleTemplates);
+    await database.delete(operatingHours);
+    await database.delete(departments);
+    await database.delete(locations);
+    await database.delete(jobRoles);
+    await database.delete(businessProfiles);
+    await database.delete(users);
   }
 }
 
