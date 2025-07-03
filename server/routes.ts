@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema } from "../shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -469,6 +469,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete holiday request" });
+    }
+  });
+
+  // Holiday Entitlements routes
+  app.get("/api/holiday-entitlements", async (req, res) => {
+    try {
+      console.log('OWNER: fetching holiday entitlements…');
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const entitlements = await storage.getHolidayEntitlementsByTenant(tenantId);
+      console.log('OWNER: entitlement data →', entitlements);
+      res.json(entitlements);
+    } catch (error) {
+      console.error('OWNER: entitlement fetch failed', error);
+      res.status(500).json({ message: "Failed to fetch holiday entitlements" });
+    }
+  });
+
+  app.put("/api/holiday-entitlements/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tenantId = req.body.tenantId as string;
+      const year = req.body.year || new Date().getFullYear();
+      
+      console.log(`OWNER: saving entitlement for ${userId} → ${req.body.entitlementDays}`);
+      
+      const entitlement = await storage.updateHolidayEntitlementByUser(tenantId, userId, year, req.body);
+      if (!entitlement) {
+        return res.status(404).json({ message: "Holiday entitlement not found" });
+      }
+      res.json(entitlement);
+    } catch (error) {
+      console.error('OWNER: entitlement save failed', error);
+      res.status(500).json({ message: "Failed to update holiday entitlement" });
     }
   });
 

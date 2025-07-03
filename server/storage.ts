@@ -2,7 +2,7 @@ import {
   users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, 
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, subscriptionPlans,
-  usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics,
+  usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -13,7 +13,8 @@ import {
   type ActivityLog, type InsertActivityLog, type Subscription, type InsertSubscription,
   type SubscriptionPlan, type InsertSubscriptionPlan, type UsageMetric, type InsertUsageMetric,
   type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
-  type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric
+  type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
+  type HolidayEntitlement, type InsertHolidayEntitlement
 } from "@shared/schema";
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
@@ -185,6 +186,15 @@ export interface IStorage {
   createPerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
   updatePerformanceMetric(id: number, metric: InsertPerformanceMetric): Promise<PerformanceMetric | undefined>;
   deletePerformanceMetric(id: number): Promise<boolean>;
+
+  // Holiday entitlement operations
+  getHolidayEntitlement(id: number): Promise<HolidayEntitlement | undefined>;
+  getHolidayEntitlementsByTenant(tenantId: string): Promise<HolidayEntitlement[]>;
+  getHolidayEntitlementByUser(tenantId: string, userId: number, year: number): Promise<HolidayEntitlement | undefined>;
+  createHolidayEntitlement(entitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement>;
+  updateHolidayEntitlement(id: number, entitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined>;
+  updateHolidayEntitlementByUser(tenantId: string, userId: number, year: number, entitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined>;
+  deleteHolidayEntitlement(id: number): Promise<boolean>;
 
   // Debug operations
   clearAllData(): Promise<void>;
@@ -1835,6 +1845,88 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBillingInfo(tenantId: string): Promise<boolean> {
     const result = await db.delete(billingInfo).where(eq(billingInfo.tenantId, tenantId));
+    return result.rowCount > 0;
+  }
+
+  // Holiday entitlement operations
+  async getHolidayEntitlement(id: number): Promise<HolidayEntitlement | undefined> {
+    const result = await db.select().from(holidayEntitlements).where(eq(holidayEntitlements.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getHolidayEntitlementsByTenant(tenantId: string): Promise<HolidayEntitlement[]> {
+    const result = await db
+      .select({
+        id: holidayEntitlements.id,
+        tenantId: holidayEntitlements.tenantId,
+        userId: holidayEntitlements.userId,
+        entitlementDays: holidayEntitlements.entitlementDays,
+        usedDays: holidayEntitlements.usedDays,
+        pendingDays: holidayEntitlements.pendingDays,
+        year: holidayEntitlements.year,
+        createdAt: holidayEntitlements.createdAt,
+        updatedAt: holidayEntitlements.updatedAt,
+        // Join with users to get staff member name
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(holidayEntitlements)
+      .leftJoin(users, eq(holidayEntitlements.userId, users.id))
+      .where(eq(holidayEntitlements.tenantId, tenantId));
+    
+    // Transform to include computed fields and staff names
+    return result.map(row => ({
+      ...row,
+      name: `${row.firstName} ${row.lastName}`,
+      remainingDays: row.entitlementDays - (row.usedDays + row.pendingDays),
+    })) as any;
+  }
+
+  async getHolidayEntitlementByUser(tenantId: string, userId: number, year: number): Promise<HolidayEntitlement | undefined> {
+    const result = await db
+      .select()
+      .from(holidayEntitlements)
+      .where(
+        and(
+          eq(holidayEntitlements.tenantId, tenantId),
+          eq(holidayEntitlements.userId, userId),
+          eq(holidayEntitlements.year, year)
+        )
+      )
+      .limit(1);
+    return result[0];
+  }
+
+  async createHolidayEntitlement(insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement> {
+    const result = await db.insert(holidayEntitlements).values(insertEntitlement).returning();
+    return result[0];
+  }
+
+  async updateHolidayEntitlement(id: number, insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined> {
+    const result = await db.update(holidayEntitlements).set(insertEntitlement).where(eq(holidayEntitlements.id, id)).returning();
+    return result[0];
+  }
+
+  async updateHolidayEntitlementByUser(tenantId: string, userId: number, year: number, insertEntitlement: InsertHolidayEntitlement): Promise<HolidayEntitlement | undefined> {
+    const result = await db
+      .update(holidayEntitlements)
+      .set({
+        ...insertEntitlement,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(holidayEntitlements.tenantId, tenantId),
+          eq(holidayEntitlements.userId, userId),
+          eq(holidayEntitlements.year, year)
+        )
+      )
+      .returning();
+    return result[0];
+  }
+
+  async deleteHolidayEntitlement(id: number): Promise<boolean> {
+    const result = await db.delete(holidayEntitlements).where(eq(holidayEntitlements.id, id));
     return result.rowCount > 0;
   }
 

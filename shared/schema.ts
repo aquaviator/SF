@@ -423,6 +423,19 @@ export const performanceMetrics = pgTable("performance_metrics", {
   notes: text("notes"),
 });
 
+// Holiday entitlements table
+export const holidayEntitlements = pgTable("holiday_entitlements", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull(),
+  entitlementDays: integer("entitlement_days").notNull().default(25), // Annual entitlement
+  usedDays: integer("used_days").notNull().default(0), // Days already taken
+  pendingDays: integer("pending_days").notNull().default(0), // Days in pending requests
+  year: integer("year").notNull(), // Which year this entitlement applies to
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertAnalyticsReportSchema = createInsertSchema(analyticsReports).omit({
   id: true,
@@ -480,6 +493,12 @@ export const insertPerformanceMetricSchema = createInsertSchema(performanceMetri
   recordedAt: true,
 });
 
+export const insertHolidayEntitlementSchema = createInsertSchema(holidayEntitlements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type HolidayRequest = typeof holidayRequests.$inferSelect;
@@ -520,3 +539,5 @@ export type TimeEntry = typeof timeEntries.$inferSelect;
 export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
+export type HolidayEntitlement = typeof holidayEntitlements.$inferSelect;
+export type InsertHolidayEntitlement = z.infer<typeof insertHolidayEntitlementSchema>;

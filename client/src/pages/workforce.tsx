@@ -2,6 +2,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { useCrud } from "@/hooks/useCrud";
 import { DataTable, Column } from "@/components/DataTable";
 import { ModalForm } from "@/components/ModalForm";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   UserPlus, 
@@ -61,6 +63,7 @@ interface HolidayEntitlement {
 
 export default function Workforce() {
   const { tenantId } = useAuth();
+  const { toast } = useToast();
   
   const {
     data: staff = [],
@@ -166,36 +169,88 @@ export default function Workforce() {
     },
   ];
 
-  // Mock holiday entitlements
-  const holidayData: HolidayEntitlement[] = [
-    {
-      id: 1,
-      staffId: 2,
-      name: "Sarah Anderson",
-      totalDays: 25,
-      usedDays: 8,
-      pendingDays: 3,
-      remainingDays: 14,
+  // Holiday entitlements data fetching
+  const [holidayFilter, setHolidayFilter] = React.useState("");
+  const [selectedEntitlement, setSelectedEntitlement] = React.useState<any>(null);
+  const [isEntitlementModalOpen, setIsEntitlementModalOpen] = React.useState(false);
+
+  const {
+    data: holidayEntitlements = [],
+    isLoading: isLoadingEntitlements,
+    refetch: refetchEntitlements,
+  } = useQuery({
+    queryKey: ["/api/holiday-entitlements", tenantId],
+    queryFn: async () => {
+      console.log('OWNER: fetching holiday entitlements…');
+      const response = await fetch(`/api/holiday-entitlements?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch holiday entitlements');
+      const data = await response.json();
+      console.log('OWNER: entitlement data →', data);
+      return data;
     },
-    {
-      id: 2,
-      staffId: 3,
-      name: "Mike Johnson",
-      totalDays: 25,
-      usedDays: 12,
-      pendingDays: 0,
-      remainingDays: 13,
-    },
-    {
-      id: 3,
-      staffId: 4,
-      name: "Emily Davis",
-      totalDays: 20,
-      usedDays: 5,
-      pendingDays: 2,
-      remainingDays: 13,
-    },
-  ];
+    enabled: !!tenantId,
+  });
+
+  // Filter holiday entitlements
+  const filteredEntitlements = React.useMemo(() => {
+    if (!holidayFilter) return holidayEntitlements;
+    const filtered = holidayEntitlements.filter((entitlement: any) =>
+      entitlement.name.toLowerCase().includes(holidayFilter.toLowerCase())
+    );
+    console.log(`OWNER: filtering entitlements by "${holidayFilter}" → ${filtered.length} results`);
+    return filtered;
+  }, [holidayEntitlements, holidayFilter]);
+
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setHolidayFilter(event.target.value);
+  };
+
+  const openEntitlementModal = (entitlement: any) => {
+    console.log(`OWNER: opening entitlement modal for ${entitlement.name}`);
+    setSelectedEntitlement(entitlement);
+    setIsEntitlementModalOpen(true);
+  };
+
+  const closeEntitlementModal = () => {
+    setSelectedEntitlement(null);
+    setIsEntitlementModalOpen(false);
+  };
+
+  const handleEntitlementSave = async (newEntitlementDays: number) => {
+    if (!selectedEntitlement) return;
+
+    try {
+      console.log(`OWNER: saving entitlement for ${selectedEntitlement.userId} → ${newEntitlementDays}`);
+      
+      const response = await fetch(`/api/holiday-entitlements/${selectedEntitlement.userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          entitlementDays: newEntitlementDays,
+          year: 2025,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update entitlement');
+      
+      refetchEntitlements();
+      closeEntitlementModal();
+      
+      // Show success toast
+      toast({
+        title: "Entitlement updated",
+        description: `Updated entitlement for ${selectedEntitlement.name}`,
+      });
+    } catch (error) {
+      console.error('OWNER: entitlement save failed', error);
+      toast({
+        title: "Error",
+        description: "Failed to update holiday entitlement",
+        variant: "destructive",
+      });
+    }
+  };
 
   const staffColumns: Column<User>[] = [
     {
@@ -281,16 +336,23 @@ export default function Workforce() {
     },
   ];
 
-  const holidayColumns: Column<HolidayEntitlement>[] = [
+  const holidayColumns: Column<any>[] = [
     {
       key: "name",
       header: "Staff Member",
       cell: (entitlement) => <span className="font-medium text-sm">{entitlement.name}</span>,
     },
     {
-      key: "totalDays",
+      key: "entitlementDays",
       header: "Entitlement",
-      cell: (entitlement) => <span className="text-sm">{entitlement.totalDays} days</span>,
+      cell: (entitlement) => (
+        <button
+          onClick={() => openEntitlementModal(entitlement)}
+          className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+        >
+          {entitlement.entitlementDays} days
+        </button>
+      ),
     },
     {
       key: "usedDays",
@@ -422,18 +484,31 @@ export default function Workforce() {
         </TabsContent>
 
         <TabsContent value="holidays" className="space-y-6">
-          <DataTable
-            data={holidayData}
-            columns={holidayColumns}
-            title="Holiday Entitlements"
-            isLoading={false}
-            emptyState={
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">No holiday data available</p>
-              </div>
-            }
-          />
+          {/* Filter input for holiday entitlements */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Input
+              data-cy="holiday-entitlement-filter"
+              placeholder="Filter by staff name..."
+              value={holidayFilter}
+              onChange={handleFilterChange}
+              className="max-w-sm"
+            />
+          </div>
+          
+          <div className="min-w-full overflow-x-auto">
+            <DataTable
+              data={filteredEntitlements}
+              columns={holidayColumns}
+              title="Holiday Entitlements"
+              isLoading={isLoadingEntitlements}
+              emptyState={
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">No holiday entitlements available</p>
+                </div>
+              }
+            />
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -522,6 +597,85 @@ export default function Workforce() {
           )}
         </div>
       </ModalForm>
+
+      {/* Holiday Entitlement Modal - Pre-rendered and hidden */}
+      <HolidayEntitlementModal
+        isOpen={isEntitlementModalOpen}
+        onClose={closeEntitlementModal}
+        entitlement={selectedEntitlement}
+        onSave={handleEntitlementSave}
+      />
+    </div>
+  );
+}
+
+// Holiday Entitlement Modal Component
+function HolidayEntitlementModal({
+  isOpen,
+  onClose,
+  entitlement,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  entitlement: any;
+  onSave: (newEntitlementDays: number) => void;
+}) {
+  const [entitlementDays, setEntitlementDays] = React.useState(entitlement?.entitlementDays || 25);
+
+  React.useEffect(() => {
+    if (entitlement) {
+      setEntitlementDays(entitlement.entitlementDays);
+    }
+  }, [entitlement]);
+
+  if (!isOpen || !entitlement) return null;
+
+  const handleSave = () => {
+    onSave(entitlementDays);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-4">Edit Holiday Entitlement</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Staff Member: {entitlement.name}</p>
+            <p className="text-sm text-gray-600 mb-4">Current year: 2025</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Annual Entitlement (days)
+            </label>
+            <Input
+              type="number"
+              min="0"
+              max="50"
+              value={entitlementDays}
+              onChange={(e) => setEntitlementDays(parseInt(e.target.value) || 0)}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            <p>Used: {entitlement.usedDays} days</p>
+            <p>Pending: {entitlement.pendingDays} days</p>
+            <p>Remaining: {entitlementDays - (entitlement.usedDays + entitlement.pendingDays)} days</p>
+          </div>
+        </div>
+        
+        <div className="flex gap-3 mt-6">
+          <Button onClick={handleSave} className="flex-1">
+            Save
+          </Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
