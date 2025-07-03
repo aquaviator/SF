@@ -523,9 +523,9 @@ export default function BusinessSettingsPage() {
         responsibilities: role.responsibilities,
         requirements: role.requirements,
         isActive: role.isActive,
-        legendLabel: (role as any).legend_label || "",
-        legendColor: (role as any).legend_color || "slate", 
-        legendIcon: (role as any).legend_icon || "",
+        legendLabel: (role as any).legendLabel || "",
+        legendColor: (role as any).legendColor || "slate", 
+        legendIcon: (role as any).legendIcon || "",
       });
     } else {
       setEditingRole(null);
@@ -637,6 +637,16 @@ export default function BusinessSettingsPage() {
     {
       header: "Hourly Rate",
       key: "hourlyRate",
+    },
+    {
+      header: "Legend Color",
+      key: "legendColor",
+      cell: (role) => (
+        <div className="flex items-center gap-2">
+          <div className={`w-4 h-4 rounded-full border ${role.legendColor ? `bg-${role.legendColor}-500` : 'bg-slate-400'}`} />
+          <span className="text-sm capitalize">{role.legendColor || 'Default'}</span>
+        </div>
+      ),
     },
     {
       header: "Status",

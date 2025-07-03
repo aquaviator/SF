@@ -6,9 +6,9 @@ interface DatabaseRole {
   id: number;
   title: string;
   tenantId: string;
-  legend_label?: string | null;
-  legend_color?: string | null;
-  legend_icon?: string | null;
+  legendLabel?: string | null;
+  legendColor?: string | null;
+  legendIcon?: string | null;
 }
 
 export function useRoleColors() {
@@ -27,13 +27,13 @@ export function useRoleColors() {
 
   // Create role-to-color mapping
   const roleColorMap = jobRoles.reduce((map, role) => {
-    const legendColor = role.legend_color || 'slate';
+    const legendColor = role.legendColor || 'slate';
     map[role.title] = {
       badge: getRoleColorFromLegend(legendColor),
       dot: getRoleDotColorFromLegend(legendColor),
       legend: getRoleLegendColorFromLegend(legendColor),
-      label: role.legend_label || role.title,
-      initial: (role.legend_label || role.title).charAt(0).toUpperCase()
+      label: role.legendLabel || role.title,
+      initial: (role.legendLabel || role.title).charAt(0).toUpperCase()
     };
     return map;
   }, {} as Record<string, { badge: string; dot: string; legend: string; label: string; initial: string }>);
