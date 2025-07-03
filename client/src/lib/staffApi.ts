@@ -59,17 +59,13 @@ export const staffApi = {
   },
 
   /**
-   * Get all staff strikes for owner view (if endpoint exists)
+   * Get all staff strikes for owner view
    */
-  async getAllStaffStrikes(tenantId: string, userId?: number): Promise<StaffStrikesListResponse> {
-    console.log("📡 GET_ALL_STAFF_STRIKES API", { tenantId, userId, timestamp: new Date() });
+  async getAllStaffStrikes(tenantId: string): Promise<StaffStrikesListResponse> {
+    console.log("📡 GET_ALL_STAFF_STRIKES API", { tenantId, timestamp: new Date() });
     
     try {
-      const url = userId 
-        ? `/api/staff-strikes?tenantId=${tenantId}&userId=${userId}`
-        : `/api/staff-strikes?tenantId=${tenantId}`;
-      
-      const response = await apiRequest(url);
+      const response = await apiRequest(`/api/staff/strikes/all?tenantId=${tenantId}`);
       
       console.log("✅ GET_ALL_STAFF_STRIKES SUCCESS", { 
         tenantId,
@@ -79,7 +75,7 @@ export const staffApi = {
       
       return response;
     } catch (error) {
-      console.error("❌ GET_ALL_STAFF_STRIKES FAILED", { tenantId, userId, error, timestamp: new Date() });
+      console.error("❌ GET_ALL_STAFF_STRIKES FAILED", { tenantId, error, timestamp: new Date() });
       throw new Error("Failed to fetch staff strikes data");
     }
   },

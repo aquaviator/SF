@@ -12,7 +12,8 @@ import {
   Shield,
   CreditCard,
   TrendingUp,
-  Bell
+  Bell,
+  AlertTriangle
 } from "lucide-react";
 import { ComponentType } from "react";
 
@@ -53,6 +54,12 @@ export const ownerMenu: MenuItem[] = [
     route: "/owner/analytics",
     icon: BarChart3,
     description: "Reports and business insights"
+  },
+  {
+    label: "Compliance",
+    route: "/owner/strikes",
+    icon: AlertTriangle,
+    description: "Staff strikes and compliance monitoring"
   }
 ];
 
@@ -124,6 +131,12 @@ export const staffMoreMenu: MenuItem[] = [
     route: "/staff/performance",
     icon: TrendingUp,
     description: "View your performance metrics"
+  },
+  {
+    label: "My Strikes",
+    route: "/staff/strikes",
+    icon: AlertTriangle,
+    description: "View your strike history and status"
   }
 ];
 

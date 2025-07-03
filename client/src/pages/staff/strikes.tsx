@@ -3,156 +3,117 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, Clock, Calendar, FileText } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
 import { StrikeHistoryModal } from "@/components/StrikeHistoryModal";
 import { staffApi } from "@/lib/staffApi";
-import { toast } from "@/hooks/use-toast";
-import type { StaffStrike } from "@shared/schema";
+import { Loader2 } from "lucide-react";
+
+interface Strike {
+  id: number;
+  points: number;
+  reason: string;
+  issuedAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  shiftId?: number;
+  notes?: string;
+}
 
 interface StrikeData {
   totalPoints: number;
-  strikes: StaffStrike[];
+  strikes: Strike[];
 }
 
 export default function StaffStrikesPage() {
   const { user } = useAuth();
   const [strikeData, setStrikeData] = useState<StrikeData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [selectedStrike, setSelectedStrike] = useState<StaffStrike | null>(null);
+  const [selectedStrike, setSelectedStrike] = useState<Strike | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  console.log("🚀 StrikeDashboardPage init", { 
-    mode: "staff", 
-    userId: user?.id, 
-    timestamp: new Date() 
-  });
-
-  const fetchStrikes = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log("📡 Fetching staff strikes", { 
-        userId: user.id, 
-        tenantId: user.tenantId,
-        timestamp: new Date() 
-      });
-      
-      const data = await staffApi.getStrikes(user.id, user.tenantId);
-      setStrikeData(data);
-      
-      console.log("✅ Strike data loaded", { 
-        totalPoints: data.totalPoints,
-        strikeCount: data.strikes.length,
-        timestamp: new Date() 
-      });
-    } catch (err) {
-      console.error("❌ Failed to load strikes:", err);
-      setError("Failed to load your strike information. Please try again.");
-      toast({
-        title: "Error",
-        description: "Failed to load strike information",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  console.log("LOAD_MY_STRIKES", { userId: user?.id, timestamp: new Date() });
 
   useEffect(() => {
+    const fetchStrikes = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const data = await staffApi.getStrikes(user.id, user.tenantId);
+        setStrikeData(data);
+        
+        console.log("STAFF_STRIKES_LOADED", { 
+          userId: user.id,
+          totalPoints: data.totalPoints,
+          strikeCount: data.strikes.length,
+          timestamp: new Date()
+        });
+      } catch (err) {
+        console.error("STAFF_STRIKES_ERROR", { error: err, timestamp: new Date() });
+        setError("Failed to load strike data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchStrikes();
   }, [user?.id]);
 
-  const handleViewDetails = (strike: StaffStrike) => {
+  const handleViewHistory = (strike: Strike) => {
+    console.log("OPEN_STRIKE_HISTORY", { strikeId: strike.id, timestamp: new Date() });
     setSelectedStrike(strike);
-    setShowHistoryModal(true);
-    console.log("ℹ️ Opening StrikeHistoryModal", { 
-      userId: user?.id, 
-      strikeId: strike.id,
-      timestamp: new Date() 
-    });
+    setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setShowHistoryModal(false);
-    setSelectedStrike(null);
-    console.log("ℹ️ Closing StrikeHistoryModal", { 
-      userId: user?.id,
-      timestamp: new Date() 
-    });
+  const handleRequestReview = (strikeId: number) => {
+    console.log("REQUEST_REVIEW_CLICK", { strikeId, timestamp: new Date() });
+    // TODO: Implement review request functionality
+    alert("Review request functionality will be implemented in future sprint");
   };
 
-  const getStrikeStatusColor = (points: number) => {
-    if (points === 0) return "bg-green-500";
-    if (points <= 2) return "bg-yellow-500";
-    if (points <= 4) return "bg-orange-500";
-    return "bg-red-500";
+  const getStatusColor = (totalPoints: number) => {
+    if (totalPoints === 0) return "bg-green-100 text-green-800 border-green-200";
+    if (totalPoints <= 2) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    if (totalPoints <= 4) return "bg-orange-100 text-orange-800 border-orange-200";
+    return "bg-red-100 text-red-800 border-red-200";
   };
 
-  const getStrikeStatusText = (points: number) => {
-    if (points === 0) return "Good Standing";
-    if (points <= 2) return "Watch";
-    if (points <= 4) return "Warning";
-    return "Critical";
+  const getStatusIcon = (totalPoints: number) => {
+    if (totalPoints === 0) return <CheckCircle className="h-5 w-5 text-green-600" />;
+    if (totalPoints <= 2) return <Clock className="h-5 w-5 text-yellow-600" />;
+    if (totalPoints <= 4) return <AlertTriangle className="h-5 w-5 text-orange-600" />;
+    return <XCircle className="h-5 w-5 text-red-600" />;
   };
 
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
+  const getStatusText = (totalPoints: number) => {
+    if (totalPoints === 0) return "Good Standing";
+    if (totalPoints <= 2) return "Caution";
+    if (totalPoints <= 4) return "Warning";
+    return "Action Required";
   };
 
-  const formatTime = (date: string | Date) => {
-    return new Date(date).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2"></div>
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64"></div>
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
-        
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">My Strikes</h1>
-          <p className="text-muted-foreground">View your current strike points and history</p>
-        </div>
-        
+      <div className="p-4 space-y-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Unable to Load Strikes</h3>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={fetchStrikes} className="min-h-[44px]">
-                Retry
-              </Button>
+            <div className="text-center text-red-600">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4" />
+              <p className="text-lg font-medium">Error Loading Strikes</p>
+              <p className="text-sm text-gray-600 mt-2">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -160,125 +121,213 @@ export default function StaffStrikesPage() {
     );
   }
 
-  const activeStrikes = strikeData?.strikes.filter(s => s.isActive) || [];
+  if (!strikeData) {
+    return (
+      <div className="p-4 space-y-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-gray-600">
+              <p>No strike data available</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">My Strikes</h1>
-        <p className="text-muted-foreground">View your current strike points and history</p>
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Your Strike History</h1>
       </div>
 
-      {/* Strike Points Summary Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Your Strike Points
-          </CardTitle>
+      {/* Strike Summary Card */}
+      <Card className={`border-2 ${getStatusColor(strikeData.totalPoints)}`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Current Status</CardTitle>
+            {getStatusIcon(strikeData.totalPoints)}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold mb-1">
-                {strikeData?.totalPoints || 0}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-bold">
+                {strikeData.totalPoints}
+                <span className="text-lg font-normal text-gray-600 ml-2">/ 5 points</span>
+              </span>
+              <Badge variant="outline" className={getStatusColor(strikeData.totalPoints)}>
+                {getStatusText(strikeData.totalPoints)}
+              </Badge>
+            </div>
+            
+            {strikeData.totalPoints >= 5 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Action Blocked</p>
+                    <p className="text-sm text-red-700">You cannot claim shifts or request swaps until strikes expire.</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div 
-                  className={`w-3 h-3 rounded-full ${getStrikeStatusColor(strikeData?.totalPoints || 0)}`}
-                ></div>
-                <span className="text-sm text-muted-foreground">
-                  {getStrikeStatusText(strikeData?.totalPoints || 0)}
-                </span>
+            )}
+            
+            {strikeData.totalPoints >= 3 && strikeData.totalPoints < 5 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">Approaching Limit</p>
+                    <p className="text-sm text-yellow-700">Be careful - you're close to the maximum strike points.</p>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">Maximum: 5 points</div>
-              <div className="text-sm text-muted-foreground">
-                Active strikes: {activeStrikes.length}
-              </div>
-            </div>
-          </div>
-          
-          {/* Strike points progress bar */}
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>0</span>
-              <span>5</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${getStrikeStatusColor(strikeData?.totalPoints || 0)}`}
-                style={{ width: `${Math.min(((strikeData?.totalPoints || 0) / 5) * 100, 100)}%` }}
-              ></div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Active Strikes List */}
+      {/* Strike History */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Active Strikes
-          </CardTitle>
+          <CardTitle className="text-lg">Strike History</CardTitle>
         </CardHeader>
         <CardContent>
-          {activeStrikes.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground">No active strikes</div>
-              <div className="text-sm text-muted-foreground">Keep up the good work!</div>
+          {strikeData.strikes.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <p className="text-lg font-medium">No strikes recorded</p>
+              <p className="text-sm">Keep up the good work!</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {activeStrikes.map((strike) => (
-                <div 
-                  key={strike.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={strike.reason === 'no_show' ? 'destructive' : 'secondary'}>
-                        {strike.reason === 'no_show' ? 'No Show' : 
-                         strike.reason === 'late_cancellation' ? 'Late Cancellation' : 
-                         'Manual Adjustment'}
-                      </Badge>
-                      <span className="font-semibold">
-                        {strike.points} {strike.points === 1 ? 'point' : 'points'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Issued: {formatDate(strike.issuedAt)} at {formatTime(strike.issuedAt)}
-                      </div>
-                      {strike.expiresAt && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          Expires: {formatDate(strike.expiresAt)}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {strike.notes && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {strike.notes}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewDetails(strike)}
-                    className="min-h-[44px] mt-3 sm:mt-0 sm:ml-4"
-                  >
-                    Details
-                  </Button>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Date</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Shift</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Reason</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Points</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Status</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {strikeData.strikes.map((strike) => (
+                        <tr key={strike.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-3 text-sm">
+                            {new Date(strike.issuedAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-3 text-sm">
+                            {strike.shiftId ? `#${strike.shiftId}` : "-"}
+                          </td>
+                          <td className="py-3 px-3 text-sm">{strike.reason}</td>
+                          <td className="py-3 px-3 text-sm">
+                            <Badge variant="outline" className="bg-red-50 text-red-700">
+                              {strike.points} pt{strike.points !== 1 ? 's' : ''}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-3 text-sm">
+                            <Badge variant={strike.isActive ? "destructive" : "secondary"}>
+                              {strike.isActive ? "Active" : "Expired"}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-3 text-sm">
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewHistory(strike)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              {strike.isActive && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRequestReview(strike.id)}
+                                >
+                                  Request Review
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-3">
+                {strikeData.strikes.map((strike) => (
+                  <Card key={strike.id} className="border">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">
+                              {new Date(strike.issuedAt).toLocaleDateString()}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {strike.shiftId ? `Shift #${strike.shiftId}` : "General"}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="bg-red-50 text-red-700">
+                              {strike.points} pt{strike.points !== 1 ? 's' : ''}
+                            </Badge>
+                            <Badge variant={strike.isActive ? "destructive" : "secondary"}>
+                              {strike.isActive ? "Active" : "Expired"}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Reason:</p>
+                          <p className="text-sm text-gray-600">{strike.reason}</p>
+                        </div>
+
+                        {strike.notes && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Notes:</p>
+                            <p className="text-sm text-gray-600">{strike.notes}</p>
+                          </div>
+                        )}
+
+                        <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewHistory(strike)}
+                            className="flex-1"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Details
+                          </Button>
+                          {strike.isActive && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRequestReview(strike.id)}
+                              className="flex-1"
+                            >
+                              Request Review
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
@@ -286,12 +335,10 @@ export default function StaffStrikesPage() {
 
       {/* Strike History Modal */}
       <StrikeHistoryModal
-        isOpen={showHistoryModal}
-        onClose={handleCloseModal}
-        userId={user?.id}
-        tenantId={user?.tenantId}
-        mode="staff"
-        selectedStrike={selectedStrike}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        strike={selectedStrike}
+        userRole="staff"
       />
     </div>
   );
