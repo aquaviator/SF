@@ -34,7 +34,7 @@ export default function SwapRequests() {
     handleSubmit,
   } = useCrud<SwapRequest>({
     queryKey: ["swapRequests", tenantId],
-    endpoint: "/api/swap-requests",
+    endpoint: `/api/swap-requests?tenantId=${tenantId}`,
   });
 
   const form = useForm<SwapRequestFormData>({

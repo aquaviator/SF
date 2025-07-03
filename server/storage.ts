@@ -2106,17 +2106,12 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to get shifts by tenant and assignment type (for opportunities)
   async getShiftsByTenantAndType(tenantId: string, assignmentType: string): Promise<Shift[]> {
-    console.log("🔍 OPPORTUNITIES_QUERY", { tenantId, assignmentType, timestamp: new Date().toISOString() });
-    
-    const result = await database.select().from(shifts).where(
+    return await database.select().from(shifts).where(
       and(
         eq(shifts.tenantId, tenantId),
         eq(shifts.assignmentType, assignmentType as any)
       )
     );
-    
-    console.log("✅ OPPORTUNITIES_RESULT", { tenantId, assignmentType, count: result.length, timestamp: new Date().toISOString() });
-    return result;
   }
 }
 

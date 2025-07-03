@@ -8,14 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Opportunity } from "@shared/schema";
+import type { Shift } from "@shared/schema";
 
 export default function Opportunities() {
   const { tenantId, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: opportunities, isLoading } = useQuery<Opportunity[]>({
+  const { data: opportunities, isLoading } = useQuery<Shift[]>({
     queryKey: ["/api/opportunities", tenantId],
     queryFn: async () => {
       const response = await fetch(`/api/opportunities?tenantId=${tenantId}`);
@@ -47,11 +47,31 @@ export default function Opportunities() {
     },
   });
 
-  const handleApply = (opportunity: Opportunity) => {
+  const handleApply = (opportunity: Shift) => {
     applyMutation.mutate(opportunity.id);
   };
 
-  const columns: Column<Opportunity>[] = [
+  const columns: Column<Shift>[] = [
+    {
+      key: "date",
+      header: "Date",
+      cell: (opportunity) => new Date(opportunity.date).toLocaleDateString(),
+    },
+    {
+      key: "role",
+      header: "Position",
+      cell: (opportunity) => opportunity.role,
+    },
+    {
+      key: "location",
+      header: "Location",
+      cell: (opportunity) => opportunity.location,
+    },
+    {
+      key: "timeSlot",
+      header: "Time",
+      cell: (opportunity) => `${opportunity.startTime} - ${opportunity.endTime}`,
+    },
     {
       key: "description",
       header: "Description",
@@ -60,20 +80,20 @@ export default function Opportunities() {
           <div className="text-sm font-medium text-gray-900">
             {opportunity.description}
           </div>
-          {opportunity.requirements && (
+          {opportunity.notes && (
             <div className="text-sm text-gray-500 mt-1">
-              {opportunity.requirements}
+              {opportunity.notes}
             </div>
           )}
         </div>
       ),
     },
     {
-      key: "isActive",
+      key: "status",
       header: "Status",
       cell: (opportunity) => (
-        <Badge variant={opportunity.isActive ? "default" : "secondary"}>
-          {opportunity.isActive ? "Available" : "Closed"}
+        <Badge variant={opportunity.status === "open" ? "default" : "secondary"}>
+          {opportunity.status === "open" ? "Available" : "Closed"}
         </Badge>
       ),
     },
@@ -84,7 +104,7 @@ export default function Opportunities() {
         <Button
           size="sm"
           onClick={() => handleApply(opportunity)}
-          disabled={!opportunity.isActive || applyMutation.isPending}
+          disabled={opportunity.status !== "open" || applyMutation.isPending}
         >
           {applyMutation.isPending ? "Applying..." : "Apply"}
         </Button>
@@ -92,7 +112,7 @@ export default function Opportunities() {
     },
   ];
 
-  const activeOpportunities = opportunities?.filter(opp => opp.isActive) || [];
+  const activeOpportunities = opportunities?.filter(opp => opp.status === "open") || [];
 
   return (
     <div className="space-y-6">
