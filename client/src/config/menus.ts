@@ -13,7 +13,8 @@ import {
   CreditCard,
   TrendingUp,
   Bell,
-  AlertTriangle
+  AlertTriangle,
+  MonitorSpeaker
 } from "lucide-react";
 import { ComponentType } from "react";
 
@@ -30,6 +31,12 @@ export const ownerMenu: MenuItem[] = [
     route: "/owner/dashboard",
     icon: Home,
     description: "Overview of business metrics and alerts"
+  },
+  {
+    label: "Live Operations",
+    route: "/owner/operations",
+    icon: MonitorSpeaker,
+    description: "Real-time mission control for business operations"
   },
   {
     label: "Scheduling",

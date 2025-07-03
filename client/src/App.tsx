@@ -25,6 +25,7 @@ import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
 import StaffStrikes from "@/pages/staff/strikes";
 import OwnerStrikes from "@/pages/owner/strikes";
+import OwnerOperations from "@/pages/owner/operations";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 
@@ -53,6 +54,7 @@ function Router() {
               <Route path="/staff/holiday-requests" component={HolidayRequests} />
               <Route path="/profile" component={Profile} />
               <Route path="/owner/dashboard" component={OwnerDashboard} />
+              <Route path="/owner/operations" component={OwnerOperations} />
               <Route path="/owner/scheduling" component={Scheduling} />
               <Route path="/owner/workforce" component={Workforce} />
               <Route path="/owner/requests" component={OwnerRequests} />

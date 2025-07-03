@@ -1,0 +1,107 @@
+We need to build a fully-functioning Owner Live Operations page—Mission Control for your business—with working routes, menus, modals, click handlers and console logging, all wired into our existing architecture. Here’s exactly what to do:
+
+1. New Route & Menu Entry
+Route: /owner/operations (owner-only protected).
+
+Sidebar Menu: Add “Live Operations” item under the Owner section; ensure it only appears for users with the Owner role.
+
+2. Page Skeleton
+Component: OwnerOperationsPage
+
+Load modals up front (render hidden in JSX, e.g. <LiveOpsModal className="hidden" />), then toggle via state and click handlers—never inject modals dynamically.
+
+Console Logging: Every action logs context:
+
+js
+Copy
+Edit
+console.log({ event: 'panel-mount', panel: 'ShiftCoverage', timestamp: new Date() });
+3. Panels & Behavior
+For each panel, define: component name, data fetch (using dashboardApi/staffApi), layout with Tailwind (mobile-first), auto-refresh logic, click handlers with console.log, and ARIA labels.
+
+Shift Coverage Panel
+
+Data:
+
+js
+Copy
+Edit
+const { data } = await dashboardApi.getShiftCoverage({ tenantId });
+console.log({ event: 'fetch-coverage', data });
+Display counts: Active, Upcoming, Unfilled, Under-utilized.
+
+Refresh: useInterval(fn, 60_000) or polling hook.
+
+Details Button: Opens <CoverageDetailsModal /> (pre-mounted, hidden).
+
+js
+Copy
+Edit
+const openDetails = () => { console.log('open-coverage-modal'); setShowCoverage(true); }
+Strike Alerts Panel
+
+Data: dashboardApi.getStrikesSummary(tenantId)
+
+Banner if totalPoints >= maxStrikePoints.
+
+“View Staff Strikes” → navigate router.push('/owner/strikes'), log click.
+
+Time-Entry Monitor
+
+Data: dashboardApi.getLiveTimeEntries(tenantId) every 30s.
+
+Show colored status dots per staff; click a dot → open <TimeEntryModal userId={…} />.
+
+Log each click and data loaded.
+
+Holiday & Sickness Queue
+
+Data: dashboardApi.getPendingHolidayRequests(tenantId)
+
+Show counts by type; “Review Requests” opens <BulkHolidayModal />.
+
+Swap & Cancellation Escalations
+
+Data: dashboardApi.getEscalations(tenantId)
+
+Button “Manage” → navigate to /owner/scheduling?filter=escalations.
+
+4. Responsive & Accessible
+Layout: 4-column grid on desktop → stacked cards on <640px.
+
+Touch Targets: ≥44px, add aria-label on buttons and modals.
+
+Keyboard: Focus trap in modals; ESC closes.
+
+5. Testing Plan
+Cypress E2E:
+
+Verify sidebar shows “Live Operations” only for owner.
+
+Panels mount, auto-refresh, modals open/close.
+
+Jest Unit:
+
+Render OwnerOperationsPage snapshots.
+
+Test each panel’s hook calls with mocked dashboardApi.
+
+Assert console.log calls via jest.spyOn.
+
+6. Isolation & Feature Flag
+Wrap in feature flag feature.liveOperations.
+
+Ensure no changes break OwnerDashboard or StaffDashboard.
+
+List any touched shared components or schemas and guard them.
+
+Deliverable: A detailed implementation plan, file/component scaffolds, Tailwind layouts, hooks for data & polling, console-logging examples, and test outlines—ready for Sprint 4.
+
+
+
+
+
+
+
+
+Ask ChatGPT

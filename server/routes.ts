@@ -1779,6 +1779,321 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Live Operations Dashboard API Endpoints
+  app.get("/api/dashboard/shift-coverage", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("📊 DASHBOARD_SHIFT_COVERAGE", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get all shifts for the next 7 days
+      const today = new Date();
+      const nextWeek = new Date();
+      nextWeek.setDate(today.getDate() + 7);
+      
+      const shifts = await storage.getShiftsByTenant(tenantId);
+      const filteredShifts = shifts.filter(shift => {
+        const shiftDate = new Date(shift.date);
+        return shiftDate >= today && shiftDate <= nextWeek;
+      });
+      
+      // Calculate coverage statistics
+      const active = filteredShifts.filter(s => s.status === "confirmed" || s.status === "clocked_in").length;
+      const upcoming = filteredShifts.filter(s => s.status === "assigned" || s.status === "claimed").length;
+      const unfilled = filteredShifts.filter(s => s.status === "open").length;
+      const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;
+      
+      // Group by date for details
+      const detailsByDate = filteredShifts.reduce((acc, shift) => {
+        const date = shift.date;
+        if (!acc[date]) {
+          acc[date] = { date, shifts: 0, filled: 0, understaffed: false };
+        }
+        acc[date].shifts++;
+        if (shift.assignedTo) acc[date].filled++;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Mark understaffed days
+      Object.values(detailsByDate).forEach((day: any) => {
+        day.understaffed = day.filled / day.shifts < 0.8; // Less than 80% filled
+      });
+      
+      const coverageData = {
+        active,
+        upcoming,
+        unfilled,
+        underUtilized,
+        details: Object.values(detailsByDate)
+      };
+      
+      console.log("✅ SHIFT_COVERAGE_SUCCESS", { 
+        tenantId,
+        active,
+        unfilled,
+        timestamp: new Date() 
+      });
+      
+      res.json(coverageData);
+    } catch (error) {
+      console.error("❌ SHIFT_COVERAGE_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch shift coverage data" });
+    }
+  });
+
+  app.get("/api/dashboard/strikes-summary", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("🚨 DASHBOARD_STRIKES_SUMMARY", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get all staff members and their strikes
+      const staff = await storage.getStaffByTenant(tenantId);
+      const policy = await storage.getShiftPolicyByTenant(tenantId);
+      const maxStrikePoints = policy?.maxStrikePoints || 5;
+      
+      let totalPoints = 0;
+      let staffWithStrikes = 0;
+      const recentStrikes = [];
+      
+      for (const member of staff) {
+        const strikes = await storage.getStaffStrikesByUser(tenantId, member.id);
+        const activeStrikes = strikes.filter(s => s.isActive);
+        const memberPoints = activeStrikes.reduce((sum, s) => sum + s.points, 0);
+        
+        totalPoints += memberPoints;
+        if (activeStrikes.length > 0) staffWithStrikes++;
+        
+        // Add recent strikes (last 7 days)
+        const recentMemberStrikes = activeStrikes
+          .filter(s => new Date(s.issuedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+          .map(s => ({
+            userId: member.id,
+            userName: `${member.firstName} ${member.lastName}`,
+            reason: s.reason,
+            points: s.points,
+            issuedAt: s.issuedAt
+          }));
+        
+        recentStrikes.push(...recentMemberStrikes);
+      }
+      
+      // Sort recent strikes by date
+      recentStrikes.sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
+      
+      const strikesData = {
+        totalPoints,
+        maxStrikePoints,
+        staffWithStrikes,
+        totalStaff: staff.length,
+        recentStrikes: recentStrikes.slice(0, 10) // Last 10 recent strikes
+      };
+      
+      console.log("✅ STRIKES_SUMMARY_SUCCESS", { 
+        tenantId,
+        totalPoints,
+        staffWithStrikes,
+        timestamp: new Date() 
+      });
+      
+      res.json(strikesData);
+    } catch (error) {
+      console.error("❌ STRIKES_SUMMARY_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch strikes summary" });
+    }
+  });
+
+  app.get("/api/dashboard/live-time-entries", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("⏰ DASHBOARD_LIVE_TIME_ENTRIES", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get all staff and their current time entries
+      const staff = await storage.getStaffByTenant(tenantId);
+      const today = new Date().toISOString().split('T')[0];
+      const liveEntries = [];
+      
+      for (const member of staff) {
+        try {
+          const timeEntries = await storage.getTimeEntriesByUserAndDate(tenantId, member.id, today);
+          const activeEntry = timeEntries.find(entry => 
+            entry.status === "clocked_in" || entry.status === "on_break"
+          );
+          
+          if (activeEntry) {
+            // Get current shift information
+            const shifts = await storage.getShiftsByTenant(tenantId);
+            const currentShift = shifts.find(shift => 
+              shift.date === today && 
+              shift.assignedTo === member.id
+            );
+            
+            const entry = {
+              userId: member.id,
+              userName: `${member.firstName} ${member.lastName}`,
+              status: activeEntry.status,
+              currentShift: currentShift ? {
+                startTime: currentShift.startTime,
+                endTime: currentShift.endTime,
+                role: currentShift.role,
+                location: currentShift.location
+              } : undefined,
+              lastActivity: activeEntry.clockInTime || new Date().toISOString()
+            };
+            
+            liveEntries.push(entry);
+          }
+        } catch (error) {
+          console.log(`Error getting time entries for user ${member.id}:`, error.message);
+        }
+      }
+      
+      console.log("✅ LIVE_TIME_ENTRIES_SUCCESS", { 
+        tenantId,
+        activeEntries: liveEntries.length,
+        timestamp: new Date() 
+      });
+      
+      res.json(liveEntries);
+    } catch (error) {
+      console.error("❌ LIVE_TIME_ENTRIES_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch live time entries" });
+    }
+  });
+
+  app.get("/api/dashboard/pending-requests", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("📋 DASHBOARD_PENDING_REQUESTS", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get pending holiday requests
+      const holidayRequests = await storage.getHolidayRequestsByTenant(tenantId);
+      const pendingRequests = holidayRequests
+        .filter(request => request.status === "pending")
+        .map(request => ({
+          id: request.id,
+          type: request.type,
+          requesterName: `User ${request.requesterId}`, // In real app, join with users table
+          startDate: request.startDate,
+          endDate: request.endDate,
+          priority: request.type === "sick" ? "high" : "normal",
+          requestedAt: request.requestedAt || new Date().toISOString()
+        }));
+      
+      console.log("✅ PENDING_REQUESTS_SUCCESS", { 
+        tenantId,
+        pendingCount: pendingRequests.length,
+        timestamp: new Date() 
+      });
+      
+      res.json(pendingRequests);
+    } catch (error) {
+      console.error("❌ PENDING_REQUESTS_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch pending requests" });
+    }
+  });
+
+  app.get("/api/dashboard/escalations", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      
+      console.log("🚨 DASHBOARD_ESCALATIONS", { tenantId, timestamp: new Date() });
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "tenantId is required" });
+      }
+      
+      // Get swap requests and identify escalations
+      const swapRequests = await storage.getSwapRequestsByTenant(tenantId);
+      const shifts = await storage.getShiftsByTenant(tenantId);
+      
+      const escalations = [];
+      
+      // Identify urgent swap requests (requested more than 24 hours ago)
+      const urgentSwaps = swapRequests.filter(swap => {
+        const requestedAt = new Date(swap.requestedAt || Date.now());
+        const hoursSinceRequest = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
+        return hoursSinceRequest > 24 && swap.status === "pending";
+      });
+      
+      urgentSwaps.forEach(swap => {
+        escalations.push({
+          id: swap.id,
+          type: "swap_request",
+          description: `Swap request pending for ${Math.round((Date.now() - new Date(swap.requestedAt || Date.now()).getTime()) / (1000 * 60 * 60))} hours`,
+          affectedShifts: 2,
+          urgency: "high",
+          createdAt: swap.requestedAt || new Date().toISOString()
+        });
+      });
+      
+      // Identify coverage gaps (shifts starting in <12 hours with no assignment)
+      const now = new Date();
+      const next12Hours = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+      
+      const upcomingUnfilledShifts = shifts.filter(shift => {
+        const shiftDateTime = new Date(`${shift.date} ${shift.startTime}`);
+        return shiftDateTime >= now && 
+               shiftDateTime <= next12Hours && 
+               !shift.assignedTo && 
+               shift.status === "open";
+      });
+      
+      upcomingUnfilledShifts.forEach(shift => {
+        const shiftDateTime = new Date(`${shift.date} ${shift.startTime}`);
+        const hoursUntil = Math.round((shiftDateTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+        
+        escalations.push({
+          id: shift.id,
+          type: "coverage_gap",
+          description: `Unfilled ${shift.role} shift starting in ${hoursUntil} hours`,
+          affectedShifts: 1,
+          urgency: hoursUntil < 4 ? "critical" : "high",
+          createdAt: shift.createdAt || new Date().toISOString()
+        });
+      });
+      
+      // Sort by urgency and creation date
+      escalations.sort((a, b) => {
+        const urgencyOrder = { critical: 3, high: 2, medium: 1, low: 0 };
+        if (urgencyOrder[a.urgency] !== urgencyOrder[b.urgency]) {
+          return urgencyOrder[b.urgency] - urgencyOrder[a.urgency];
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      console.log("✅ ESCALATIONS_SUCCESS", { 
+        tenantId,
+        escalationCount: escalations.length,
+        criticalCount: escalations.filter(e => e.urgency === 'critical').length,
+        timestamp: new Date() 
+      });
+      
+      res.json(escalations);
+    } catch (error) {
+      console.error("❌ ESCALATIONS_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch escalations" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
