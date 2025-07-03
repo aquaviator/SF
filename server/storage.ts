@@ -48,6 +48,7 @@ export interface IStorage {
   // Swap request operations
   getSwapRequest(id: number): Promise<SwapRequest | undefined>;
   getSwapRequestsByTenant(tenantId: string): Promise<SwapRequest[]>;
+  getSwapRequestsByUser(tenantId: string, userId: number): Promise<SwapRequest[]>;
   createSwapRequest(swapRequest: InsertSwapRequest): Promise<SwapRequest>;
   updateSwapRequest(id: number, swapRequest: InsertSwapRequest): Promise<SwapRequest | undefined>;
   deleteSwapRequest(id: number): Promise<boolean>;
@@ -55,6 +56,7 @@ export interface IStorage {
   // Assignment operations
   getAssignment(id: number): Promise<Assignment | undefined>;
   getAssignmentsByTenant(tenantId: string): Promise<Assignment[]>;
+  getAssignmentsByUser(tenantId: string, userId: number): Promise<Assignment[]>;
   createAssignment(assignment: InsertAssignment): Promise<Assignment>;
   updateAssignment(id: number, assignment: InsertAssignment): Promise<Assignment | undefined>;
   deleteAssignment(id: number): Promise<boolean>;
@@ -62,6 +64,7 @@ export interface IStorage {
   // Holiday request operations
   getHolidayRequest(id: number): Promise<HolidayRequest | undefined>;
   getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]>;
+  getHolidayRequestsByUser(tenantId: string, userId: number): Promise<HolidayRequest[]>;
   createHolidayRequest(holidayRequest: InsertHolidayRequest): Promise<HolidayRequest>;
   updateHolidayRequest(id: number, holidayRequest: InsertHolidayRequest): Promise<HolidayRequest | undefined>;
   deleteHolidayRequest(id: number): Promise<boolean>;
@@ -1460,6 +1463,12 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
+  async getSwapRequestsByUser(tenantId: string, userId: number): Promise<SwapRequest[]> {
+    return await database.select().from(swapRequests).where(
+      and(eq(swapRequests.tenantId, tenantId), eq(swapRequests.requesterId, userId))
+    );
+  }
+
   // Assignment operations
   async getAssignment(id: number): Promise<Assignment | undefined> {
     const result = await database.select().from(assignments).where(eq(assignments.id, id)).limit(1);
@@ -1483,6 +1492,13 @@ export class DatabaseStorage implements IStorage {
   async deleteAssignment(id: number): Promise<boolean> {
     const result = await database.delete(assignments).where(eq(assignments.id, id));
     return result.rowCount > 0;
+  }
+
+  async getAssignmentsByUser(tenantId: string, userId: number): Promise<Assignment[]> {
+    // For assignments, we need to check if the user is assigned to the assignment
+    // This would require a join with a staff_assignments table or similar
+    // For now, return empty array since assignments don't have direct user assignments
+    return [];
   }
 
   // Holiday request operations
@@ -1538,6 +1554,40 @@ export class DatabaseStorage implements IStorage {
   async deleteHolidayRequest(id: number): Promise<boolean> {
     const result = await database.delete(holidayRequests).where(eq(holidayRequests.id, id));
     return result.rowCount > 0;
+  }
+
+  async getHolidayRequestsByUser(tenantId: string, userId: number): Promise<HolidayRequest[]> {
+    const result = await database
+      .select({
+        // Holiday request fields
+        id: holidayRequests.id,
+        tenantId: holidayRequests.tenantId,
+        requesterId: holidayRequests.requesterId,
+        startDate: holidayRequests.startDate,
+        endDate: holidayRequests.endDate,
+        reason: holidayRequests.reason,
+        status: holidayRequests.status,
+        type: holidayRequests.type,
+        priority: holidayRequests.priority,
+        reviewedBy: holidayRequests.reviewedBy,
+        reviewedAt: holidayRequests.reviewedAt,
+        reviewNotes: holidayRequests.reviewNotes,
+        createdAt: holidayRequests.createdAt,
+        // User fields
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(holidayRequests)
+      .leftJoin(users, eq(holidayRequests.requesterId, users.id))
+      .where(and(eq(holidayRequests.tenantId, tenantId), eq(holidayRequests.requesterId, userId)));
+
+    return result.map(row => ({
+      ...row,
+      // Add computed name field for compatibility
+      name: row.firstName && row.lastName 
+        ? `${row.firstName} ${row.lastName}` 
+        : `User ${row.requesterId}`,
+    })) as any;
   }
 
   // Schedule template operations

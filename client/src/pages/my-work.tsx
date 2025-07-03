@@ -57,7 +57,7 @@ type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
 type SwapRequestFormData = z.infer<typeof swapRequestFormSchema>;
 
 export default function MyWork() {
-  const { tenantId, user } = useAuth();
+  const { role, tenantId, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
@@ -99,7 +99,7 @@ export default function MyWork() {
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
     queryKey: ["/api/assignments", tenantId, user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/assignments?tenantId=${tenantId}&userId=${user?.id}`);
+      const response = await fetch(`/api/assignments?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
       if (!response.ok) throw new Error("Failed to fetch assignments");
       return response.json();
     },
@@ -120,7 +120,7 @@ export default function MyWork() {
   const { data: holidayRequests = [], isLoading: holidayRequestsLoading } = useQuery({
     queryKey: ["/api/holiday-requests", tenantId, user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}`);
+      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
       if (!response.ok) return [];
       return response.json();
     },

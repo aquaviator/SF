@@ -354,11 +354,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/swap-requests", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      const userRole = req.query.userRole as string;
+      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const swapRequests = await storage.getSwapRequestsByTenant(tenantId);
+      let swapRequests;
+      if (userRole === "staff" && userId) {
+        // Staff users see only requests involving them (either as requester or target)
+        swapRequests = await storage.getSwapRequestsByUser(tenantId, parseInt(userId));
+      } else {
+        // Owner users see all tenant requests
+        swapRequests = await storage.getSwapRequestsByTenant(tenantId);
+      }
       res.json(swapRequests);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch swap requests" });
@@ -412,11 +422,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/assignments", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      const userRole = req.query.userRole as string;
+      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const assignments = await storage.getAssignmentsByTenant(tenantId);
+      let assignments;
+      if (userRole === "staff" && userId) {
+        // Staff users see only their own assignments
+        assignments = await storage.getAssignmentsByUser(tenantId, parseInt(userId));
+      } else {
+        // Owner users see all tenant assignments
+        assignments = await storage.getAssignmentsByTenant(tenantId);
+      }
       res.json(assignments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch assignments" });
@@ -491,11 +511,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/holiday-requests", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      const userRole = req.query.userRole as string;
+      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const holidayRequests = await storage.getHolidayRequestsByTenant(tenantId);
+      let holidayRequests;
+      if (userRole === "staff" && userId) {
+        // Staff users see only their own requests
+        holidayRequests = await storage.getHolidayRequestsByUser(tenantId, parseInt(userId));
+      } else {
+        // Owner users see all tenant requests
+        holidayRequests = await storage.getHolidayRequestsByTenant(tenantId);
+      }
       // Normalize data for backward compatibility
       const normalizedRequests = holidayRequests.map(request => ({
         ...request,

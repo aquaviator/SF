@@ -29,18 +29,18 @@ interface HolidayRequest {
 
 interface SwapRequest {
   id: number;
-  requestingUserId: number;
+  requesterId: number;
   tenantId: string;
   originalShiftId: number;
   targetShiftId: number;
   reason: string;
   status: "pending" | "approved" | "rejected";
-  createdAt: string;
-  updatedAt: string;
-  // User details
-  requestingUserName: string;
-  originalShiftDate: string;
-  targetShiftDate: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // User details (may not be present)
+  requestingUserName?: string;
+  originalShiftDate?: string;
+  targetShiftDate?: string;
 }
 
 export default function OwnerRequestsPage() {
@@ -96,8 +96,8 @@ export default function OwnerRequestsPage() {
   );
 
   const filteredSwapRequests = swapRequests.filter((req: SwapRequest) =>
-    req.requestingUserName.toLowerCase().includes(filterText.toLowerCase()) ||
-    req.reason.toLowerCase().includes(filterText.toLowerCase())
+    (req.requestingUserName || `User ${req.requesterId}`).toLowerCase().includes(filterText.toLowerCase()) ||
+    (req.reason || "").toLowerCase().includes(filterText.toLowerCase())
   );
 
   // Mutations for holiday request actions
