@@ -26,7 +26,7 @@ export function CalendarView({
   onDeleteShift,
   userRole 
 }: CalendarViewProps) {
-  const { getRoleColorByTitle, getRoleDotColorByTitle, getRoleLabelByTitle } = useRoleColors();
+  const { getRoleColorByTitle, getRoleDotColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayModalOpen, setDayModalOpen] = useState(false);
@@ -160,19 +160,26 @@ export function CalendarView({
                   </div>
                   <div className="space-y-1">
                     {dayShifts.slice(0, 2).map(shift => (
-                      <div key={shift.id} className="flex items-center justify-center">
+                      <div 
+                        key={shift.id} 
+                        className="flex items-center justify-center cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditShift(shift);
+                        }}
+                      >
                         {/* Desktop: badge with role initial */}
                         <span
-                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium ${getRoleColorByTitle(shift.role)}`}
-                          title={getRoleLabelByTitle(shift.role)}
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium hover:shadow-sm transition-shadow ${getRoleColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)} - Click to edit`}
                         >
-                          {getRoleLabelByTitle(shift.role).charAt(0).toUpperCase()}
+                          {getRoleInitialByTitle(shift.role)}
                         </span>
 
                         {/* Mobile: colored dot only */}
                         <span
-                          className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColorByTitle(shift.role)}`}
-                          title={getRoleLabelByTitle(shift.role)}
+                          className={`inline-block md:hidden w-3 h-3 rounded-full hover:shadow-sm transition-shadow ${getRoleDotColorByTitle(shift.role)}`}
+                          title={`${getRoleLabelByTitle(shift.role)} - Tap to edit`}
                         />
                       </div>
                     ))}

@@ -32,10 +32,11 @@ export function useRoleColors() {
       badge: getRoleColorFromLegend(legendColor),
       dot: getRoleDotColorFromLegend(legendColor),
       legend: getRoleLegendColorFromLegend(legendColor),
-      label: role.legend_label || role.title
+      label: role.legend_label || role.title,
+      initial: (role.legend_label || role.title).charAt(0).toUpperCase()
     };
     return map;
-  }, {} as Record<string, { badge: string; dot: string; legend: string; label: string }>);
+  }, {} as Record<string, { badge: string; dot: string; legend: string; label: string; initial: string }>);
 
   // Helper functions that use the database mapping
   const getRoleColorByTitle = (roleTitle: string): string => {
@@ -54,6 +55,10 @@ export function useRoleColors() {
     return roleColorMap[roleTitle]?.label || roleTitle;
   };
 
+  const getRoleInitialByTitle = (roleTitle: string): string => {
+    return roleColorMap[roleTitle]?.initial || roleTitle.charAt(0).toUpperCase();
+  };
+
   return {
     jobRoles,
     roleColorMap,
@@ -61,6 +66,7 @@ export function useRoleColors() {
     getRoleColorByTitle,
     getRoleDotColorByTitle,
     getRoleLegendColorByTitle,
-    getRoleLabelByTitle
+    getRoleLabelByTitle,
+    getRoleInitialByTitle
   };
 }
