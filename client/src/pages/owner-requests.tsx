@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,23 +51,29 @@ export default function OwnerRequestsPage() {
 
   console.log("OWNER REQUESTS: Loading requests dashboard...");
 
+  // Memoized query function to prevent infinite re-renders
+  const fetchHolidayRequests = useCallback(async () => {
+    const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}`);
+    const data = await response.json();
+    console.log("OWNER REQUESTS: holiday requests raw data →", data);
+    
+    // Process data directly in queryFn to ensure fresh processing
+    return data.map((req: any) => {
+      const displayName = req.name || (req.firstName && req.lastName 
+        ? `${req.firstName} ${req.lastName}` 
+        : `User #${req.requesterId}`);
+      console.log(`OWNER REQUESTS: processing request ${req.id} - name field: "${req.name}", computed: "${displayName}"`);
+      return {
+        ...req,
+        displayName, // Use a separate field to avoid conflicts
+      };
+    });
+  }, [tenantId]);
+
   // Fetch holiday requests
   const { data: holidayRequests = [], isLoading: holidayLoading } = useQuery({
     queryKey: ["/api/holiday-requests", tenantId],
-    queryFn: () => fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()),
-    select: (data: any[]) => {
-      console.log("OWNER REQUESTS: holiday requests data →", data);
-      return data.map((req: any) => {
-        const displayName = req.name || (req.firstName && req.lastName 
-          ? `${req.firstName} ${req.lastName}` 
-          : `User ${req.requesterId}`);
-        console.log(`OWNER REQUESTS: processing request ${req.id} - firstName: ${req.firstName}, lastName: ${req.lastName}, name: ${req.name}, final displayName: ${displayName}`);
-        return {
-          ...req,
-          name: displayName,
-        };
-      });
-    },
+    queryFn: fetchHolidayRequests,
     enabled: !!tenantId,
   });
 
@@ -83,8 +89,8 @@ export default function OwnerRequestsPage() {
   });
 
   // Filter requests based on search
-  const filteredHolidayRequests = holidayRequests.filter((req: HolidayRequest) =>
-    (req.name || "").toLowerCase().includes(filterText.toLowerCase()) ||
+  const filteredHolidayRequests = holidayRequests.filter((req: any) =>
+    (req.displayName || req.name || "").toLowerCase().includes(filterText.toLowerCase()) ||
     req.type.toLowerCase().includes(filterText.toLowerCase()) ||
     req.reason.toLowerCase().includes(filterText.toLowerCase())
   );
@@ -125,7 +131,12 @@ export default function OwnerRequestsPage() {
     },
     onSuccess: (data, variables) => {
       console.log(`OWNER REQUESTS: holiday request ${variables.action}d successfully`);
+      // Invalidate all related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/holiday-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/holiday-entitlements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pending-requests-count"] });
+      // Force refetch with cache reset to ensure UI updates
+      queryClient.resetQueries({ queryKey: ["/api/holiday-requests", tenantId] });
       toast({
         title: `Request ${variables.action}d`,
         description: `Holiday request has been ${variables.action}d successfully.`,
@@ -281,7 +292,7 @@ export default function OwnerRequestsPage() {
                       <div className="flex items-center gap-3">
                         {getRequestTypeIcon(request.type)}
                         <div>
-                          <CardTitle className="text-lg">{request.name || `User ${request.requesterId}`}</CardTitle>
+                          <CardTitle className="text-lg">{request.displayName || request.name || `User #${request.requesterId}`}</CardTitle>
                           <p className="text-sm text-gray-500 capitalize">{request.type} Request</p>
                         </div>
                       </div>
