@@ -6,10 +6,11 @@ interface AuthContextType {
   role: UserRole;
   tenantId: string;
   user: {
-    id: string;
+    id: number;
     firstName: string;
     lastName: string;
     email: string;
+    tenantId: string;
   } | null;
   switchRole: (role: UserRole) => void;
   isAuthenticated: boolean;
@@ -33,10 +34,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<UserRole>("owner");
   const [tenantId] = useState("acme-corp"); // Stubbed tenant ID
   const [user, setUser] = useState<{
-    id: string;
+    id: number;
     firstName: string;
     lastName: string;
     email: string;
+    tenantId: string;
   } | null>(null);
 
   const switchRole = (newRole: UserRole) => {
@@ -52,18 +54,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (response.ok) {
           const userData = await response.json();
           setUser({
-            id: userData.id.toString(),
+            id: userData.id,
             firstName: userData.firstName || "User",
             lastName: userData.lastName || "",
-            email: userData.email || "user@example.com"
+            email: userData.email || "user@example.com",
+            tenantId: userData.tenantId || "acme-corp"
           });
         } else {
           // Fallback to default user if API fails
           setUser({
-            id: "1",
+            id: 1,
             firstName: "Demo",
             lastName: "User",
-            email: "demo@acme-corp.com"
+            email: "demo@acme-corp.com",
+            tenantId: "acme-corp"
           });
         }
       } catch (error) {

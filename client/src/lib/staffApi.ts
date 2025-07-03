@@ -42,16 +42,17 @@ export const staffApi = {
     console.log("📡 GET_STRIKES API", { userId, tenantId, timestamp: new Date() });
     
     try {
-      const response = await apiRequest(`/api/staff/${userId}/strikes?tenantId=${tenantId}`);
+      const response = await apiRequest("GET", `/api/staff/${userId}/strikes?tenantId=${tenantId}`);
+      const data = await response.json();
       
       console.log("✅ GET_STRIKES SUCCESS", { 
         userId,
-        totalPoints: response.totalPoints,
-        strikeCount: response.strikes.length,
+        totalPoints: data.totalPoints,
+        strikeCount: data.strikes.length,
         timestamp: new Date() 
       });
       
-      return response;
+      return data;
     } catch (error) {
       console.error("❌ GET_STRIKES FAILED", { userId, tenantId, error, timestamp: new Date() });
       throw new Error("Failed to fetch strike data");
@@ -65,15 +66,16 @@ export const staffApi = {
     console.log("📡 GET_ALL_STAFF_STRIKES API", { tenantId, timestamp: new Date() });
     
     try {
-      const response = await apiRequest(`/api/staff/strikes/all?tenantId=${tenantId}`);
+      const response = await apiRequest("GET", `/api/staff/strikes/all?tenantId=${tenantId}`);
+      const data = await response.json();
       
       console.log("✅ GET_ALL_STAFF_STRIKES SUCCESS", { 
         tenantId,
-        strikeCount: response.strikes?.length || 0,
+        strikeCount: data.strikes?.length || 0,
         timestamp: new Date() 
       });
       
-      return response;
+      return data;
     } catch (error) {
       console.error("❌ GET_ALL_STAFF_STRIKES FAILED", { tenantId, error, timestamp: new Date() });
       throw new Error("Failed to fetch staff strikes data");

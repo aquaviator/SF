@@ -42,7 +42,7 @@ export default function StaffStrikesPage() {
         setIsLoading(true);
         setError(null);
         
-        const data = await staffApi.getStrikes(user.id, user.tenantId);
+        const data = await staffApi.getStrikes(parseInt(user.id), user.tenantId);
         setStrikeData(data);
         
         console.log("STAFF_STRIKES_LOADED", { 
