@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import type { User, Shift } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Users, 
   Calendar, 
@@ -25,6 +40,33 @@ import {
   BarChart3
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Form Schemas
+const createShiftSchema = z.object({
+  tenantId: z.string(),
+  date: z.string().min(1, "Date is required"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  locationId: z.string().min(1, "Location is required"),
+  roleId: z.string().min(1, "Role is required"),
+  title: z.string().min(1, "Shift title is required"),
+  description: z.string().optional(),
+});
+
+const addStaffSchema = z.object({
+  tenantId: z.string(),
+  username: z.string().min(1, "Username is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.literal("staff"),
+  isActive: z.boolean().default(true),
+});
+
+type CreateShiftFormData = z.infer<typeof createShiftSchema>;
+type AddStaffFormData = z.infer<typeof addStaffSchema>;
+
 // Schema types for dashboard data
 
 interface DashboardMetrics {
@@ -52,12 +94,84 @@ interface RecentActivity {
 
 export default function OwnerDashboard() {
   const { tenantId } = useAuth();
+  const { toast } = useToast();
 
   // Modal state management
   const [isCreateShiftOpen, setIsCreateShiftOpen] = useState(false);
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [isApproveRequestsOpen, setIsApproveRequestsOpen] = useState(false);
   const [isViewReportsOpen, setIsViewReportsOpen] = useState(false);
+
+  // Form setup
+  const createShiftForm = useForm<CreateShiftFormData>({
+    resolver: zodResolver(createShiftSchema),
+    defaultValues: {
+      tenantId: tenantId || "",
+      date: "",
+      startTime: "",
+      endTime: "",
+      locationId: "",
+      roleId: "",
+      title: "",
+      description: "",
+    },
+  });
+
+  const addStaffForm = useForm<AddStaffFormData>({
+    resolver: zodResolver(addStaffSchema),
+    defaultValues: {
+      tenantId: tenantId || "",
+      username: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      role: "staff",
+      isActive: true,
+    },
+  });
+
+  // Fetch data for form dropdowns
+  const { data: jobRoles = [] } = useQuery({
+    queryKey: ["/api/job-roles", tenantId],
+    queryFn: () => fetch(`/api/job-roles?tenantId=${tenantId}`).then(res => res.json()),
+  });
+
+  const { data: locations = [] } = useQuery({
+    queryKey: ["/api/locations", tenantId],
+    queryFn: () => fetch(`/api/locations?tenantId=${tenantId}`).then(res => res.json()),
+  });
+
+  // Mutations
+  const createShiftMutation = useMutation({
+    mutationFn: async (data: CreateShiftFormData) => {
+      return await apiRequest("POST", "/api/shifts", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts", tenantId] });
+      toast({ title: "Success", description: "Shift created successfully" });
+      setIsCreateShiftOpen(false);
+      createShiftForm.reset();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create shift", variant: "destructive" });
+    },
+  });
+
+  const addStaffMutation = useMutation({
+    mutationFn: async (data: AddStaffFormData) => {
+      return await apiRequest("POST", "/api/staff", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
+      toast({ title: "Success", description: "Staff member added successfully" });
+      setIsAddStaffOpen(false);
+      addStaffForm.reset();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add staff member", variant: "destructive" });
+    },
+  });
 
   // Fetch real staff data for metrics
   const { data: staffData = [], isLoading: metricsStaffLoading } = useQuery<User[]>({
@@ -342,46 +456,243 @@ export default function OwnerDashboard() {
 
       {/* Quick Action Modals */}
       <Dialog open={isCreateShiftOpen} onOpenChange={setIsCreateShiftOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Shift</DialogTitle>
+            <DialogTitle>Create New Shift</DialogTitle>
             <DialogDescription>
-              Go to the Scheduling module to create new shifts.
+              Create a new shift quickly from the dashboard.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 space-y-4">
-            <p className="text-center text-gray-600">Create and manage shifts in the full Scheduling interface.</p>
-            <div className="flex justify-center">
-              <Link href="/owner/scheduling">
-                <Button onClick={() => setIsCreateShiftOpen(false)}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Go to Scheduling
+          <Form {...createShiftForm}>
+            <form onSubmit={createShiftForm.handleSubmit((data) => createShiftMutation.mutate(data))} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={createShiftForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shift Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. Morning Shift" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createShiftForm.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="date" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={createShiftForm.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="time" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createShiftForm.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="time" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={createShiftForm.control}
+                  name="locationId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {locations.map((location: any) => (
+                            <SelectItem key={location.id} value={location.id.toString()}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createShiftForm.control}
+                  name="roleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {jobRoles.map((role: any) => (
+                            <SelectItem key={role.id} value={role.id.toString()}>
+                              {role.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={createShiftForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Shift description..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsCreateShiftOpen(false)}>
+                  Cancel
                 </Button>
-              </Link>
-            </div>
-          </div>
+                <Button type="submit" disabled={createShiftMutation.isPending}>
+                  {createShiftMutation.isPending ? "Creating..." : "Create Shift"}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Staff Member</DialogTitle>
+            <DialogTitle>Add New Staff Member</DialogTitle>
             <DialogDescription>
-              Go to the Staff module to add new team members.
+              Add a new team member to your workforce.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 space-y-4">
-            <p className="text-center text-gray-600">Manage your team and add new staff members.</p>
-            <div className="flex justify-center">
-              <Link href="/owner/staff">
-                <Button onClick={() => setIsAddStaffOpen(false)}>
-                  <Users className="w-4 h-4 mr-2" />
-                  Go to Staff
+          <Form {...addStaffForm}>
+            <form onSubmit={addStaffForm.handleSubmit((data) => addStaffMutation.mutate(data))} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={addStaffForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="John" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={addStaffForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Smith" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={addStaffForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="john.smith@company.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={addStaffForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="john.smith" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={addStaffForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="password" placeholder="••••••••" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsAddStaffOpen(false)}>
+                  Cancel
                 </Button>
-              </Link>
-            </div>
-          </div>
+                <Button type="submit" disabled={addStaffMutation.isPending}>
+                  {addStaffMutation.isPending ? "Adding..." : "Add Staff Member"}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
