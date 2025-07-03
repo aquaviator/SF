@@ -27,21 +27,7 @@ interface HolidayRequest {
   name?: string;
 }
 
-interface SwapRequest {
-  id: number;
-  requesterId: number;
-  tenantId: string;
-  originalShiftId: number;
-  targetShiftId: number;
-  reason: string;
-  status: "pending" | "approved" | "rejected";
-  createdAt?: string;
-  updatedAt?: string;
-  // User details (may not be present)
-  requestingUserName?: string;
-  originalShiftDate?: string;
-  targetShiftDate?: string;
-}
+
 
 export default function OwnerRequestsPage() {
   const [filterText, setFilterText] = useState("");
@@ -77,16 +63,7 @@ export default function OwnerRequestsPage() {
     enabled: !!tenantId,
   });
 
-  // Fetch swap requests
-  const { data: swapRequests = [], isLoading: swapLoading } = useQuery({
-    queryKey: ["/api/swap-requests", tenantId],
-    queryFn: () => fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()),
-    select: (data: any[]) => {
-      console.log("OWNER REQUESTS: swap requests data →", data);
-      return data;
-    },
-    enabled: !!tenantId,
-  });
+
 
   // Filter requests based on search
   const filteredHolidayRequests = holidayRequests.filter((req: any) =>
@@ -95,10 +72,7 @@ export default function OwnerRequestsPage() {
     req.reason.toLowerCase().includes(filterText.toLowerCase())
   );
 
-  const filteredSwapRequests = swapRequests.filter((req: SwapRequest) =>
-    (req.requestingUserName || `User ${req.requesterId}`).toLowerCase().includes(filterText.toLowerCase()) ||
-    (req.reason || "").toLowerCase().includes(filterText.toLowerCase())
-  );
+
 
   // Mutations for holiday request actions
   const holidayActionMutation = useMutation({
@@ -152,37 +126,8 @@ export default function OwnerRequestsPage() {
     },
   });
 
-  // Mutations for swap request actions
-  const swapActionMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "approve" | "reject" }) => {
-      console.log(`OWNER REQUESTS: ${action}ing swap request ${id}`);
-      const status = action === "approve" ? "approved" : "rejected";
-      return apiRequest("PUT", `/api/swap-requests/${id}`, { status });
-    },
-    onSuccess: (data, variables) => {
-      console.log(`OWNER REQUESTS: swap request ${variables.action}d successfully`);
-      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests"] });
-      toast({
-        title: `Request ${variables.action}d`,
-        description: `Swap request has been ${variables.action}d successfully.`,
-      });
-    },
-    onError: (error) => {
-      console.error("OWNER REQUESTS: Error updating swap request:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update swap request. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleHolidayAction = (id: number, action: "approve" | "reject") => {
     holidayActionMutation.mutate({ id, action });
-  };
-
-  const handleSwapAction = (id: number, action: "approve" | "reject") => {
-    swapActionMutation.mutate({ id, action });
   };
 
   const getStatusBadge = (status: string) => {
@@ -221,7 +166,6 @@ export default function OwnerRequestsPage() {
   };
 
   const pendingHolidayCount = holidayRequests.filter(req => req.status === "pending").length;
-  const pendingSwapCount = swapRequests.filter(req => req.status === "pending").length;
 
   return (
     <div className="flex flex-col h-full">
@@ -233,7 +177,7 @@ export default function OwnerRequestsPage() {
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              {pendingHolidayCount + pendingSwapCount} pending
+              {pendingHolidayCount} pending
             </Badge>
           </div>
         </div>
@@ -251,22 +195,13 @@ export default function OwnerRequestsPage() {
 
       <div className="flex-1 overflow-hidden">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4">
+          <TabsList className="grid w-full grid-cols-1 mx-4 mt-4">
             <TabsTrigger value="holiday" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Holiday Requests
               {pendingHolidayCount > 0 && (
                 <Badge variant="destructive" className="ml-1 px-1 py-0 text-xs">
                   {pendingHolidayCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="swap" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Swap Requests
-              {pendingSwapCount > 0 && (
-                <Badge variant="destructive" className="ml-1 px-1 py-0 text-xs">
-                  {pendingSwapCount}
                 </Badge>
               )}
             </TabsTrigger>
@@ -361,88 +296,7 @@ export default function OwnerRequestsPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="swap" className="flex-1 overflow-y-auto p-4 space-y-4">
-            {swapLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-sm text-gray-500">Loading swap requests...</div>
-              </div>
-            ) : filteredSwapRequests.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">
-                  {filterText ? "No swap requests match your search." : "No swap requests found."}
-                </p>
-              </div>
-            ) : (
-              filteredSwapRequests.map((request: SwapRequest) => (
-                <Card key={request.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-purple-500" />
-                        <div>
-                          <CardTitle className="text-lg">{request.requestingUserName}</CardTitle>
-                          <p className="text-sm text-gray-500">Shift Swap Request</p>
-                        </div>
-                      </div>
-                      {getStatusBadge(request.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Original Shift</p>
-                        <p className="text-sm text-gray-600">{request.originalShiftDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Target Shift</p>
-                        <p className="text-sm text-gray-600">{request.targetShiftDate}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Requested</p>
-                      <p className="text-sm text-gray-600">
-                        {request.createdAt 
-                          ? format(new Date(request.createdAt), "MMM d, yyyy")
-                          : "Date not available"
-                        }
-                      </p>
-                    </div>
 
-                    {request.reason && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-1">Reason</p>
-                        <p className="text-sm text-gray-600">{request.reason}</p>
-                      </div>
-                    )}
-
-                    {request.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleSwapAction(request.id, "approve")}
-                          disabled={swapActionMutation.isPending}
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Approve
-                        </Button>
-                        <Button
-                          onClick={() => handleSwapAction(request.id, "reject")}
-                          disabled={swapActionMutation.isPending}
-                          variant="destructive"
-                          className="flex-1"
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
         </Tabs>
       </div>
     </div>
