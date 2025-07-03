@@ -298,8 +298,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      const opportunities = await storage.getOpportunitiesByTenant(tenantId);
-      res.json(opportunities);
+      // Fetch shifts with assignmentType="opportunity"
+      const opportunityShifts = await storage.getShiftsByTenantAndType(tenantId, "opportunity");
+      res.json(opportunityShifts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch opportunities" });
     }
