@@ -50,6 +50,26 @@ export default function MyWork() {
     },
   });
 
+  // Fetch time entries for metrics
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
+    queryKey: ["/api/time-entries", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) return []; // Return empty array if no data
+      return response.json();
+    },
+  });
+
+  // Fetch holiday requests for activity feed
+  const { data: holidayRequests = [], isLoading: holidayRequestsLoading } = useQuery({
+    queryKey: ["/api/holiday-requests", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
   // Fetch time tracking policies
   const { data: timePolicy } = useQuery({
     queryKey: ["/api/shift-policy", tenantId],
@@ -61,10 +81,9 @@ export default function MyWork() {
   });
 
   // Working time tracking state
-  const [timeEntries, setTimeEntries] = useState<any[]>([]);
+  const [localTimeEntries, setLocalTimeEntries] = useState<any[]>([]);
   const [isClocked, setIsClocked] = useState(false);
   const [clockInTime, setClockInTime] = useState<Date | null>(null);
-  const timeEntriesLoading = false;
 
   // Handle clock in/out functionality
   const handleClockIn = () => {
@@ -87,7 +106,7 @@ export default function MyWork() {
     const minutes = totalMinutes % 60;
     
     // Add to time entries for display before clearing state
-    setTimeEntries((prev: any[]) => [...prev, {
+    setLocalTimeEntries((prev: any[]) => [...prev, {
       id: Date.now(),
       date: now.toISOString().split('T')[0],
       clockInTime: clockInTime.toLocaleTimeString(),
@@ -205,6 +224,82 @@ export default function MyWork() {
     },
   ];
 
+  // Dynamic calculations from database data
+  const today = new Date();
+  const currentWeek = getWeekDates(today);
+  const lastWeek = getWeekDates(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000));
+  
+  // Calculate upcoming shifts
+  const upcomingShifts = shifts.filter(shift => new Date(shift.date) >= today);
+  const nextShift = upcomingShifts.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  const daysUntilNext = nextShift ? Math.ceil((new Date(nextShift.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  
+  // Calculate hours this week from time entries
+  const thisWeekEntries = (timeEntries || []).filter((entry: any) => {
+    const entryDate = new Date(entry.clockInTime);
+    return entryDate >= currentWeek.start && entryDate <= currentWeek.end;
+  });
+  const hoursThisWeek = thisWeekEntries.reduce((total: number, entry: any) => total + (entry.totalHours || 0), 0);
+  
+  // Calculate last week hours for comparison
+  const lastWeekEntries = (timeEntries || []).filter((entry: any) => {
+    const entryDate = new Date(entry.clockInTime);
+    return entryDate >= lastWeek.start && entryDate <= lastWeek.end;
+  });
+  const hoursLastWeek = lastWeekEntries.reduce((total: number, entry: any) => total + (entry.totalHours || 0), 0);
+  const hoursChange = hoursThisWeek - hoursLastWeek;
+  
+  // Calculate attendance rate
+  const completedShifts = shifts.filter(shift => shift.status === 'completed').length;
+  const totalScheduledShifts = shifts.filter(shift => new Date(shift.date) < today).length;
+  const attendanceRate = totalScheduledShifts > 0 ? (completedShifts / totalScheduledShifts) * 100 : 100;
+  
+  // Recent activity from multiple sources
+  const recentActivities = [
+    ...shifts.filter(shift => shift.status === 'completed' && new Date(shift.date) >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000))
+      .map(shift => ({
+        type: 'shift_completed',
+        title: 'Shift completed',
+        description: `${shift.role} - ${shift.location}`,
+        time: getTimeAgo(new Date(shift.date)),
+        icon: CheckCircle,
+        color: 'green'
+      })),
+    ...(holidayRequests || []).filter((req: any) => new Date(req.updatedAt) >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000))
+      .map((req: any) => ({
+        type: 'holiday_request',
+        title: `Holiday request ${req.status}`,
+        description: `${new Date(req.startDate).toLocaleDateString()} - ${new Date(req.endDate).toLocaleDateString()}`,
+        time: getTimeAgo(new Date(req.updatedAt)),
+        icon: Calendar,
+        color: req.status === 'approved' ? 'blue' : 'orange'
+      }))
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 3);
+
+  // Helper functions
+  function getWeekDates(date: Date) {
+    const start = new Date(date);
+    start.setDate(date.getDate() - date.getDay());
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    
+    return { start, end };
+  }
+  
+  function getTimeAgo(date: Date) {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  }
+
   return (
     <div className="container mx-auto p-4 space-y-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -257,9 +352,9 @@ export default function MyWork() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{shifts.length}</div>
+                <div className="text-2xl font-bold">{upcomingShifts.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  Next shift in 2 days
+                  {nextShift ? `Next shift in ${daysUntilNext} day${daysUntilNext === 1 ? '' : 's'}` : 'No upcoming shifts'}
                 </p>
               </CardContent>
             </Card>
@@ -283,9 +378,9 @@ export default function MyWork() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">32.5</div>
+                <div className="text-2xl font-bold">{hoursThisWeek.toFixed(1)}</div>
                 <p className="text-xs text-muted-foreground">
-                  +2.5 from last week
+                  {hoursChange >= 0 ? '+' : ''}{hoursChange.toFixed(1)} from last week
                 </p>
               </CardContent>
             </Card>
@@ -296,9 +391,11 @@ export default function MyWork() {
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">98.5%</div>
+                <div className="text-2xl font-bold">{attendanceRate.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">
-                  Excellent performance
+                  {attendanceRate >= 95 ? 'Excellent performance' : 
+                   attendanceRate >= 85 ? 'Good performance' : 
+                   attendanceRate >= 75 ? 'Needs improvement' : 'Poor performance'}
                 </p>
               </CardContent>
             </Card>
@@ -311,38 +408,34 @@ export default function MyWork() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Shift completed</p>
-                      <p className="text-xs text-muted-foreground">Evening shift - Main Location</p>
-                    </div>
-                    <div className="text-xs text-muted-foreground ml-auto">2 hours ago</div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Holiday request approved</p>
-                      <p className="text-xs text-muted-foreground">Dec 24-26, 2024</p>
-                    </div>
-                    <div className="text-xs text-muted-foreground ml-auto">1 day ago</div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-purple-100 rounded-full">
-                      <RefreshCw className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Shift swap completed</p>
-                      <p className="text-xs text-muted-foreground">With John Smith</p>
-                    </div>
-                    <div className="text-xs text-muted-foreground ml-auto">3 days ago</div>
-                  </div>
+                  {recentActivities.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No recent activity to display
+                    </p>
+                  ) : (
+                    recentActivities.map((activity, index) => {
+                      const colorClasses = {
+                        green: 'bg-green-100 text-green-600',
+                        blue: 'bg-blue-100 text-blue-600',
+                        orange: 'bg-orange-100 text-orange-600',
+                        purple: 'bg-purple-100 text-purple-600'
+                      };
+                      const colorClass = colorClasses[activity.color as keyof typeof colorClasses] || colorClasses.green;
+                      
+                      return (
+                        <div key={index} className="flex items-center space-x-4">
+                          <div className={`p-2 rounded-full ${colorClass.split(' ')[0]}`}>
+                            <activity.icon className={`h-4 w-4 ${colorClass.split(' ')[1]}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">{activity.title}</p>
+                            <p className="text-xs text-muted-foreground">{activity.description}</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground ml-auto">{activity.time}</div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>
