@@ -171,16 +171,17 @@ export const staffApi = {
     console.log("📡 CAN_CLAIM_SHIFT API", { userId, tenantId, timestamp: new Date() });
     
     try {
-      const response = await apiRequest(`/api/staff/${userId}/can-claim?tenantId=${tenantId}`);
+      const response = await apiRequest("GET", `/api/staff/${userId}/can-claim?tenantId=${tenantId}`);
+      const data = await response.json();
       
       console.log("✅ CAN_CLAIM_SHIFT SUCCESS", { 
         userId,
-        canClaim: response.canClaim,
-        reason: response.reason,
+        canClaim: data.canClaim,
+        reason: data.reason,
         timestamp: new Date() 
       });
       
-      return response;
+      return data;
     } catch (error) {
       console.error("❌ CAN_CLAIM_SHIFT FAILED", { userId, tenantId, error, timestamp: new Date() });
       throw new Error("Failed to check shift claim eligibility");
