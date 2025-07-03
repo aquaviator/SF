@@ -47,6 +47,7 @@ function Router() {
               <Route path="/opportunities" component={Opportunities} />
               <Route path="/swap-requests" component={SwapRequests} />
               <Route path="/holiday-requests" component={HolidayRequests} />
+              <Route path="/staff/holiday-requests" component={HolidayRequests} />
               <Route path="/profile" component={Profile} />
               <Route path="/owner/dashboard" component={OwnerDashboard} />
               <Route path="/owner/scheduling" component={Scheduling} />
