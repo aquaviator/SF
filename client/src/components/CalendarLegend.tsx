@@ -1,13 +1,8 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { getRoleLegendColor } from "@/utils/roleColors";
-
-interface JobRole {
-  id: number;
-  title: string;
-  tenantId: string;
-}
+import { getRoleLegendColorFromLegend } from "@/utils/roleColors";
+import type { JobRole } from "@shared/schema";
 
 interface CalendarLegendProps {
   className?: string;
@@ -43,9 +38,9 @@ export function CalendarLegend({ className = "" }: CalendarLegendProps) {
         {jobRoles.map((role) => {
           return (
             <div key={role.id} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${getRoleLegendColor(role.title)}`} />
+              <div className={`w-3 h-3 rounded-full ${getRoleLegendColorFromLegend(role.legendColor || 'slate')}`} />
               <span className="text-xs text-slate-600 whitespace-nowrap">
-                {role.title}
+                {role.legendLabel || role.title}
               </span>
             </div>
           );

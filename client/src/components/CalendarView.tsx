@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Shift } from "@shared/schema";
-import { getRoleColor, getRoleDotColor, roleColorMap } from "@/utils/roleColors";
+import { getRoleColor, getRoleDotColor } from "@/utils/roleColors";
 
 // Export for backward compatibility
-export { getRoleColor, getRoleDotColor, roleColorMap };
+export { getRoleColor, getRoleDotColor };
 
 interface CalendarViewProps {
   shifts: Shift[];

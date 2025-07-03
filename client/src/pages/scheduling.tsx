@@ -199,6 +199,22 @@ export default function Scheduling() {
     }
   };
 
+  // Handle shift duplication
+  const handleShiftDuplicate = (shift: Shift) => {
+    // Open create modal with shift data pre-filled
+    shiftForm.reset({
+      date: shift.date,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      role: shift.role,
+      description: shift.description,
+      location: shift.location,
+      assignedTo: shift.assignedTo?.toString() || "",
+      notes: shift.notes || "",
+    });
+    openCreateShiftModal();
+  };
+
   // Initialize template form with slots support
   const templateForm = useForm<EnhancedTemplateData>({
     resolver: zodResolver(enhancedTemplateSchema),
@@ -543,7 +559,7 @@ export default function Scheduling() {
                   onDateClick={(date) => console.log("Date clicked:", date)}
                   onCreateShift={openCreateShiftModal}
                   onEditShift={openEditShiftModal}
-                  onDuplicateShift={() => {}}
+                  onDuplicateShift={handleShiftDuplicate}
                   onDeleteShift={handleShiftDelete}
                   userRole={user?.role || "staff"}
                 />

@@ -156,6 +156,10 @@ export const jobRoles = pgTable("job_roles", {
   responsibilities: text("responsibilities").array(),
   requirements: text("requirements").array(),
   isActive: boolean("is_active").notNull().default(true),
+  // Legend settings for calendar display
+  legendLabel: text("legend_label"), // Custom display label for calendar (defaults to title if null)
+  legendColor: text("legend_color").default("slate"), // Color scheme: green, blue, yellow, purple, indigo, orange, gray, slate
+  legendIcon: text("legend_icon"), // Optional icon identifier (for future use)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

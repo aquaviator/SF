@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { JobRole, Location, Department } from "@shared/schema";
 
 // Business Profile Schema
 const businessProfileSchema = z.object({
@@ -39,7 +40,7 @@ const businessProfileSchema = z.object({
   businessType: z.string().optional(),
 });
 
-// Job Role Schema
+// Job Role Schema with Legend Support
 const jobRoleSchema = z.object({
   tenantId: z.string(),
   title: z.string().min(1, "Role title is required"),
@@ -48,6 +49,10 @@ const jobRoleSchema = z.object({
   responsibilities: z.array(z.string()).default([]),
   requirements: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  // Legend settings for calendar display
+  legendLabel: z.string().optional(),
+  legendColor: z.enum(["green", "blue", "yellow", "purple", "indigo", "orange", "gray", "slate"]).default("slate"),
+  legendIcon: z.string().optional(),
 });
 
 // Location Schema
@@ -197,6 +202,9 @@ export default function BusinessSettingsPage() {
       responsibilities: [],
       requirements: [],
       isActive: true,
+      legendLabel: "",
+      legendColor: "slate",
+      legendIcon: "",
     },
   });
 
@@ -515,6 +523,9 @@ export default function BusinessSettingsPage() {
         responsibilities: role.responsibilities,
         requirements: role.requirements,
         isActive: role.isActive,
+        legendLabel: role.legendLabel || "",
+        legendColor: role.legendColor || "slate",
+        legendIcon: role.legendIcon || "",
       });
     } else {
       setEditingRole(null);
@@ -526,6 +537,9 @@ export default function BusinessSettingsPage() {
         responsibilities: [],
         requirements: [],
         isActive: true,
+        legendLabel: "",
+        legendColor: "slate",
+        legendIcon: "",
       });
     }
     setIsRoleModalOpen(true);
@@ -1054,6 +1068,159 @@ export default function BusinessSettingsPage() {
               </FormItem>
             )}
           />
+          {/* Legend Management Section */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-purple-500"></div>
+              <h4 className="font-medium">Calendar Legend Settings</h4>
+            </div>
+            
+            <FormField
+              control={roleForm.control}
+              name="legendLabel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Display Label (Optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Custom label for calendar (leave empty to use role title)" />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground">
+                    Override the display name shown in calendar legend and shift badges
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={roleForm.control}
+              name="legendColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Calendar Color</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a color scheme">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              field.value === "green" ? "bg-green-400" :
+                              field.value === "blue" ? "bg-blue-400" :
+                              field.value === "yellow" ? "bg-yellow-400" :
+                              field.value === "purple" ? "bg-purple-400" :
+                              field.value === "indigo" ? "bg-indigo-400" :
+                              field.value === "orange" ? "bg-orange-400" :
+                              field.value === "gray" ? "bg-gray-400" :
+                              "bg-slate-400"
+                            }`} />
+                            <span className="capitalize">{field.value}</span>
+                          </div>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="green">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-400" />
+                            Green
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="blue">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-blue-400" />
+                            Blue
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="yellow">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                            Yellow
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="purple">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-purple-400" />
+                            Purple
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="indigo">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-indigo-400" />
+                            Indigo
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="orange">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-orange-400" />
+                            Orange
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="gray">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-400" />
+                            Gray
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="slate">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-slate-400" />
+                            Slate
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground">
+                    Color used in calendar legend, shift badges, and mobile dots
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Legend Preview */}
+            <div className="bg-slate-50 rounded-lg p-3 border">
+              <div className="text-xs font-medium text-slate-600 mb-2">Preview:</div>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    roleForm.watch("legendColor") === "green" ? "bg-green-400" :
+                    roleForm.watch("legendColor") === "blue" ? "bg-blue-400" :
+                    roleForm.watch("legendColor") === "yellow" ? "bg-yellow-400" :
+                    roleForm.watch("legendColor") === "purple" ? "bg-purple-400" :
+                    roleForm.watch("legendColor") === "indigo" ? "bg-indigo-400" :
+                    roleForm.watch("legendColor") === "orange" ? "bg-orange-400" :
+                    roleForm.watch("legendColor") === "gray" ? "bg-gray-400" :
+                    "bg-slate-400"
+                  }`} />
+                  <span className="text-xs">Legend</span>
+                </div>
+                <div className={`inline-flex items-center px-2 py-1 rounded border text-xs font-medium ${
+                  roleForm.watch("legendColor") === "green" ? "bg-green-100 border-green-300 text-green-800" :
+                  roleForm.watch("legendColor") === "blue" ? "bg-blue-100 border-blue-300 text-blue-800" :
+                  roleForm.watch("legendColor") === "yellow" ? "bg-yellow-100 border-yellow-300 text-yellow-800" :
+                  roleForm.watch("legendColor") === "purple" ? "bg-purple-100 border-purple-300 text-purple-800" :
+                  roleForm.watch("legendColor") === "indigo" ? "bg-indigo-100 border-indigo-300 text-indigo-800" :
+                  roleForm.watch("legendColor") === "orange" ? "bg-orange-100 border-orange-300 text-orange-800" :
+                  roleForm.watch("legendColor") === "gray" ? "bg-gray-100 border-gray-300 text-gray-800" :
+                  "bg-slate-100 border-slate-300 text-slate-800"
+                }`}>
+                  {roleForm.watch("legendLabel") || roleForm.watch("title") || "Role Badge"}
+                </div>
+                <div className={`w-2 h-2 rounded-full ${
+                  roleForm.watch("legendColor") === "green" ? "bg-green-500" :
+                  roleForm.watch("legendColor") === "blue" ? "bg-blue-500" :
+                  roleForm.watch("legendColor") === "yellow" ? "bg-yellow-500" :
+                  roleForm.watch("legendColor") === "purple" ? "bg-purple-500" :
+                  roleForm.watch("legendColor") === "indigo" ? "bg-indigo-500" :
+                  roleForm.watch("legendColor") === "orange" ? "bg-orange-500" :
+                  roleForm.watch("legendColor") === "gray" ? "bg-gray-500" :
+                  "bg-slate-500"
+                }`} />
+                <span className="text-xs">Mobile</span>
+              </div>
+            </div>
+          </div>
+
           <FormField
             control={roleForm.control}
             name="isActive"
