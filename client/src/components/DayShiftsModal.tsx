@@ -40,12 +40,14 @@ export function DayShiftsModal({
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState<Shift | null>(null);
+  const [staff, setStaff] = useState<any[]>([]);
 
   // Fetch shifts for the selected date
   useEffect(() => {
     if (date && isOpen) {
       console.log('DayShiftsModal opening for date:', date);
       fetchDayShifts();
+      fetchStaff();
     }
   }, [date, isOpen, tenantId]);
 
@@ -69,9 +71,57 @@ export function DayShiftsModal({
     }
   };
 
+  const fetchStaff = async () => {
+    if (!tenantId) return;
+    
+    try {
+      const response = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
+      const staffData = await response.json();
+      setStaff(staffData);
+    } catch (error) {
+      console.error("Failed to fetch staff:", error);
+    }
+  };
+
   const refreshShifts = () => {
     // Refresh the shift data for this date
     fetchDayShifts();
+  };
+
+  // Helper function to find staff member by ID
+  const getStaffById = (staffId: number | null) => {
+    if (!staffId) return null;
+    return staff.find(s => s.id === staffId);
+  };
+
+  // Helper function to format staff name as "FirstName LastInitial"
+  const formatStaffName = (staffMember: any) => {
+    if (!staffMember) return null;
+    const firstName = staffMember.firstName || staffMember.username?.split('.')[0] || 'Unknown';
+    const lastName = staffMember.lastName || staffMember.username?.split('.')[1] || '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return lastInitial ? `${firstName} ${lastInitial}` : firstName;
+  };
+
+  // Helper function to format status display
+  const getStatusDisplay = (shift: Shift) => {
+    const staffMember = getStaffById(shift.assignedTo);
+    const staffName = formatStaffName(staffMember);
+    
+    if (shift.status === 'open') {
+      return 'Open';
+    }
+    
+    if (staffName) {
+      const statusText = shift.status.replace('_', ' ').split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      return `${statusText} - ${staffName}`;
+    }
+    
+    return shift.status.replace('_', ' ').split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   };
 
   const handleCreateShift = () => {
@@ -97,7 +147,7 @@ export function DayShiftsModal({
         startTime: shift.startTime,
         endTime: shift.endTime,
         role: shift.role,
-        description: `${shift.description} (Copy)`,
+        description: shift.description,
         location: shift.location,
         assignedTo: null, // Reset assignment for copy
         status: "open" as const,
@@ -251,12 +301,10 @@ export function DayShiftsModal({
                               <span>{shift.location}</span>
                             </div>
                             
-                            {shift.assignedTo && (
-                              <div className="flex items-center space-x-1">
-                                <User className="w-4 h-4" />
-                                <span>Assigned</span>
-                              </div>
-                            )}
+                            <div className="flex items-center space-x-1">
+                              <User className="w-4 h-4" />
+                              <span>{getStatusDisplay(shift)}</span>
+                            </div>
                           </div>
                           
                           {shift.description && (
