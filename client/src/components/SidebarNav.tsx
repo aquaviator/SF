@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 
 export function SidebarNav() {
-  const { role, user, tenantId, switchRole } = useAuth();
+  const { role, user, tenantId, switchRole, switchStaff, currentStaffId } = useAuth();
   const [location] = useLocation();
   
   const menuItems = getMenuForRole(role);
@@ -118,6 +118,24 @@ export function SidebarNav() {
               <option value="staff">Staff</option>
             </select>
           </div>
+          
+          {/* Staff Profile Switcher - Only show when in staff mode */}
+          {role === "staff" && (
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs font-medium text-yellow-800">STAFF USER</span>
+              <select
+                value={currentStaffId}
+                onChange={(e) => switchStaff(parseInt(e.target.value))}
+                className="text-xs bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              >
+                <option value={2}>Mike Chen</option>
+                <option value={3}>Emma Davis</option>
+                <option value={4}>Alex Martinez</option>
+                <option value={5}>Jamie Wilson</option>
+                <option value={6}>Taylor Brown</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
       

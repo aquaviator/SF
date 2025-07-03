@@ -13,6 +13,8 @@ interface AuthContextType {
     tenantId: string;
   } | null;
   switchRole: (role: UserRole) => void;
+  switchStaff: (staffId: number) => void;
+  currentStaffId: number;
   isAuthenticated: boolean;
 }
 
@@ -33,6 +35,9 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<UserRole>("owner");
   const [tenantId] = useState("acme-corp"); // Stubbed tenant ID
+  const [currentStaffId, setCurrentStaffId] = useState<number>(() => {
+    return parseInt(localStorage.getItem("dev-staff-id") || "2");
+  });
   const [user, setUser] = useState<{
     id: number;
     firstName: string;
@@ -48,11 +53,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     fetchUserDataForRole(newRole);
   };
 
+  const switchStaff = (staffId: number) => {
+    setCurrentStaffId(staffId);
+    localStorage.setItem("dev-staff-id", staffId.toString());
+    // If currently in staff mode, fetch new staff data
+    if (role === "staff") {
+      fetchUserDataForRole(role);
+    }
+  };
+
   // Fetch user data based on role
   const fetchUserDataForRole = async (userRole: UserRole) => {
     try {
-      // Owner: Sarah Johnson (ID: 1), Staff: Mike Chen (ID: 2) as demo staff user
-      const userId = userRole === "owner" ? 1 : 2;
+      // Owner: Sarah Johnson (ID: 1), Staff: Use currentStaffId for demo staff user
+      const userId = userRole === "owner" ? 1 : currentStaffId;
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
@@ -66,13 +80,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       } else {
         // Fallback based on role
-        setUser({
-          id: userRole === "owner" ? 1 : 2,
-          firstName: userRole === "owner" ? "Sarah" : "Mike",
-          lastName: userRole === "owner" ? "Johnson" : "Chen",
-          email: userRole === "owner" ? "sarah@acme-corp.com" : "mike@acme-corp.com",
-          tenantId: "acme-corp"
-        });
+        const staffNames = [
+          { id: 2, firstName: "Mike", lastName: "Chen", email: "mike.chen@acme-corp.com" },
+          { id: 3, firstName: "Emma", lastName: "Davis", email: "emma.davis@acme-corp.com" },
+          { id: 4, firstName: "Alex", lastName: "Martinez", email: "alex.martinez@acme-corp.com" },
+          { id: 5, firstName: "Jamie", lastName: "Wilson", email: "jamie.wilson@acme-corp.com" },
+          { id: 6, firstName: "Taylor", lastName: "Brown", email: "taylor.brown@acme-corp.com" },
+        ];
+        
+        if (userRole === "owner") {
+          setUser({
+            id: 1,
+            firstName: "Sarah",
+            lastName: "Johnson",
+            email: "sarah@acme-corp.com",
+            tenantId: "acme-corp"
+          });
+        } else {
+          const staffData = staffNames.find(s => s.id === currentStaffId) || staffNames[0];
+          setUser({
+            id: staffData.id,
+            firstName: staffData.firstName,
+            lastName: staffData.lastName,
+            email: staffData.email,
+            tenantId: "acme-corp"
+          });
+        }
       }
     } catch (error) {
       console.log("User data fetch failed, using fallback for role:", userRole);
@@ -92,13 +125,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initialRole = (savedRole && (savedRole === "owner" || savedRole === "staff")) ? savedRole : "owner";
     setRole(initialRole);
     fetchUserDataForRole(initialRole);
-  }, []);
+  }, [currentStaffId]);
 
   const value: AuthContextType = {
     role,
     tenantId,
     user,
     switchRole,
+    switchStaff,
+    currentStaffId,
     isAuthenticated: true, // Always authenticated in stub mode
   };
 
