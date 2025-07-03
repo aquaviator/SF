@@ -1475,7 +1475,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHolidayRequestsByTenant(tenantId: string): Promise<HolidayRequest[]> {
-    return await db.select().from(holidayRequests).where(eq(holidayRequests.tenantId, tenantId));
+    const result = await db
+      .select({
+        // Holiday request fields
+        id: holidayRequests.id,
+        tenantId: holidayRequests.tenantId,
+        requesterId: holidayRequests.requesterId,
+        startDate: holidayRequests.startDate,
+        endDate: holidayRequests.endDate,
+        reason: holidayRequests.reason,
+        status: holidayRequests.status,
+        type: holidayRequests.type,
+        priority: holidayRequests.priority,
+        reviewedBy: holidayRequests.reviewedBy,
+        reviewedAt: holidayRequests.reviewedAt,
+        reviewNotes: holidayRequests.reviewNotes,
+        createdAt: holidayRequests.createdAt,
+        // User fields for display
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(holidayRequests)
+      .leftJoin(users, eq(holidayRequests.requesterId, users.id))
+      .where(eq(holidayRequests.tenantId, tenantId));
+
+    return result.map(row => ({
+      ...row,
+      // Add computed name field for compatibility
+      name: row.firstName && row.lastName 
+        ? `${row.firstName} ${row.lastName}` 
+        : `User ${row.requesterId}`,
+    })) as any;
   }
 
   async createHolidayRequest(insertHolidayRequest: InsertHolidayRequest): Promise<HolidayRequest> {

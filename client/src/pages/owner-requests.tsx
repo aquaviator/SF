@@ -95,7 +95,29 @@ export default function OwnerRequestsPage() {
     mutationFn: async ({ id, action }: { id: number; action: "approve" | "reject" }) => {
       console.log(`OWNER REQUESTS: ${action}ing holiday request ${id}`);
       const status = action === "approve" ? "approved" : "rejected";
-      return apiRequest("PUT", `/api/holiday-requests/${id}`, { status });
+      
+      // Find the original request to get all required fields
+      const originalRequest = holidayRequests.find(req => req.id === id);
+      if (!originalRequest) {
+        throw new Error("Holiday request not found");
+      }
+      
+      // Send complete request object with updated status
+      const updateData = {
+        tenantId: originalRequest.tenantId,
+        requesterId: originalRequest.requesterId,
+        startDate: originalRequest.startDate,
+        endDate: originalRequest.endDate,
+        reason: originalRequest.reason,
+        status: status,
+        type: originalRequest.type,
+        priority: "normal",
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewNotes: null,
+      };
+      
+      return apiRequest("PUT", `/api/holiday-requests/${id}`, updateData);
     },
     onSuccess: (data, variables) => {
       console.log(`OWNER REQUESTS: holiday request ${variables.action}d successfully`);

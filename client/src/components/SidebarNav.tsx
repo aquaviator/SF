@@ -17,6 +17,26 @@ export function SidebarNav() {
     queryFn: () => fetch(`/api/business-profile?tenantId=${tenantId}`).then(res => res.json()),
     enabled: !!tenantId,
   });
+
+  // Fetch pending requests count for owners
+  const { data: pendingRequestsCount = 0 } = useQuery({
+    queryKey: ["/api/pending-requests-count", tenantId],
+    queryFn: async () => {
+      if (role !== 'owner') return 0;
+      
+      const [holidayRequests, swapRequests] = await Promise.all([
+        fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => []),
+        fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => [])
+      ]);
+      
+      const pendingHoliday = holidayRequests.filter((req: any) => req.status === "pending").length;
+      const pendingSwap = swapRequests.filter((req: any) => req.status === "pending").length;
+      
+      return pendingHoliday + pendingSwap;
+    },
+    enabled: !!tenantId && role === 'owner',
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
   
   const isActiveRoute = (route: string) => {
     // Handle special cases for route matching
@@ -128,6 +148,11 @@ export function SidebarNav() {
             >
               <Icon className="w-5 h-5" />
               <span>{item.label}</span>
+              {item.label === "Requests" && role === "owner" && pendingRequestsCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                  {pendingRequestsCount}
+                </span>
+              )}
             </Link>
           );
         })}
