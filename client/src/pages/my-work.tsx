@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -31,6 +35,24 @@ import {
 } from "lucide-react";
 import type { Shift } from "@shared/schema";
 
+// Form schemas matching the main holiday request page
+const holidayRequestFormSchema = z.object({
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  reason: z.string().optional(),
+  type: z.enum(["vacation", "sick", "personal", "emergency", "bereavement", "maternity", "paternity", "study", "other"]).default("vacation"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+});
+
+const swapRequestFormSchema = z.object({
+  myShiftId: z.string().min(1, "Please select your shift"),
+  targetShiftId: z.string().min(1, "Please select shift to swap with"),
+  reason: z.string().min(1, "Please provide a reason for the swap"),
+});
+
+type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
+type SwapRequestFormData = z.infer<typeof swapRequestFormSchema>;
+
 export default function MyWork() {
   const { tenantId, user } = useAuth();
   const { toast } = useToast();
@@ -38,6 +60,27 @@ export default function MyWork() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+
+  // Form initialization
+  const holidayForm = useForm<HolidayRequestFormData>({
+    resolver: zodResolver(holidayRequestFormSchema),
+    defaultValues: {
+      startDate: "",
+      endDate: "",
+      reason: "",
+      type: "vacation",
+      priority: "normal",
+    },
+  });
+
+  const swapForm = useForm<SwapRequestFormData>({
+    resolver: zodResolver(swapRequestFormSchema),
+    defaultValues: {
+      myShiftId: "",
+      targetShiftId: "",
+      reason: "",
+    },
+  });
   
   // Fetch my shifts
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
@@ -77,6 +120,69 @@ export default function MyWork() {
       const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}`);
       if (!response.ok) return [];
       return response.json();
+    },
+  });
+
+  // Fetch all shifts for swap functionality
+  const { data: allShifts = [] } = useQuery({
+    queryKey: ["/api/shifts", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/shifts?tenantId=${tenantId}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!tenantId,
+  });
+
+  // Mutations for form submissions
+  const holidayRequestMutation = useMutation({
+    mutationFn: async (data: HolidayRequestFormData) => {
+      const submitData = {
+        ...data,
+        tenantId,
+        requesterId: parseInt(user?.id || "1"),
+        status: "pending" as const,
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewNotes: null,
+        reason: data.reason || null,
+      };
+      return apiRequest("POST", "/api/holiday-requests", submitData);
+    },
+    onSuccess: () => {
+      toast({ title: "Holiday request submitted successfully!" });
+      holidayForm.reset();
+      setIsHolidayModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/holiday-requests"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to submit holiday request", variant: "destructive" });
+    },
+  });
+
+  const swapRequestMutation = useMutation({
+    mutationFn: async (data: SwapRequestFormData) => {
+      const submitData = {
+        tenantId,
+        requestingUserId: parseInt(user?.id || "1"),
+        requestedShiftId: parseInt(data.myShiftId),
+        targetShiftId: parseInt(data.targetShiftId),
+        reason: data.reason,
+        status: "pending" as const,
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewNotes: null,
+      };
+      return apiRequest("POST", "/api/swap-requests", submitData);
+    },
+    onSuccess: () => {
+      toast({ title: "Swap request submitted successfully!" });
+      swapForm.reset();
+      setIsSwapModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to submit swap request", variant: "destructive" });
     },
   });
 
@@ -780,36 +886,116 @@ export default function MyWork() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Submit Holiday Request</DialogTitle>
+                      <DialogTitle>Request Time Off</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="type">Request Type</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="vacation">Vacation</SelectItem>
-                            <SelectItem value="sick">Sick Leave</SelectItem>
-                            <SelectItem value="personal">Personal Day</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="startDate">Start Date</Label>
-                        <Input id="startDate" type="date" />
-                      </div>
-                      <div>
-                        <Label htmlFor="endDate">End Date</Label>
-                        <Input id="endDate" type="date" />
-                      </div>
-                      <div>
-                        <Label htmlFor="reason">Reason</Label>
-                        <Textarea id="reason" placeholder="Please provide a reason for your request..." />
-                      </div>
-                      <Button className="w-full">Submit Request</Button>
-                    </div>
+                    <Form {...holidayForm}>
+                      <form onSubmit={holidayForm.handleSubmit((data) => holidayRequestMutation.mutate(data))} className="space-y-4">
+                        <FormField
+                          control={holidayForm.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Request Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="vacation">Vacation</SelectItem>
+                                  <SelectItem value="sick">Sick Leave</SelectItem>
+                                  <SelectItem value="personal">Personal Day</SelectItem>
+                                  <SelectItem value="emergency">Emergency</SelectItem>
+                                  <SelectItem value="bereavement">Bereavement</SelectItem>
+                                  <SelectItem value="maternity">Maternity</SelectItem>
+                                  <SelectItem value="paternity">Paternity</SelectItem>
+                                  <SelectItem value="study">Study Leave</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={holidayForm.control}
+                          name="startDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={holidayForm.control}
+                          name="endDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>End Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={holidayForm.control}
+                          name="priority"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Priority</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="low">Low</SelectItem>
+                                  <SelectItem value="normal">Normal</SelectItem>
+                                  <SelectItem value="high">High</SelectItem>
+                                  <SelectItem value="urgent">Urgent</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={holidayForm.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reason (Optional)</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder="Please provide details for your request..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={holidayRequestMutation.isPending}
+                        >
+                          {holidayRequestMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            "Submit Request"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
                   </DialogContent>
                 </Dialog>
               </CardTitle>
@@ -839,32 +1025,110 @@ export default function MyWork() {
                       Request Swap
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Request Shift Swap</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="shiftToSwap">Shift to Swap</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your shift" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shifts.map((shift) => (
-                              <SelectItem key={shift.id} value={shift.id.toString()}>
-                                {shift.date} - {shift.startTime} to {shift.endTime} ({shift.role})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="reason">Reason for Swap</Label>
-                        <Textarea id="reason" placeholder="Please explain why you need to swap this shift..." />
-                      </div>
-                      <Button className="w-full">Submit Swap Request</Button>
-                    </div>
+                    <Form {...swapForm}>
+                      <form onSubmit={swapForm.handleSubmit((data) => swapRequestMutation.mutate(data))} className="space-y-4">
+                        <FormField
+                          control={swapForm.control}
+                          name="myShiftId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>My Shift to Swap</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select your shift" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {shifts.filter(shift => shift.assignedTo === parseInt(user?.id || "0")).map((shift) => (
+                                    <SelectItem key={shift.id} value={shift.id.toString()}>
+                                      {shift.date} - {shift.startTime} to {shift.endTime} ({shift.role})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={swapForm.control}
+                          name="targetShiftId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Shift to Swap With</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select shift to swap with" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {allShifts
+                                    .filter(shift => 
+                                      shift.assignedTo !== parseInt(user?.id || "0") && 
+                                      shift.assignedTo !== null &&
+                                      shift.status === "assigned"
+                                    )
+                                    .map((shift) => (
+                                      <SelectItem key={shift.id} value={shift.id.toString()}>
+                                        <div className="flex flex-col items-start">
+                                          <div className="font-medium">
+                                            {shift.date} - {shift.startTime} to {shift.endTime}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                            {shift.role} at {shift.location}
+                                          </div>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={swapForm.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reason for Swap</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Please explain why you need to swap this shift..." 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>How it works:</strong> Your swap request will be sent to both the owner and the staff member assigned to the target shift. Both parties must approve before the swap is confirmed.
+                          </p>
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={swapRequestMutation.isPending}
+                        >
+                          {swapRequestMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            "Submit Swap Request"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
                   </DialogContent>
                 </Dialog>
               </CardTitle>
