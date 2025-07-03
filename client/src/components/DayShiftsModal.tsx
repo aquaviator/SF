@@ -108,20 +108,11 @@ export function DayShiftsModal({
     const staffMember = getStaffById(shift.assignedTo);
     const staffName = formatStaffName(staffMember);
     
-    if (shift.status === 'open') {
-      return 'Open';
+    if (shift.assignedTo && staffName) {
+      return staffName;
     }
     
-    if (staffName) {
-      const statusText = shift.status.replace('_', ' ').split(' ').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
-      return `${statusText} - ${staffName}`;
-    }
-    
-    return shift.status.replace('_', ' ').split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    return 'Open';
   };
 
   const handleCreateShift = () => {
