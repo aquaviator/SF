@@ -1,0 +1,59 @@
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+chunk-RPCDYKBN.js?v=b27e50ee:18625 [Violation] 'setTimeout' handler took 123ms
+policies.tsx:140 === CLIENT FORM SUBMISSION DEBUG ===
+policies.tsx:141 Form data being submitted: {
+  "minNoticeHours": 49,
+  "maxAdvanceBookingDays": 31,
+  "cancellationDeadlineHours": 4,
+  "maxStrikePoints": 6,
+  "strikePointsNoShow": 3,
+  "strikePointsLateCancellation": 6,
+  "resetPeriodDays": 90,
+  "lateGracePeriodMinutes": 10,
+  "clockInBufferMinutes": 30,
+  "clockOutBufferMinutes": 30
+}
+policies.tsx:142 === END CLIENT FORM SUBMISSION DEBUG ===
+queryClient.ts:15 Fetch finished loading: PUT "https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/shift-policy".
+apiRequest @ queryClient.ts:15
+mutationFn @ policies.tsx:112
+fn @ @tanstack_react-query.js?v=b27e50ee:1189
+run @ @tanstack_react-query.js?v=b27e50ee:494
+start @ @tanstack_react-query.js?v=b27e50ee:536
+execute @ @tanstack_react-query.js?v=b27e50ee:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+onSubmit @ policies.tsx:143
+(anonymous) @ chunk-4BFJKWC4.js?v=b27e50ee:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+chunk-RPCDYKBN.js?v=b27e50ee:377 [Violation] 'message' handler took 160ms
+Navigated to https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/owner/policies
+client:495 [vite] connecting...
+client:618 [vite] connected.
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+chunk-RPCDYKBN.js?v=b27e50ee:18625 [Violation] 'setTimeout' handler took 125ms

@@ -258,6 +258,9 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Form includes strike reset periods (90 days), late grace periods (10 min), and buffer windows (15/30 min)
   - API endpoints working correctly with all time tracking policy fields persisting to PostgreSQL
   - Foundation established for automated strike point calculations based on policy violations
+  - Fixed critical database update bug where clockInBufferMinutes wasn't being properly updated through ORM
+  - Added comprehensive debugging to identify and resolve form submission and SQL query issues
+  - Database now correctly stores and retrieves all time tracking policy values with proper form synchronization
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
