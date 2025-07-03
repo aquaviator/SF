@@ -10,6 +10,8 @@ import {
   jobRoles,
   locations,
   holidayEntitlements,
+  opportunities,
+  swapRequests,
   type InsertUser,
   type InsertBusinessProfile,
   type InsertShiftPolicy,
@@ -20,6 +22,8 @@ import {
   type InsertJobRole,
   type InsertLocation,
   type InsertHolidayEntitlement,
+  type InsertOpportunity,
+  type InsertSwapRequest,
 } from "../shared/schema";
 import { sql } from "drizzle-orm";
 
@@ -755,6 +759,106 @@ async function e2eSeed() {
     console.log(`✅ Created ${insertedRequests.length} holiday requests`);
   }
 
+  // Step 11: Create opportunity shifts (shifts with assignmentType="opportunity")
+  console.log("🎯 Creating opportunity shifts...");
+  const opportunityShiftsData = [];
+  
+  for (const business of insertedBusinesses) {
+    const businessRoles = insertedJobRoles.filter(r => r.tenantId === business.tenantId);
+    const businessLocations = insertedLocations.filter(l => l.tenantId === business.tenantId);
+    const createdBy = insertedUsers.find(u => u.tenantId === business.tenantId && u.role === "owner");
+    
+    // Create 10-15 opportunity shifts per business
+    const oppCount = 10 + Math.floor(Math.random() * 6);
+    
+    for (let i = 0; i < oppCount; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + 1 + Math.floor(Math.random() * 30)); // Next 30 days
+      
+      const role = businessRoles[Math.floor(Math.random() * businessRoles.length)];
+      const location = businessLocations[Math.floor(Math.random() * businessLocations.length)];
+      
+      const shiftTypes = ["morning", "afternoon", "evening", "night"];
+      const shiftType = shiftTypes[Math.floor(Math.random() * shiftTypes.length)];
+      
+      let startTime, endTime;
+      if (shiftType === "morning") {
+        startTime = "06:00";
+        endTime = "14:00";
+      } else if (shiftType === "afternoon") {
+        startTime = "14:00";
+        endTime = "22:00";
+      } else if (shiftType === "evening") {
+        startTime = "18:00";
+        endTime = "02:00";
+      } else {
+        startTime = "22:00";
+        endTime = "06:00";
+      }
+      
+      opportunityShiftsData.push({
+        tenantId: business.tenantId,
+        date: futureDate.toISOString().split('T')[0],
+        description: `${shiftType} ${role.title} opportunity`,
+        status: "open",
+        role: role.title,
+        startTime,
+        endTime,
+        location: location.name,
+        assignmentType: "opportunity",
+        requiredStaff: 1,
+        createdBy: createdBy!.id,
+        notes: Math.random() < 0.3 ? `Additional ${shiftType} coverage needed` : null,
+      });
+    }
+  }
+  
+  if (opportunityShiftsData.length > 0) {
+    const insertedOpportunityShifts = await db.insert(shifts).values(opportunityShiftsData).returning();
+    console.log(`✅ Created ${insertedOpportunityShifts.length} opportunity shifts`);
+  }
+
+  // Create swap requests
+  console.log("🔄 Creating swap requests...");
+  const swapRequestsData = [];
+  
+  for (const business of insertedBusinesses) {
+    const tenantStaff = insertedUsers.filter(u => u.tenantId === business.tenantId && u.role === "staff");
+    const businessShifts = allShifts.filter(s => s.tenantId === business.tenantId && s.assignedTo);
+    
+    // Create 3-5 swap requests per business
+    const swapCount = 3 + Math.floor(Math.random() * 3);
+    
+    for (let i = 0; i < swapCount; i++) {
+      const requestingStaff = tenantStaff[Math.floor(Math.random() * tenantStaff.length)];
+      const requestingShift = businessShifts.find(s => s.assignedTo === requestingStaff.id);
+      
+      if (requestingShift) {
+        const targetShift = businessShifts.find(s => s.assignedTo !== requestingStaff.id);
+        
+        if (targetShift) {
+          const statuses = ["pending", "approved", "rejected"];
+          const reasons = ["Personal commitment", "Medical appointment", "Family emergency", "Schedule conflict"];
+          
+          swapRequestsData.push({
+            tenantId: business.tenantId,
+            requesterId: requestingStaff.id,
+            originalShiftId: requestingShift.id,
+            targetShiftId: targetShift.id,
+            status: statuses[Math.floor(Math.random() * statuses.length)] as "pending" | "approved" | "rejected",
+            reason: reasons[Math.floor(Math.random() * reasons.length)],
+            requestedAt: new Date(today.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Within last week
+          });
+        }
+      }
+    }
+  }
+  
+  if (swapRequestsData.length > 0) {
+    const insertedSwapRequests = await db.insert(swapRequests).values(swapRequestsData).returning();
+    console.log(`✅ Created ${insertedSwapRequests.length} swap requests`);
+  }
+
   // Step 12: Validation and summary
   console.log("\n📊 FINAL SUMMARY");
   console.log("================");
@@ -764,11 +868,12 @@ async function e2eSeed() {
     users: insertedUsers.length,
     jobRoles: insertedJobRoles.length,
     locations: insertedLocations.length,
-    shifts: totalShifts,
+    shifts: totalShifts + opportunityShiftsData.length,
     timeEntries: totalTimeEntries,
     strikes: strikeData.length,
     holidayRequests: holidayRequestData.length,
     entitlements: insertedEntitlements.length,
+    swapRequests: swapRequestsData.length,
   };
 
   Object.entries(finalCounts).forEach(([key, count]) => {

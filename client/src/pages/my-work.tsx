@@ -819,6 +819,38 @@ export default function MyWork() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
+              ) : shifts.length > 0 ? (
+                <div className="space-y-3">
+                  {shifts.map((shift) => (
+                    <div
+                      key={shift.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
+                            {shift.status}
+                          </Badge>
+                          <span className="font-medium">{shift.role}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {shift.date} • {shift.startTime} - {shift.endTime}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          📍 {shift.location}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium">{shift.description}</div>
+                        {shift.notes && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {shift.notes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="h-8 w-8 mx-auto mb-2" />
