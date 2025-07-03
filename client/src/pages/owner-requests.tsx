@@ -13,20 +13,18 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface HolidayRequest {
   id: number;
-  userId: number;
+  requesterId: number;
   tenantId: string;
-  requestType: "holiday" | "sick" | "personal";
+  type: "vacation" | "sick" | "personal";
   startDate: string;
   endDate: string;
-  daysRequested: number;
   reason: string;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
-  updatedAt: string;
-  // User details
-  firstName: string;
-  lastName: string;
-  name: string;
+  // User details (may not be present)
+  firstName?: string;
+  lastName?: string;
+  name?: string;
 }
 
 interface SwapRequest {
@@ -61,7 +59,9 @@ export default function OwnerRequestsPage() {
       console.log("OWNER REQUESTS: holiday requests data →", data);
       return data.map((req: any) => ({
         ...req,
-        name: `${req.firstName} ${req.lastName}`,
+        name: req.firstName && req.lastName 
+          ? `${req.firstName} ${req.lastName}` 
+          : `User ${req.requesterId}`,
       }));
     },
     enabled: !!tenantId,
@@ -80,8 +80,8 @@ export default function OwnerRequestsPage() {
 
   // Filter requests based on search
   const filteredHolidayRequests = holidayRequests.filter((req: HolidayRequest) =>
-    req.name.toLowerCase().includes(filterText.toLowerCase()) ||
-    req.requestType.toLowerCase().includes(filterText.toLowerCase()) ||
+    (req.name || "").toLowerCase().includes(filterText.toLowerCase()) ||
+    req.type.toLowerCase().includes(filterText.toLowerCase()) ||
     req.reason.toLowerCase().includes(filterText.toLowerCase())
   );
 
@@ -95,7 +95,7 @@ export default function OwnerRequestsPage() {
     mutationFn: async ({ id, action }: { id: number; action: "approve" | "reject" }) => {
       console.log(`OWNER REQUESTS: ${action}ing holiday request ${id}`);
       const status = action === "approve" ? "approved" : "rejected";
-      return apiRequest(`/api/holiday-requests/${id}`, "PUT", { status });
+      return apiRequest("PUT", `/api/holiday-requests/${id}`, { status });
     },
     onSuccess: (data, variables) => {
       console.log(`OWNER REQUESTS: holiday request ${variables.action}d successfully`);
@@ -120,7 +120,7 @@ export default function OwnerRequestsPage() {
     mutationFn: async ({ id, action }: { id: number; action: "approve" | "reject" }) => {
       console.log(`OWNER REQUESTS: ${action}ing swap request ${id}`);
       const status = action === "approve" ? "approved" : "rejected";
-      return apiRequest(`/api/swap-requests/${id}`, "PUT", { status });
+      return apiRequest("PUT", `/api/swap-requests/${id}`, { status });
     },
     onSuccess: (data, variables) => {
       console.log(`OWNER REQUESTS: swap request ${variables.action}d successfully`);
@@ -172,7 +172,7 @@ export default function OwnerRequestsPage() {
 
   const getRequestTypeIcon = (type: string) => {
     switch (type) {
-      case "holiday":
+      case "vacation":
         return <Calendar className="w-4 h-4 text-blue-500" />;
       case "sick":
         return <AlertCircle className="w-4 h-4 text-red-500" />;
@@ -253,10 +253,10 @@ export default function OwnerRequestsPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {getRequestTypeIcon(request.requestType)}
+                        {getRequestTypeIcon(request.type)}
                         <div>
-                          <CardTitle className="text-lg">{request.name}</CardTitle>
-                          <p className="text-sm text-gray-500 capitalize">{request.requestType} Request</p>
+                          <CardTitle className="text-lg">{request.name || `User ${request.requesterId}`}</CardTitle>
+                          <p className="text-sm text-gray-500 capitalize">{request.type} Request</p>
                         </div>
                       </div>
                       {getStatusBadge(request.status)}
@@ -269,7 +269,9 @@ export default function OwnerRequestsPage() {
                         <p className="text-sm text-gray-600">
                           {format(new Date(request.startDate), "MMM d, yyyy")} - {format(new Date(request.endDate), "MMM d, yyyy")}
                         </p>
-                        <p className="text-sm text-gray-500">{request.daysRequested} days</p>
+                        <p className="text-sm text-gray-500">
+                          {Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-1">Requested</p>
