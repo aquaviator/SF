@@ -15,9 +15,10 @@ const mockApiResponses = {
 
 vi.mock('@/lib/queryClient', () => ({
   apiRequest: vi.fn().mockImplementation((method: string, url: string, data?: unknown) => {
+    const methodKey = method.toLowerCase() as keyof typeof mockApiResponses;
     const mockResponse = {
       ok: true,
-      json: () => Promise.resolve(mockApiResponses[method.toLowerCase()](url, data)),
+      json: () => Promise.resolve(mockApiResponses[methodKey](url, data)),
     };
     return Promise.resolve(mockResponse);
   }),
@@ -43,7 +44,7 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockAuthContext,
 }));
 
-// Realistic test data from the actual database
+// Realistic test data with new schema fields
 const holidayRequestsData: HolidayRequest[] = [
   {
     id: 1,
@@ -53,6 +54,8 @@ const holidayRequestsData: HolidayRequest[] = [
     endDate: '2025-08-20',
     reason: 'Family vacation to Hawaii',
     status: 'approved',
+    type: 'vacation',
+    priority: 'normal',
     reviewedBy: 1,
     reviewedAt: new Date('2025-07-01'),
     reviewNotes: null,
@@ -66,6 +69,8 @@ const holidayRequestsData: HolidayRequest[] = [
     endDate: '2025-08-05',
     reason: 'Wedding attendance',
     status: 'pending',
+    type: 'personal',
+    priority: 'high',
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
@@ -79,6 +84,8 @@ const holidayRequestsData: HolidayRequest[] = [
     endDate: '2025-06-12',
     reason: 'Personal time off',
     status: 'rejected',
+    type: 'personal',
+    priority: 'low',
     reviewedBy: 1,
     reviewedAt: new Date('2025-05-28'),
     reviewNotes: null,
@@ -378,6 +385,8 @@ describe('Holiday Requests Integration Tests', () => {
           endDate: '2025-10-03',
           reason: null, // Null reason
           status: 'pending',
+          type: 'vacation',
+          priority: 'normal',
           reviewedBy: null,
           reviewedAt: null,
           reviewNotes: null,

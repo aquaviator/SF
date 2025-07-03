@@ -9,6 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import type { HolidayRequest } from "@shared/schema";
 
@@ -16,6 +17,8 @@ const holidayRequestFormSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
   reason: z.string().optional(),
+  type: z.enum(["vacation", "sick", "personal", "emergency", "bereavement", "maternity", "paternity", "study", "other"]).default("vacation"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
 });
 
 type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
@@ -45,6 +48,8 @@ export default function HolidayRequests() {
       startDate: "",
       endDate: "",
       reason: "",
+      type: "vacation",
+      priority: "normal",
     },
   });
 
@@ -56,12 +61,16 @@ export default function HolidayRequests() {
           startDate: editingItem.startDate,
           endDate: editingItem.endDate,
           reason: editingItem.reason || "",
+          type: editingItem.type || "vacation",
+          priority: editingItem.priority || "normal",
         });
       } else {
         form.reset({
           startDate: "",
           endDate: "",
           reason: "",
+          type: "vacation",
+          priority: "normal",
         });
       }
     }
@@ -230,12 +239,65 @@ export default function HolidayRequests() {
 
           <FormField
             control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select request type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="vacation">Vacation</SelectItem>
+                    <SelectItem value="sick">Sick Leave</SelectItem>
+                    <SelectItem value="personal">Personal</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
+                    <SelectItem value="bereavement">Bereavement</SelectItem>
+                    <SelectItem value="maternity">Maternity</SelectItem>
+                    <SelectItem value="paternity">Paternity</SelectItem>
+                    <SelectItem value="study">Study Leave</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority level" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="reason"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Reason (Optional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Vacation, personal time, family event, etc..." {...field} />
+                  <Textarea placeholder="Additional details or specific reason..." {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
