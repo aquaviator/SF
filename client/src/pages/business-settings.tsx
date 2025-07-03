@@ -336,19 +336,22 @@ export default function BusinessSettingsPage() {
         const lastName = lastNameParts.join(' ');
         
         // Get current user data to preserve other fields
-        const currentUser = await apiRequest("GET", `/api/users/${user.id}`);
+        const response = await apiRequest("GET", `/api/users/${user.id}`);
+        const currentUser = await response.json();
+        
+        const updateData = {
+          username: (currentUser as any).username,
+          password: (currentUser as any).password, // Preserve existing password
+          email: (currentUser as any).email,
+          role: (currentUser as any).role,
+          tenantId: (currentUser as any).tenantId,
+          isActive: (currentUser as any).isActive,
+          firstName: firstName || (currentUser as any).firstName || "",
+          lastName: lastName || (currentUser as any).lastName || "",
+        };
         
         // Update user with new name while preserving all existing fields
-        await apiRequest("PUT", `/api/users/${user.id}`, {
-          username: currentUser.username,
-          password: currentUser.password, // Preserve existing password
-          email: currentUser.email,
-          role: currentUser.role,
-          tenantId: currentUser.tenantId,
-          isActive: currentUser.isActive,
-          firstName: firstName || currentUser.firstName || "",
-          lastName: lastName || currentUser.lastName || "",
-        });
+        await apiRequest("PUT", `/api/users/${user.id}`, updateData);
       }
       
       return profileResult;
