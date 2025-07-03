@@ -1,0 +1,55 @@
+Please write a complete end-to-end seed script (e.g. scripts/e2e-seed.ts) using our Drizzle ORM setup that will:
+
+Wipe & reset
+
+Truncate all application tables (businesses, users, shift_policies, shifts, time_entries, staff_strikes, holiday_requests, etc.)
+
+Reset all serial/identity sequences
+
+Create two businesses
+
+Acme Corp and Globex Ltd, each with its own tenant_id
+
+Assign distinct shift policies for each (use realistic values for notice periods, grace windows, max strike points, reset periods)
+
+Populate users & roles
+
+For each business, create 5–8 users: 1 owner, 1 manager, and 3–6 staff with roles (Chef, Bartender, Security, Supervisor)
+
+Persist each in users table with proper role and businessId
+
+Generate shifts
+
+For each staff user, insert daily shifts for the past 60 days and scheduled shifts for the next 30 days
+
+Stagger shift times realistically (e.g. 08:00–16:00, 16:00–00:00, 00:00–08:00)
+
+Seed time entries
+
+For past shifts, randomly assign:
+
+60% “on_time” check-ins
+
+20% “late” check-ins (calculate lateBy = 5–30 minutes)
+
+10% “missing” (never checked in → will generate strikes)
+
+For check-outs: 70% on-time, 20% early exits, 10% missing checkout
+
+Assign strikes
+
+Based on past “missing” and “late cancellation” events, insert corresponding staff_strikes records with correct points, reason, shiftId, issuedAt, and expiresAt per policy
+
+Holiday requests
+
+Create 2–3 holiday requests per business for random staff members: both “pending” and “approved” requests spanning 1–5 days over the past 60 days
+
+Validation
+
+At the end of the script, log summary counts:
+
+Number of businesses, users, shifts, time entries, strikes, holiday requests seeded
+
+Ensure all relationships (user→business, shift→user, timeEntry→shift) are valid
+
+Once this script is in place, running npm run db:push && ts-node scripts/e2e-seed.ts should leave you with two fully populated businesses—complete with past performance data, live upcoming shifts, strikes, and holiday requests—to test every feature end-to-end.
