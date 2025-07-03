@@ -878,6 +878,8 @@ export class MemStorage implements IStorage {
       endDate: insertHolidayRequest.endDate,
       reason: insertHolidayRequest.reason || null,
       status: insertHolidayRequest.status || "pending",
+      type: insertHolidayRequest.type || "vacation",
+      priority: insertHolidayRequest.priority || "normal",
       reviewedBy: insertHolidayRequest.reviewedBy || null,
       reviewedAt: insertHolidayRequest.reviewedAt || null,
       reviewNotes: insertHolidayRequest.reviewNotes || null,

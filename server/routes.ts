@@ -384,6 +384,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Utility function for backward-compatible status normalization
+  const normalizeHolidayRequestStatus = (status: string) => {
+    const statusMap: Record<string, "pending" | "approved" | "rejected"> = {
+      "pending": "pending",
+      "approved": "approved", 
+      "rejected": "rejected",
+      "declined": "rejected", // Handle legacy seed data
+    };
+    return statusMap[status] || "pending";
+  };
+
+  // Utility function for adding default values for new fields
+  const normalizeHolidayRequestData = (data: any) => {
+    return {
+      ...data,
+      status: normalizeHolidayRequestStatus(data.status || "pending"),
+      type: data.type || "vacation",
+      priority: data.priority || "normal",
+    };
+  };
+
   // Holiday Requests routes
   app.get("/api/holiday-requests", async (req, res) => {
     try {
@@ -393,7 +414,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const holidayRequests = await storage.getHolidayRequestsByTenant(tenantId);
-      res.json(holidayRequests);
+      // Normalize data for backward compatibility
+      const normalizedRequests = holidayRequests.map(request => ({
+        ...request,
+        status: normalizeHolidayRequestStatus(request.status),
+        type: request.type || "vacation",
+        priority: request.priority || "normal",
+      }));
+      res.json(normalizedRequests);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch holiday requests" });
     }
@@ -401,7 +429,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/holiday-requests", async (req, res) => {
     try {
-      const validatedData = insertHolidayRequestSchema.parse(req.body);
+      const normalizedData = normalizeHolidayRequestData(req.body);
+      const validatedData = insertHolidayRequestSchema.parse(normalizedData);
       const holidayRequest = await storage.createHolidayRequest(validatedData);
       res.status(201).json(holidayRequest);
     } catch (error) {
@@ -415,7 +444,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/holiday-requests/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertHolidayRequestSchema.parse(req.body);
+      const normalizedData = normalizeHolidayRequestData(req.body);
+      const validatedData = insertHolidayRequestSchema.parse(normalizedData);
       const holidayRequest = await storage.updateHolidayRequest(id, validatedData);
       if (!holidayRequest) {
         return res.status(404).json({ message: "Holiday request not found" });

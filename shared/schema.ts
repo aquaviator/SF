@@ -103,7 +103,9 @@ export const holidayRequests = pgTable("holiday_requests", {
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
   reason: text("reason"),
-  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  status: text("status").notNull().default("pending").$type<"pending" | "approved" | "rejected" | "declined">(), // Extended for backward compatibility
+  type: text("type").default("vacation").$type<"vacation" | "sick" | "personal" | "emergency" | "bereavement" | "maternity" | "paternity" | "study" | "other">(), // New optional field
+  priority: text("priority").default("normal").$type<"low" | "normal" | "high" | "urgent">(), // New optional field
   reviewedBy: integer("reviewed_by"),
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
@@ -226,6 +228,12 @@ export const insertAssignmentSchema = createInsertSchema(assignments).omit({
 export const insertHolidayRequestSchema = createInsertSchema(holidayRequests).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Allow backward compatibility for status field - normalize "declined" to "rejected"
+  status: z.enum(["pending", "approved", "rejected", "declined"]).optional().default("pending"),
+  // New optional fields with smart defaults
+  type: z.enum(["vacation", "sick", "personal", "emergency", "bereavement", "maternity", "paternity", "study", "other"]).optional().default("vacation"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).optional().default("normal"),
 });
 
 export const insertScheduleTemplateSchema = createInsertSchema(scheduleTemplates).omit({

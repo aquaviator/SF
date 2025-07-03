@@ -30,7 +30,7 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockAuthContext,
 }));
 
-// Mock holiday requests data
+// Mock holiday requests data with new schema fields
 const mockHolidayRequests: HolidayRequest[] = [
   {
     id: 1,
@@ -40,6 +40,8 @@ const mockHolidayRequests: HolidayRequest[] = [
     endDate: '2025-08-03',
     reason: 'Family vacation',
     status: 'pending',
+    type: 'vacation',
+    priority: 'normal',
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
@@ -53,6 +55,8 @@ const mockHolidayRequests: HolidayRequest[] = [
     endDate: '2025-07-17',
     reason: 'Medical appointment',
     status: 'approved',
+    type: 'sick',
+    priority: 'high',
     reviewedBy: 1,
     reviewedAt: new Date('2025-07-02'),
     reviewNotes: 'Approved - adequate coverage',
@@ -66,6 +70,8 @@ const mockHolidayRequests: HolidayRequest[] = [
     endDate: '2025-06-22',
     reason: 'Personal time',
     status: 'rejected',
+    type: 'personal',
+    priority: 'low',
     reviewedBy: 1,
     reviewedAt: new Date('2025-06-15'),
     reviewNotes: 'Denied - insufficient coverage',
