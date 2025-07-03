@@ -51,7 +51,11 @@ export function DayShiftsModal({
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/shifts?date=${date}`);
+      const response = await fetch(`/api/shifts?date=${date}`, {
+        headers: {
+          'x-tenant-id': 'acme-corp'
+        }
+      });
       if (response.ok) {
         const shifts = await response.json();
         setDayShifts(shifts);
@@ -67,21 +71,29 @@ export function DayShiftsModal({
     }
   };
 
+  const refreshShifts = () => {
+    // Refresh the shift data for this date
+    fetchDayShifts();
+  };
+
   const handleCreateShift = () => {
     if (date) {
       onCreateShift(new Date(date + 'T00:00:00'));
-      onClose();
+      // Refresh after a short delay to see new shift
+      setTimeout(refreshShifts, 500);
     }
   };
 
   const handleEditShift = (shift: Shift) => {
     onEditShift(shift);
-    onClose();
+    // Refresh after a short delay to see updated shift
+    setTimeout(refreshShifts, 500);
   };
 
   const handleDuplicateShift = (shift: Shift) => {
     onDuplicateShift(shift);
-    onClose();
+    // Refresh after a short delay to see duplicated shift
+    setTimeout(refreshShifts, 500);
   };
 
   const openDeleteDialog = (shift: Shift) => {
@@ -144,12 +156,15 @@ export function DayShiftsModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="day-modal-description">
           <DialogHeader>
             <DialogTitle>
               Shifts for {date && formatDate(date)}
             </DialogTitle>
           </DialogHeader>
+          <div id="day-modal-description" className="sr-only">
+            View and manage shifts scheduled for this date
+          </div>
 
           <div className="space-y-4">
             {/* Create Shift Button */}
