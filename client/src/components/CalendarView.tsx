@@ -22,9 +22,29 @@ const roleColorMap: Record<string, string> = {
 };
 
 // Helper function to get role-based colors
-const getRoleColor = (role: string): string => {
+export const getRoleColor = (role: string): string => {
   return roleColorMap[role] || roleColorMap["default"];
 };
+
+// Helper function to get dot colors for mobile (darker shades)
+export const getRoleDotColor = (role: string): string => {
+  const dotColorMap: Record<string, string> = {
+    "Chef": "bg-green-500",
+    "Bar Staff": "bg-blue-500",
+    "Bartender": "bg-blue-500",
+    "Security": "bg-yellow-500",
+    "Supervisor": "bg-purple-500",
+    "Manager": "bg-purple-500",
+    "Server": "bg-indigo-500",
+    "Driver": "bg-orange-500",
+    "Warehouse Clerk": "bg-gray-500",
+    "default": "bg-slate-500"
+  };
+  return dotColorMap[role] || dotColorMap["default"];
+};
+
+// Export the role color mapping for external use
+export { roleColorMap };
 
 interface CalendarViewProps {
   shifts: Shift[];
@@ -178,11 +198,20 @@ export function CalendarView({
                   </div>
                   <div className="space-y-1">
                     {dayShifts.slice(0, 2).map(shift => (
-                      <div
-                        key={shift.id}
-                        className={`text-xs px-2 py-1 rounded border text-center truncate ${getRoleColor(shift.role)}`}
-                      >
-                        {shift.role}
+                      <div key={shift.id} className="flex items-center justify-center">
+                        {/* Desktop: badge with role initial */}
+                        <span
+                          className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-medium ${getRoleColor(shift.role)}`}
+                          title={shift.role}
+                        >
+                          {shift.role.charAt(0).toUpperCase()}
+                        </span>
+
+                        {/* Mobile: colored dot only */}
+                        <span
+                          className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColor(shift.role)}`}
+                          title={shift.role}
+                        />
                       </div>
                     ))}
                     {dayShifts.length > 2 && (
