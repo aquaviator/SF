@@ -100,22 +100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/my-shifts", async (req, res) => {
-    try {
-      const tenantId = req.query.tenantId as string;
-      const userId = req.query.userId as string;
-      
-      if (!tenantId || !userId) {
-        return res.status(400).json({ message: "Tenant ID and User ID are required" });
-      }
-      
-      const shifts = await storage.getShiftsByUser(tenantId, parseInt(userId));
-      res.json(shifts);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch user shifts" });
-    }
-  });
-
   app.post("/api/shifts", async (req, res) => {
     try {
       const validatedData = insertShiftSchema.parse(req.body);

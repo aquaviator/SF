@@ -1390,7 +1390,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
-    return await database.select().from(shifts).where(eq(shifts.tenantId, tenantId));
+    return await database.select().from(shifts).where(
+      and(eq(shifts.tenantId, tenantId), eq(shifts.assignedTo, userId))
+    );
   }
 
   async createShift(insertShift: InsertShift): Promise<Shift> {
