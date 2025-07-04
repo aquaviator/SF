@@ -52,7 +52,12 @@ export function ModalForm<T extends FieldValues = FieldValues>({
                 type="submit" 
                 disabled={isLoading} 
                 className="min-h-[44px]"
-                onClick={() => console.log("🔧 SUBMIT_BUTTON_CLICKED", { isLoading, formValid: form.formState.isValid })}
+                onClick={() => console.log("🔧 SUBMIT_BUTTON_CLICKED", { 
+                  isLoading, 
+                  formValid: form.formState.isValid,
+                  formErrors: form.formState.errors,
+                  formValues: form.getValues()
+                })}
               >
                 {isLoading ? "Saving..." : submitLabel}
               </Button>
