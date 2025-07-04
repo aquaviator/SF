@@ -523,7 +523,9 @@ export default function BusinessSettingsPage() {
   }, [businessProfile, profileForm]);
 
   const handleRoleSubmit = (data: JobRoleFormData) => {
+    console.log("🔧 JOB_ROLE_FORM_SUBMIT", { data, editingRole });
     const submitData = editingRole ? { ...data, id: editingRole.id } : data;
+    console.log("🔧 JOB_ROLE_SUBMIT_DATA", submitData);
     roleMutation.mutate(submitData);
   };
 

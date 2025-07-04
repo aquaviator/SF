@@ -1049,18 +1049,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/job-roles/:id", async (req, res) => {
     try {
+      console.log("🔧 JOB_ROLE_UPDATE", { roleId: req.params.id, requestBody: req.body });
+      
       const result = insertJobRoleSchema.safeParse(req.body);
       if (!result.success) {
+        console.log("❌ JOB_ROLE_VALIDATION_FAILED", { errors: result.error.issues });
         return res.status(400).json({ message: "Invalid job role data", errors: result.error.issues });
       }
+      
+      console.log("✅ JOB_ROLE_VALIDATION_SUCCESS", { validatedData: result.data });
       
       const id = parseInt(req.params.id);
       const jobRole = await storage.updateJobRole(id, result.data);
       if (!jobRole) {
+        console.log("❌ JOB_ROLE_NOT_FOUND", { roleId: id });
         return res.status(404).json({ message: "Job role not found" });
       }
+      
+      console.log("✅ JOB_ROLE_UPDATE_SUCCESS", { roleId: id, updatedRole: jobRole });
       res.json(jobRole);
     } catch (error) {
+      console.error("❌ JOB_ROLE_UPDATE_FAILED", { error: error.message, stack: error.stack });
       res.status(500).json({ message: "Failed to update job role" });
     }
   });
