@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 interface TimeEntry {
   id: number;
   clockInTime: string | Date | null;
   clockOutTime: string | Date | null;
+  scheduledStartTime?: string | Date | null;
+  scheduledEndTime?: string | Date | null;
   userId: number;
   tenantId: string;
   status: string;
@@ -26,33 +28,76 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Convert timestamps to datetime-local format
-  const formatForInput = (timestamp: string | Date | null): string => {
+  // Format date for input type="date"
+  const formatDate = (timestamp: string | Date | null): string => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
-    // Return in YYYY-MM-DDTHH:mm format for datetime-local input
-    return date.toISOString().slice(0, 16);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Format time for input type="time"
+  const formatTime = (timestamp: string | Date | null): string => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toTimeString().slice(0, 5);
+  };
+
+  // Get default values from actualIn/actualOut or fall back to scheduled times
+  const getDefaultInDate = () => {
+    return formatDate(entry.clockInTime || entry.scheduledStartTime);
+  };
+
+  const getDefaultInTime = () => {
+    return formatTime(entry.clockInTime || entry.scheduledStartTime);
+  };
+
+  const getDefaultOutDate = () => {
+    return formatDate(entry.clockOutTime || entry.scheduledEndTime);
+  };
+
+  const getDefaultOutTime = () => {
+    return formatTime(entry.clockOutTime || entry.scheduledEndTime);
   };
 
   const [formData, setFormData] = useState({
-    clockIn: formatForInput(entry.clockInTime),
-    clockOut: formatForInput(entry.clockOutTime),
-    note: ""
+    inDate: getDefaultInDate(),
+    inTime: getDefaultInTime(),
+    outDate: getDefaultOutDate(),
+    outTime: getDefaultOutTime(),
+    reason: "",
+    otherNote: ""
   });
+
+  const reasonOptions = [
+    "Late arrival",
+    "Early departure", 
+    "Forgot to clock out",
+    "Other"
+  ];
+
+  const isFormValid = () => {
+    const hasBasicFields = formData.inDate && formData.inTime && formData.outDate && formData.outTime && formData.reason;
+    const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
+    return hasBasicFields && hasValidReason;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.clockIn || !formData.clockOut || !formData.note.trim()) {
+    if (!isFormValid()) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
     }
 
-    if (new Date(formData.clockIn) >= new Date(formData.clockOut)) {
+    // Combine date and time into ISO format
+    const inDateTime = `${formData.inDate}T${formData.inTime}:00`;
+    const outDateTime = `${formData.outDate}T${formData.outTime}:00`;
+
+    if (new Date(inDateTime) >= new Date(outDateTime)) {
       toast({
         title: "Error", 
         description: "Clock out time must be after clock in time",
@@ -64,15 +109,15 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     setIsLoading(true);
 
     try {
-      const response = await apiRequest(`/api/time-entries/${entry.id}/override`, {
+      const response = await fetch(`/api/time-entries/${entry.id}/override`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          in: formData.clockIn,
-          out: formData.clockOut,
-          note: formData.note
+          in: inDateTime,
+          out: outDateTime,
+          note: formData.reason === "Other" ? formData.otherNote : formData.reason
         })
       });
 
@@ -113,46 +158,86 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Clock In Date & Time */}
           <div className="space-y-2">
-            <Label htmlFor="clockIn">Clock In Time</Label>
-            <Input
-              id="clockIn"
-              type="datetime-local"
-              value={formData.clockIn}
-              onChange={(e) => setFormData(prev => ({ ...prev, clockIn: e.target.value }))}
-              required
-            />
+            <Label>Clock In</Label>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={formData.inDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, inDate: e.target.value }))}
+                required
+                className="flex-1"
+              />
+              <Input
+                type="time"
+                value={formData.inTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, inTime: e.target.value }))}
+                required
+                className="flex-1"
+              />
+            </div>
           </div>
 
+          {/* Clock Out Date & Time */}
           <div className="space-y-2">
-            <Label htmlFor="clockOut">Clock Out Time</Label>
-            <Input
-              id="clockOut"
-              type="datetime-local"
-              value={formData.clockOut}
-              onChange={(e) => setFormData(prev => ({ ...prev, clockOut: e.target.value }))}
-              required
-            />
+            <Label>Clock Out</Label>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={formData.outDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, outDate: e.target.value }))}
+                required
+                className="flex-1"
+              />
+              <Input
+                type="time"
+                value={formData.outTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, outTime: e.target.value }))}
+                required
+                className="flex-1"
+              />
+            </div>
           </div>
 
+          {/* Reason Selector */}
           <div className="space-y-2">
-            <Label htmlFor="note">Override Note</Label>
-            <Textarea
-              id="note"
-              placeholder="Explain why this override is necessary..."
-              value={formData.note}
-              onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-              required
-              rows={3}
-            />
+            <Label>Reason</Label>
+            <Select value={formData.reason} onValueChange={(value) => setFormData(prev => ({ ...prev, reason: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {reasonOptions.map((reason) => (
+                  <SelectItem key={reason} value={reason}>
+                    {reason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Other Note (shown when "Other" is selected) */}
+          {formData.reason === "Other" && (
+            <div className="space-y-2">
+              <Label htmlFor="otherNote">Please specify</Label>
+              <Textarea
+                id="otherNote"
+                placeholder="Explain the reason for this override..."
+                value={formData.otherNote}
+                onChange={(e) => setFormData(prev => ({ ...prev, otherNote: e.target.value }))}
+                required
+                rows={3}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Override"}
+            <Button type="submit" disabled={isLoading || !isFormValid()}>
+              {isLoading ? "Saving..." : "Save"}
             </Button>
           </div>
         </form>
