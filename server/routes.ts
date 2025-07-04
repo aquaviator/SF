@@ -2084,10 +2084,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Calculate coverage statistics
-      const active = filteredShifts.filter(s => s.status === "confirmed").length;
-      const upcoming = filteredShifts.filter(s => s.status === "assigned" || s.status === "claimed").length;
+      const active = filteredShifts.filter(s => s.status === "confirmed" || s.status === "assigned").length;
+      const upcoming = filteredShifts.filter(s => s.status === "claimed").length;
       const unfilled = filteredShifts.filter(s => s.status === "open").length;
       const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;
+      
+      console.log("📊 COVERAGE_CALCULATION_DEBUG", {
+        tenantId,
+        totalFiltered: filteredShifts.length,
+        active,
+        upcoming, 
+        unfilled,
+        underUtilized,
+        statusBreakdown: filteredShifts.reduce((acc, s) => {
+          acc[s.status] = (acc[s.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
       
       // Group by date for details
       const detailsByDate = filteredShifts.reduce((acc, shift) => {
