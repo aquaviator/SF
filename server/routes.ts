@@ -2035,10 +2035,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "tenantId is required" });
       }
       
-      // Get all shifts for the next 7 days
+      // Get all shifts from today through next 7 days
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of today
-      const nextWeek = new Date();
+      const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
       nextWeek.setHours(23, 59, 59, 999); // End of next week
       
@@ -2063,18 +2063,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shiftDate.setHours(0, 0, 0, 0);
         
         const isInRange = shiftDate >= today && shiftDate <= nextWeek;
-        if (shifts.indexOf(shift) < 5) { // Log first 5 for debugging
-          console.log("🔍 SHIFT_FILTER_DEBUG", { 
+        
+        // Special debug for July 4th shifts
+        if (shift.date === '2025-07-04') {
+          console.log("🎯 JULY_4TH_SHIFT_DEBUG", { 
             shiftId: shift.id,
-            shiftDate: shift.date, 
-            shiftDateParsed: shiftDate.toISOString().split('T')[0],
-            todayParsed: today.toISOString().split('T')[0],
-            nextWeekParsed: nextWeek.toISOString().split('T')[0],
+            shiftDate: shift.date,
+            shiftTime: shiftDate.getTime(),
+            todayTime: today.getTime(),
+            nextWeekTime: nextWeek.getTime(),
+            isAfterToday: shiftDate >= today,
+            isBeforeNextWeek: shiftDate <= nextWeek,
             isInRange,
             status: shift.status,
             assignedTo: shift.assignedTo
           });
         }
+        
         return isInRange;
       });
       
