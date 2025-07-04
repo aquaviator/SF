@@ -1,0 +1,61 @@
+Prompt for Dev Agent (Frontend Sprint)
+
+Context
+We’re adding/updating components in the client/src/pages area (e.g. MyWork, ShiftDetailModal, etc.). We follow these rules:
+
+Always define or import every helper you reference.
+
+If you call checkSwapPolicyStatus or formatCountdown, include its implementation or a proper import at the top of the file.
+
+Wrap all async handlers and callbacks in try/catch and log failures (no uncaught errors!).
+
+Accessibility
+
+Every <DialogContent> must have a <DialogDescription> child.
+
+Assign aria-describedby={descriptionId} to the content wrapper.
+
+Error Overlay Mitigation
+
+Ensure you don’t rely on HMR overlays to catch bugs—your code should fail gracefully.
+
+Add an error boundary or fallback UI where appropriate.
+
+API Payloads
+
+Match the backend Zod schemas exactly (e.g. convert IDs/dates to strings if schema expects string).
+
+Add client-side validation to catch type mismatches early.
+
+Console Logging
+
+Emit structured logs at each lifecycle hook: mount, open, policy check, API call, success/failure, unmount.
+
+Task
+Update ShiftDetailModal (and any related helpers) so that:
+
+All referenced helpers (checkSwapPolicyStatus, checkCancelPolicyStatus, etc.) are defined or imported.
+
+The modal content includes a <DialogDescription> with a valid id, and the <DialogContent> sets aria-describedby to that ID.
+
+All button click handlers are wrapped in try/catch and log errors instead of throwing.
+
+The swap and cancel payloads are correctly formatted as strings to pass Zod validation.
+
+Add an ErrorBoundary around the modal so any render exceptions show a user-friendly message instead of the Vite overlay.
+
+Provide the updated code snippets (only the affected files) and confirm in the console you see logs for:
+
+arduino
+Copy
+Edit
+SHIFT_DETAIL_MODAL_MOUNT
+SHIFT_DETAIL_MODAL_OPEN
+POLICY_CHECK_SWAP { allowed: true|false }
+POLICY_CHECK_CANCEL { allowed: true|false }
+REQUEST_SWAP API { … }
+REQUEST_SWAP SUCCESS/FAILURE
+REQUEST_CANCEL API { … }
+REQUEST_CANCEL SUCCESS/FAILURE
+SHIFT_DETAIL_MODAL_UNMOUNT
+Then test by clicking a shift card in My Shifts and verify no HMR overlay appears, and disabled buttons log a “policy blocked” message.

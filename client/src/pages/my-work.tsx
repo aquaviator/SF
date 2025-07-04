@@ -418,32 +418,21 @@ export default function MyWork() {
 
   // Enhanced ShiftDetailModal with Sprint 3 requirements
   const ShiftDetailModal = ({ shift, isOpen, onClose }) => {
-    // Pre-mounted modal lifecycle logging
+    // Pre-mounted modal lifecycle logging - exact format requested
     React.useEffect(() => {
-      console.log('📋 SHIFT_DETAIL_MODAL_MOUNT', {
-        timestamp: new Date().toISOString()
-      });
+      console.log('SHIFT_DETAIL_MODAL_MOUNT');
       
       return () => {
-        console.log('📋 SHIFT_DETAIL_MODAL_UNMOUNT', {
-          timestamp: new Date().toISOString()
-        });
+        console.log('SHIFT_DETAIL_MODAL_UNMOUNT');
       };
     }, []);
     
-    // Modal open/close lifecycle logging
+    // Modal open/close lifecycle logging - exact format requested
     React.useEffect(() => {
       if (isOpen && shift) {
-        console.log('📋 SHIFT_DETAIL_MODAL_OPEN', {
-          shiftId: shift.id,
-          role: shift.role,
-          date: shift.date,
-          timestamp: new Date().toISOString()
-        });
+        console.log('SHIFT_DETAIL_MODAL_OPEN');
       } else if (!isOpen) {
-        console.log('📋 SHIFT_DETAIL_MODAL_CLOSE', {
-          timestamp: new Date().toISOString()
-        });
+        console.log('SHIFT_DETAIL_MODAL_CLOSE');
       }
     }, [isOpen, shift]);
     
@@ -456,21 +445,23 @@ export default function MyWork() {
     
     const actions = getShiftActions(shift);
     
-    // Helper functions defined locally
+    // Helper functions defined locally with enhanced logging
     const checkSwapPolicyStatus = (shift: any) => {
       try {
         const shiftDateTime = new Date(`${shift.date}T${shift.startTime}`);
         const hoursUntilShift = (shiftDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+        const allowed = hoursUntilShift >= 24;
         
-        console.log('📋 CHECK_SWAP_POLICY', { 
+        console.log('POLICY_CHECK_SWAP', { 
           shiftId: shift.id, 
-          hoursUntilShift: Math.round(hoursUntilShift * 100) / 100, 
+          hoursUntilShift: Math.round(hoursUntilShift * 100) / 100,
+          allowed,
           timestamp: new Date().toISOString() 
         });
         
-        return hoursUntilShift >= 24; // Allow swaps only with 24+ hours notice
+        return allowed;
       } catch (e) {
-        console.error('❌ checkSwapPolicyStatus failed', e);
+        console.error('❌ POLICY_CHECK_SWAP failed', e);
         return false;
       }
     };
@@ -479,64 +470,70 @@ export default function MyWork() {
       try {
         const shiftDateTime = new Date(`${shift.date}T${shift.startTime}`);
         const hoursUntilShift = (shiftDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+        const allowed = hoursUntilShift >= 4;
         
-        console.log('📋 CHECK_CANCEL_POLICY', { 
+        console.log('POLICY_CHECK_CANCEL', { 
           shiftId: shift.id, 
-          hoursUntilShift: Math.round(hoursUntilShift * 100) / 100, 
+          hoursUntilShift: Math.round(hoursUntilShift * 100) / 100,
+          allowed,
           timestamp: new Date().toISOString() 
         });
         
-        return hoursUntilShift >= 4; // Allow cancellations only with 4+ hours notice
+        return allowed;
       } catch (e) {
-        console.error('❌ checkCancelPolicyStatus failed', e);
+        console.error('❌ POLICY_CHECK_CANCEL failed', e);
         return false;
       }
     };
 
-    // Staff action handlers with comprehensive error handling
+    // Staff action handlers with comprehensive error handling and enhanced logging
     const handleSwap = async () => {
-      console.log('🔄 REQUEST_SWAP entry', { shiftId: shift.id, timestamp: new Date().toISOString() });
+      console.log('REQUEST_SWAP API', { shiftId: shift.id, timestamp: new Date().toISOString() });
       
       try {
         const allowed = checkSwapPolicyStatus(shift);
-        console.log('🔄 REQUEST_SWAP clicked', { shift, allowed, timestamp: new Date().toISOString() });
         
         if (!allowed) {
+          console.log('REQUEST_SWAP policy blocked', { shiftId: shift.id, timestamp: new Date().toISOString() });
           escalateToManager('swap', shift);
           return;
         }
         
+        console.log('REQUEST_SWAP API starting...', { shiftId: shift.id, timestamp: new Date().toISOString() });
         await staffApi.requestSwap(shift.id);
-        console.log('✅ REQUEST_SWAP success', { shift, timestamp: new Date().toISOString() });
+        console.log('REQUEST_SWAP SUCCESS', { shiftId: shift.id, timestamp: new Date().toISOString() });
+        
         queryClient.invalidateQueries({ queryKey: ['/api/my-shifts'] });
         queryClient.invalidateQueries({ queryKey: ['/api/swap-requests'] });
         toast({ title: "Swap Request Submitted", description: "Your swap request has been submitted for approval." });
         onClose();
       } catch (err) {
-        console.error('❌ REQUEST_SWAP error', { shift, error: err, timestamp: new Date().toISOString() });
+        console.error('REQUEST_SWAP FAILURE', { shiftId: shift.id, error: err, timestamp: new Date().toISOString() });
         toast({ variant: "destructive", title: "Error", description: "Could not request swap. Please try again." });
       }
     };
 
     const handleCancel = async () => {
-      console.log('❌ REQUEST_CANCEL entry', { shiftId: shift.id, timestamp: new Date().toISOString() });
+      console.log('REQUEST_CANCEL API', { shiftId: shift.id, timestamp: new Date().toISOString() });
       
       try {
         const allowed = checkCancelPolicyStatus(shift);
-        console.log('❌ REQUEST_CANCEL clicked', { shift, allowed, timestamp: new Date().toISOString() });
         
         if (!allowed) {
+          console.log('REQUEST_CANCEL policy blocked', { shiftId: shift.id, timestamp: new Date().toISOString() });
           escalateToManager('cancel', shift);
           return;
         }
         
+        console.log('REQUEST_CANCEL API starting...', { shiftId: shift.id, timestamp: new Date().toISOString() });
         await staffApi.requestCancel(shift.id);
-        console.log('✅ REQUEST_CANCEL success', { shift, timestamp: new Date().toISOString() });
+        console.log('REQUEST_CANCEL SUCCESS', { shiftId: shift.id, timestamp: new Date().toISOString() });
+        
         queryClient.invalidateQueries({ queryKey: ['/api/my-shifts'] });
         toast({ title: "Cancellation Requested", description: "Your shift cancellation has been requested." });
         onClose();
       } catch (err) {
-        console.error('❌ REQUEST_CANCEL error', { shift, error: err, timestamp: new Date().toISOString() });
+        console.error('REQUEST_CANCEL FAILURE', { shiftId: shift.id, error: err, timestamp: new Date().toISOString() });
         toast({ variant: "destructive", title: "Error", description: "Could not request cancellation. Please try again." });
       }
     };
@@ -554,21 +551,10 @@ export default function MyWork() {
     
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent 
-          className="sm:max-w-[500px] focus-visible:outline-none"
-          aria-describedby="shift-detail-desc"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              console.log('⌨️ SHIFT_MODAL_ESC_KEY', {
-                shiftId: shift.id,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }}
-        >
+        <DialogContent className="sm:max-w-[500px] focus-visible:outline-none">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Shift Details</DialogTitle>
-            <DialogDescription id="shift-detail-desc">
+            <DialogDescription>
               View shift information and perform role-based actions for swap and cancellation requests.
             </DialogDescription>
           </DialogHeader>
