@@ -34,6 +34,7 @@ export interface IStorage {
   getShiftsByTenant(tenantId: string): Promise<Shift[]>;
   getShiftsByTenantAndDate(tenantId: string, date: string): Promise<Shift[]>;
   getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]>;
+  getShiftsByUserAndDate(tenantId: string, userId: number, date: string): Promise<Shift[]>;
   createShift(shift: InsertShift): Promise<Shift>;
   updateShift(id: number, shift: InsertShift): Promise<Shift | undefined>;
   deleteShift(id: number): Promise<boolean>;
@@ -1395,6 +1396,16 @@ export class DatabaseStorage implements IStorage {
   async getShiftsByUser(tenantId: string, userId: number): Promise<Shift[]> {
     return await database.select().from(shifts).where(
       and(eq(shifts.tenantId, tenantId), eq(shifts.assignedTo, userId))
+    );
+  }
+
+  async getShiftsByUserAndDate(tenantId: string, userId: number, date: string): Promise<Shift[]> {
+    return await database.select().from(shifts).where(
+      and(
+        eq(shifts.tenantId, tenantId), 
+        eq(shifts.assignedTo, userId),
+        eq(shifts.date, date)
+      )
     );
   }
 

@@ -103,6 +103,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/shifts", async (req, res) => {
     try {
       const validatedData = insertShiftSchema.parse(req.body);
+      
+      // Check for scheduling conflicts if a user is assigned
+      if (validatedData.assignedTo && validatedData.tenantId && validatedData.date) {
+        const conflictingShifts = await storage.getShiftsByUserAndDate(
+          validatedData.tenantId, 
+          validatedData.assignedTo, 
+          validatedData.date
+        );
+        
+        if (conflictingShifts.length > 0) {
+          return res.status(400).json({ 
+            message: "Schedule conflict: User already has a shift assigned on this date",
+            conflictingShifts: conflictingShifts.map(s => ({
+              id: s.id,
+              role: s.role,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              location: s.location
+            }))
+          });
+        }
+      }
+      
       const shift = await storage.createShift(validatedData);
       res.status(201).json(shift);
     } catch (error) {
@@ -123,6 +146,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validatedData = insertShiftSchema.parse(req.body);
+      
+      // Check for scheduling conflicts if assignedTo is changing
+      if (validatedData.assignedTo && validatedData.tenantId && validatedData.date) {
+        const conflictingShifts = await storage.getShiftsByUserAndDate(
+          validatedData.tenantId, 
+          validatedData.assignedTo, 
+          validatedData.date
+        );
+        
+        // Filter out the current shift being updated
+        const otherShifts = conflictingShifts.filter(s => s.id !== id);
+        
+        if (otherShifts.length > 0) {
+          return res.status(400).json({ 
+            message: "Schedule conflict: User already has a shift assigned on this date",
+            conflictingShifts: otherShifts.map(s => ({
+              id: s.id,
+              role: s.role,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              location: s.location
+            }))
+          });
+        }
+      }
+      
       const shift = await storage.updateShift(id, validatedData);
       
       if (!shift) {
@@ -328,13 +377,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user can claim shifts (strike system validation)
-      const canClaim = await strikeService.canClaimShift(userId, tenantId);
+      const canClaim = await strikeService.canClaimShift(userId.toString(), tenantId);
       if (!canClaim.canClaim) {
         return res.status(403).json({ message: canClaim.reason || "Cannot claim shifts due to strikes" });
+      }
+
+      // Check for scheduling conflicts
+      const conflictingShifts = await storage.getShiftsByUserAndDate(tenantId, userId, opportunity.date);
+      if (conflictingShifts.length > 0) {
+        return res.status(400).json({ 
+          message: "Schedule conflict: You already have a shift assigned on this date",
+          conflictingShifts: conflictingShifts.map(s => ({
+            id: s.id,
+            role: s.role,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            location: s.location
+          }))
+        });
       }
       
       // Convert opportunity to confirmed shift by updating the shift
       const updatedShift = await storage.updateShift(id, {
+        ...opportunity,
         assignedTo: userId,
         assignmentType: "assigned",
         status: "confirmed"
