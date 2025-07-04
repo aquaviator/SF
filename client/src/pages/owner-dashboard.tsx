@@ -241,12 +241,12 @@ export default function OwnerDashboard() {
   // Convert activity logs to dashboard format
   const activities: RecentActivity[] = activityLogs.slice(0, 4).map((log: any) => ({
     id: log.id,
-    type: log.action === 'create' ? 'shift_created' : 
-          log.action === 'assign' ? 'assignment_made' :
-          log.action === 'approve' ? 'swap_approved' : 'holiday_requested',
-    description: log.description,
-    timestamp: new Date(log.timestamp),
-    user: log.user || 'System',
+    type: log.action === 'created' ? 'shift_created' : 
+          log.action === 'assigned' ? 'assignment_made' :
+          log.action === 'approved' ? 'swap_approved' : 'holiday_requested',
+    description: log.details || `${log.action} ${log.resourceType}`,
+    timestamp: new Date(log.createdAt),
+    user: `User ${log.userId}`,
   }));
 
   const getStatusBadge = (status: StaffStatus["status"]) => {
