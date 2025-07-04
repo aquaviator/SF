@@ -2041,13 +2041,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       nextWeek.setDate(today.getDate() + 7);
       
       const shifts = await storage.getShiftsByTenant(tenantId);
+      console.log("🔍 SHIFTS_RAW_DATA", { 
+        tenantId, 
+        totalShifts: shifts.length, 
+        sampleShift: shifts[0],
+        today: today.toISOString().split('T')[0],
+        nextWeek: nextWeek.toISOString().split('T')[0]
+      });
+      
       const filteredShifts = shifts.filter(shift => {
         const shiftDate = new Date(shift.date);
-        return shiftDate >= today && shiftDate <= nextWeek;
+        const isInRange = shiftDate >= today && shiftDate <= nextWeek;
+        if (shifts.indexOf(shift) < 3) { // Log first 3 for debugging
+          console.log("🔍 SHIFT_FILTER_DEBUG", { 
+            shiftId: shift.id,
+            shiftDate: shift.date, 
+            shiftDateParsed: shiftDate.toISOString().split('T')[0],
+            isInRange,
+            status: shift.status,
+            assignedTo: shift.assignedTo
+          });
+        }
+        return isInRange;
       });
       
       // Calculate coverage statistics
-      const active = filteredShifts.filter(s => s.status === "confirmed" || s.status === "clocked_in").length;
+      const active = filteredShifts.filter(s => s.status === "confirmed").length;
       const upcoming = filteredShifts.filter(s => s.status === "assigned" || s.status === "claimed").length;
       const unfilled = filteredShifts.filter(s => s.status === "open").length;
       const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;

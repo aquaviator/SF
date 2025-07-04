@@ -47,11 +47,13 @@ function CoverageDetailsModal({ isOpen, onClose, coverageData }: CoverageDetails
   // Fetch additional data for comprehensive coverage management
   const { data: shiftsData, isLoading: shiftsLoading } = useQuery({
     queryKey: ["/api/shifts", tenantId],
+    queryFn: () => fetch(`/api/shifts?tenantId=${tenantId}`).then(res => res.json()),
     enabled: isOpen && !!tenantId,
   });
 
   const { data: staffData, isLoading: staffLoading } = useQuery({
     queryKey: ["/api/staff", tenantId],
+    queryFn: () => fetch(`/api/staff?tenantId=${tenantId}`).then(res => res.json()),
     enabled: isOpen && !!tenantId,
   });
 
