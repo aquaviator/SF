@@ -39,13 +39,27 @@ export class ShiftSwapService {
         };
       }
 
-      // Get business policy
-      const policy = await storage.getShiftPolicyByTenant(payload.tenantId);
-      
-      // Calculate time until shift start
+      // Check if shift is in the past
       const shiftStart = new Date(`${shift.date}T${shift.startTime}`);
       const now = new Date();
       const timeUntilStartHours = (shiftStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (timeUntilStartHours < 0) {
+        console.log("🚫 SWAP_DENIED_PAST_SHIFT", {
+          shiftId: payload.shiftId,
+          shiftDate: shift.date,
+          timeUntilStartHours,
+          timestamp: new Date()
+        });
+        return {
+          success: false,
+          action: "denied",
+          message: "Cannot swap shifts that have already occurred"
+        };
+      }
+
+      // Get business policy
+      const policy = await storage.getShiftPolicyByTenant(payload.tenantId);
 
       console.log("🕒 SWAP_TIMING_CHECK", {
         shiftStart: shiftStart.toISOString(),

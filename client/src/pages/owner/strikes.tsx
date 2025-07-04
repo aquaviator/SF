@@ -69,8 +69,8 @@ export default function OwnerStrikesPage() {
 
   const handleManualStrike = (userId: number) => {
     console.log("MANUAL_STRIKE_ASSIGN", { userId, timestamp: new Date() });
-    // TODO: Implement manual strike assignment
-    alert("Manual strike assignment will be implemented in future sprint");
+    setSelectedUserId(userId);
+    setIsModalOpen(true);
   };
 
   const handleAdjustStrike = (userId: number) => {
@@ -385,7 +385,22 @@ export default function OwnerStrikesPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         userId={selectedUserId}
-        userRole="owner"
+        tenantId={user?.tenantId}
+        mode="owner"
+        initialAction="add"
+        onStrikeUpdated={() => {
+          // Refresh the strikes data when a strike is updated
+          const fetchAllStrikes = async () => {
+            if (!user?.tenantId) return;
+            try {
+              const data = await staffApi.getAllStaffStrikes(user.tenantId);
+              setStrikesData(data);
+            } catch (error) {
+              console.error("Failed to refresh strikes data:", error);
+            }
+          };
+          fetchAllStrikes();
+        }}
       />
     </div>
   );

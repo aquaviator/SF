@@ -29,6 +29,7 @@ interface StrikeHistoryModalProps {
   mode: "staff" | "owner";
   selectedStrike?: StaffStrike | null;
   onStrikeUpdated?: () => void;
+  initialAction?: "view" | "add" | "adjust";
 }
 
 const addStrikeSchema = z.object({
@@ -48,12 +49,17 @@ export function StrikeHistoryModal({
   tenantId,
   mode,
   selectedStrike,
-  onStrikeUpdated
+  onStrikeUpdated,
+  initialAction = "view"
 }: StrikeHistoryModalProps) {
   const [strikes, setStrikes] = useState<StaffStrike[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("history");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialAction === "add") return "add-strike";
+    if (initialAction === "adjust") return "adjust-strike";
+    return "history";
+  });
 
   const form = useForm<AddStrikeForm>({
     resolver: zodResolver(addStrikeSchema),
