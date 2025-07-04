@@ -38,6 +38,8 @@ import {
   RotateCcw,
   X,
   Shield,
+  Copy,
+  Trash2,
   AlertTriangle
 } from "lucide-react";
 import type { Shift } from "@shared/schema";
@@ -208,20 +210,69 @@ export default function MyWork() {
   const ShiftCard = ({ shift, actions, onCardClick, showActions = false, isCompleted = false }) => {
     const timeUntilShift = calculateTimeUntilShift(shift);
     const formattedCountdown = formatCountdown(timeUntilShift);
+    const policyCheck = checkSwapPolicyStatus(shift);
+    
+    // Role initials generation
+    const getRoleInitials = (role: string) => {
+      return role.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+    };
+    
+    // Enhanced status badge variant mapping
+    const getStatusVariant = (status: string) => {
+      switch (status) {
+        case 'completed': return 'default';
+        case 'cancelled': return 'destructive';
+        case 'clocked_in': return 'secondary';
+        case 'assigned': return 'outline';
+        case 'confirmed': return 'default';
+        default: return 'outline';
+      }
+    };
+    
+    // Enhanced escalation countdown
+    const getEscalationCountdown = () => {
+      if (policyCheck.escalationWarning) {
+        return `⚠️ ${policyCheck.escalationWarning}`;
+      }
+      if (policyCheck.hoursUntilShift > 24) {
+        return `Swap until ${Math.floor(policyCheck.hoursUntilShift - 24)}h before start`;
+      }
+      if (policyCheck.hoursUntilShift > 4) {
+        const escalationTime = timeUntilShift - (4 * 60 * 60 * 1000);
+        return `Escalates to Manager in ${formatCountdown(escalationTime)}`;
+      }
+      return null;
+    };
+    
+    const escalationText = getEscalationCountdown();
     
     return (
       <div 
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
-        onClick={onCardClick}
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
+        onClick={() => {
+          console.log('🎯 SHIFT_CARD_CLICK', {
+            shiftId: shift.id,
+            role: shift.role,
+            date: shift.date,
+            status: shift.status,
+            timestamp: new Date().toISOString()
+          });
+          onCardClick();
+        }}
       >
         <div className="flex items-start justify-between">
           {/* Left side - Main shift info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-2">
-              <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
+              <Badge variant={getStatusVariant(shift.status)}>
                 {shift.status}
               </Badge>
-              <span className="font-medium text-sm truncate">{shift.role}</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 dark:text-blue-200">
+                  {getRoleInitials(shift.role)}
+                </div>
+                <span className="font-medium text-sm truncate">{shift.role}</span>
+              </div>
             </div>
             
             <div className="text-sm text-muted-foreground mb-1">
@@ -240,11 +291,13 @@ export default function MyWork() {
               📍 {shift.location}
             </div>
             
-            {/* Escalation warning */}
-            {actions?.escalationMessage && (
-              <div className="mt-2 flex items-center space-x-1 text-xs text-orange-600 dark:text-orange-400">
-                <AlertTriangle className="h-3 w-3" />
-                <span>{actions.escalationMessage}</span>
+            {/* Enhanced escalation countdown */}
+            {escalationText && (
+              <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs text-orange-600 dark:text-orange-400">
+                <div className="flex items-center space-x-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>{escalationText}</span>
+                </div>
               </div>
             )}
           </div>
@@ -267,9 +320,15 @@ export default function MyWork() {
                     size="sm" 
                     variant="outline" 
                     className="h-8 w-8 p-0"
+                    disabled={!policyCheck.canInitiateSwap}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Swap shift:', shift.id);
+                      console.log('🔄 SHIFT_SWAP_BUTTON_CLICK', {
+                        shiftId: shift.id,
+                        canSwap: policyCheck.canInitiateSwap,
+                        hoursUntilShift: policyCheck.hoursUntilShift,
+                        timestamp: new Date().toISOString()
+                      });
                     }}
                   >
                     <RotateCcw className="h-3 w-3" />
@@ -281,9 +340,15 @@ export default function MyWork() {
                     size="sm" 
                     variant="outline" 
                     className="h-8 w-8 p-0"
+                    disabled={policyCheck.hoursUntilShift < 4}
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Cancel shift:', shift.id);
+                      console.log('❌ SHIFT_CANCEL_BUTTON_CLICK', {
+                        shiftId: shift.id,
+                        canCancel: policyCheck.hoursUntilShift >= 4,
+                        hoursUntilShift: policyCheck.hoursUntilShift,
+                        timestamp: new Date().toISOString()
+                      });
                     }}
                   >
                     <X className="h-3 w-3" />
@@ -296,7 +361,10 @@ export default function MyWork() {
                   className="h-8 w-8 p-0"
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('View shift details:', shift.id);
+                    console.log('👁️ SHIFT_DETAIL_BUTTON_CLICK', {
+                      shiftId: shift.id,
+                      timestamp: new Date().toISOString()
+                    });
                     onCardClick();
                   }}
                 >
@@ -318,17 +386,62 @@ export default function MyWork() {
     );
   };
 
-  // ShiftDetailModal component for detailed shift information
+  // Enhanced ShiftDetailModal with Sprint 3 requirements
   const ShiftDetailModal = ({ shift, isOpen, onClose }) => {
-    if (!shift) return null;
+    // Pre-mounted modal lifecycle logging
+    React.useEffect(() => {
+      console.log('📋 SHIFT_DETAIL_MODAL_MOUNT', {
+        timestamp: new Date().toISOString()
+      });
+      
+      return () => {
+        console.log('📋 SHIFT_DETAIL_MODAL_UNMOUNT', {
+          timestamp: new Date().toISOString()
+        });
+      };
+    }, []);
+    
+    // Modal open/close lifecycle logging
+    React.useEffect(() => {
+      if (isOpen && shift) {
+        console.log('📋 SHIFT_DETAIL_MODAL_OPEN', {
+          shiftId: shift.id,
+          role: shift.role,
+          date: shift.date,
+          timestamp: new Date().toISOString()
+        });
+      } else if (!isOpen) {
+        console.log('📋 SHIFT_DETAIL_MODAL_CLOSE', {
+          timestamp: new Date().toISOString()
+        });
+      }
+    }, [isOpen, shift]);
+    
+    if (!shift) {
+      console.log('📋 SHIFT_DETAIL_MODAL_RENDER_NO_SHIFT', {
+        timestamp: new Date().toISOString()
+      });
+      return null;
+    }
     
     const actions = getShiftActions(shift);
+    const policyCheck = checkSwapPolicyStatus(shift);
     
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent 
+          className="sm:max-w-[500px] focus-visible:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              console.log('⌨️ SHIFT_MODAL_ESC_KEY', {
+                shiftId: shift.id,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>Shift Details</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Shift Details</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -389,34 +502,69 @@ export default function MyWork() {
             )}
           </div>
           
-          <div className="flex justify-end space-x-2 mt-6">
-            {actions?.canSwap && (
+          {/* Sprint 3 Action Buttons: Duplicate, Create, Delete */}
+          <div className="flex justify-between items-center mt-6 pt-4 border-t">
+            <div className="flex space-x-2">
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => {
-                  console.log('Request swap for shift:', shift.id);
-                  // TODO: Open swap request modal
+                  console.log('🔄 DUPLICATE_SHIFT_BUTTON_CLICK', {
+                    originalShiftId: shift.id,
+                    role: shift.role,
+                    date: shift.date,
+                    timestamp: new Date().toISOString()
+                  });
+                  // TODO: Implement duplicate shift functionality
                 }}
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Request Swap
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
               </Button>
-            )}
-            
-            {actions?.canCancel && (
+              
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => {
-                  console.log('Cancel shift:', shift.id);
-                  // TODO: Open cancel confirmation
+                  console.log('➕ CREATE_SHIFT_BUTTON_CLICK', {
+                    baseShiftId: shift.id,
+                    timestamp: new Date().toISOString()
+                  });
+                  // TODO: Open create new shift modal
                 }}
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancel Shift
+                <Plus className="h-4 w-4 mr-2" />
+                Create
               </Button>
-            )}
+              
+              {(shift.status === 'assigned' || shift.status === 'confirmed') && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => {
+                    console.log('🗑️ DELETE_SHIFT_BUTTON_CLICK', {
+                      shiftId: shift.id,
+                      status: shift.status,
+                      timestamp: new Date().toISOString()
+                    });
+                    // TODO: Open delete confirmation modal
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+            </div>
             
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={() => {
+              console.log('❌ CLOSE_SHIFT_MODAL_BUTTON_CLICK', {
+                shiftId: shift.id,
+                timestamp: new Date().toISOString()
+              });
+              onClose();
+            }}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
