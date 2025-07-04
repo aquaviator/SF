@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { OverrideClockModal } from "@/components/OverrideClockModal";
 import { 
   MonitorSpeaker, 
   Users, 
@@ -72,28 +73,134 @@ interface TimeEntryModalProps {
 }
 
 function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalProps) {
+  const { tenantId } = useAuth();
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  
   console.log("⏰ TIME_ENTRY_MODAL_RENDER", { isOpen, userId, userName, timestamp: new Date() });
 
+  // Fetch today's time entries for this user
+  const { data: timeEntries, isLoading, refetch } = useQuery({
+    queryKey: ["/api/time-entries", tenantId, userId, "today"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${userId}&date=${today}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch time entries');
+      }
+      return response.json();
+    },
+    enabled: isOpen && !!userId && !!tenantId
+  });
+
+  const handleOverride = (entry: any) => {
+    console.log("🔧 OVERRIDE_TIME_ENTRY", { entryId: entry.id, userName, timestamp: new Date() });
+    setSelectedEntry(entry);
+    setShowOverrideModal(true);
+  };
+
+  const handleOverrideSaved = (updatedEntry: any) => {
+    console.log("✅ OVERRIDE_SAVED", { entryId: updatedEntry.id, userName, timestamp: new Date() });
+    setShowOverrideModal(false);
+    setSelectedEntry(null);
+    refetch(); // Refresh the time entries data
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent aria-labelledby="time-entry-modal-title">
-        <DialogHeader>
-          <DialogTitle id="time-entry-modal-title">Time Entry Details - {userName}</DialogTitle>
-          <DialogDescription>
-            Current time tracking status and recent activity
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Time entry details for User ID: {userId}
-          </p>
-          {/* Placeholder for real implementation */}
-          <div className="p-4 bg-muted rounded">
-            <p>Real-time time entry data will be displayed here</p>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-labelledby="time-entry-modal-title">
+          <DialogHeader>
+            <DialogTitle id="time-entry-modal-title">Time Entry Details - {userName}</DialogTitle>
+            <DialogDescription>
+              Current time tracking status and recent activity for today
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="space-y-3">
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
+                <div className="h-20 bg-muted animate-pulse rounded"></div>
+                <div className="h-20 bg-muted animate-pulse rounded"></div>
+              </div>
+            ) : (
+              <>
+                {timeEntries && timeEntries.length > 0 ? (
+                  <div className="space-y-3">
+                    {timeEntries.map((entry: any) => (
+                      <div key={entry.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              entry.status === 'clocked_in' ? 'bg-green-500' : 
+                              entry.status === 'on_break' ? 'bg-yellow-500' : 
+                              entry.status === 'adjusted' ? 'bg-blue-500' : 
+                              'bg-gray-400'
+                            }`}></div>
+                            <Badge variant={entry.status === 'adjusted' ? 'secondary' : 'outline'}>
+                              {entry.status.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOverride(entry)}
+                            className="min-h-[32px]"
+                          >
+                            Override
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="font-medium">Clock In</p>
+                            <p className="text-muted-foreground">
+                              {entry.clockInTime ? new Date(entry.clockInTime).toLocaleString() : 'Not clocked in'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Clock Out</p>
+                            <p className="text-muted-foreground">
+                              {entry.clockOutTime ? new Date(entry.clockOutTime).toLocaleString() : 'Not clocked out'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {entry.overrideNote && (
+                          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                            <p className="text-sm font-medium text-blue-800">Override Note:</p>
+                            <p className="text-sm text-blue-700">{entry.overrideNote}</p>
+                          </div>
+                        )}
+                        
+                        {entry.adjustedAt && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Adjusted on {new Date(entry.adjustedAt).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No time entries found for today</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Override Modal */}
+      {showOverrideModal && selectedEntry && (
+        <OverrideClockModal
+          entry={selectedEntry}
+          onClose={() => setShowOverrideModal(false)}
+          onSaved={handleOverrideSaved}
+        />
+      )}
+    </>
   );
 }
 

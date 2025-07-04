@@ -428,6 +428,7 @@ export const timeEntries = pgTable("time_entries", {
   adjustedAt: timestamp("adjusted_at"), // When adjustment was made
   adjustmentReason: text("adjustment_reason"), // Why it was adjusted
   notes: text("notes"),
+  overrideNote: text("override_note"), // Owner override note
   approvedBy: integer("approved_by").references(() => users.id, { onDelete: 'cascade' }),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

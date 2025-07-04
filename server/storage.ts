@@ -1831,6 +1831,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getTimeEntryById(id: number): Promise<TimeEntry | undefined> {
+    const result = await database.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
+    return result[0];
+  }
+
   async createTimeEntry(insertEntry: InsertTimeEntry): Promise<TimeEntry> {
     const result = await database.insert(timeEntries).values(insertEntry).returning();
     return result[0];

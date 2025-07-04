@@ -852,6 +852,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Time Entry Override route for owners
+  app.patch("/api/time-entries/:id/override", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { in: clockInTime, out: clockOutTime, note } = req.body;
+      
+      // Validate request body
+      if (!clockInTime || !clockOutTime || !note) {
+        return res.status(400).json({ message: "Clock in time, clock out time, and note are required" });
+      }
+      
+      // Get the existing time entry to validate tenant access
+      const existingEntry = await storage.getTimeEntryById(id);
+      if (!existingEntry) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      
+      // TODO: Add role validation - ensure caller has "owner" role for the entry's tenant
+      // This would require passing user context or adding authentication middleware
+      
+      // Update the time entry with override data
+      const updateData = {
+        tenantId: existingEntry.tenantId,
+        userId: existingEntry.userId,
+        clockInTime: new Date(clockInTime),
+        clockOutTime: new Date(clockOutTime),
+        overrideNote: note,
+        status: "adjusted" as const,
+        adjustedAt: new Date(),
+        // TODO: Add adjustedBy when user context is available
+      };
+      
+      const updatedEntry = await storage.updateTimeEntry(id, updateData);
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      
+      console.log(`TIME_ENTRY_OVERRIDE: Entry ${id} overridden - ${clockInTime} to ${clockOutTime}`);
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Override time entry error:", error);
+      res.status(500).json({ message: "Failed to override time entry" });
+    }
+  });
+
   // Business Profile routes
   app.get("/api/business-profile", async (req, res) => {
     try {
