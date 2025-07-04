@@ -197,25 +197,27 @@ export default function MyWork() {
     const now = new Date();
     const hoursUntilShift = (shiftStart.getTime() - now.getTime()) / (1000 * 60 * 60);
     
-    // Policy-driven escalation logic
+    // Policy-driven escalation logic - return boolean for button enabled state
     if (hoursUntilShift > 24) {
-      return {
-        canSwap: true,
-        escalationLevel: 'peer',
-        message: `Swap until ${Math.floor(hoursUntilShift - 24)}h before start`
-      };
+      return true; // Can swap directly
     } else if (hoursUntilShift > 4) {
-      return {
-        canSwap: true,
-        escalationLevel: 'management',
-        message: `Escalates to Manager in ${Math.floor(hoursUntilShift - 4)}h`
-      };
+      return true; // Can escalate to management
     } else {
-      return {
-        canSwap: false,
-        escalationLevel: 'denied',
-        message: 'Too late to swap - would result in strike'
-      };
+      return false; // Too late - would result in strike
+    }
+  };
+
+  // Policy-driven cancel status check
+  const checkCancelPolicyStatus = (shift: any) => {
+    const shiftStart = new Date(`${shift.date}T${shift.startTime}`);
+    const now = new Date();
+    const hoursUntilShift = (shiftStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    // Policy-driven cancellation logic
+    if (hoursUntilShift > 4) {
+      return true; // Can cancel with notice
+    } else {
+      return false; // Too late - would result in strike
     }
   };
 
@@ -454,6 +456,61 @@ export default function MyWork() {
     
     const actions = getShiftActions(shift);
     const policyCheck = checkSwapPolicyStatus(shift);
+
+    // Staff action handlers
+    const handleSwap = async () => {
+      const allowed = checkSwapPolicyStatus(shift);
+      console.log('🔄 REQUEST_SWAP clicked', { shift, allowed, timestamp: new Date().toISOString() });
+      
+      if (!allowed) {
+        escalateToManager('swap', shift);
+        return;
+      }
+      
+      try {
+        await staffApi.requestSwap(shift.id);
+        console.log('✅ REQUEST_SWAP success', { shift, timestamp: new Date().toISOString() });
+        queryClient.invalidateQueries({ queryKey: ['/api/my-shifts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/swap-requests'] });
+        toast({ title: "Swap Request Submitted", description: "Your swap request has been submitted for approval." });
+        onClose();
+      } catch (err) {
+        console.error('❌ REQUEST_SWAP error', { shift, error: err, timestamp: new Date().toISOString() });
+        toast({ variant: "destructive", title: "Error", description: "Could not request swap. Please try again." });
+      }
+    };
+
+    const handleCancel = async () => {
+      const allowed = checkCancelPolicyStatus(shift);
+      console.log('❌ REQUEST_CANCEL clicked', { shift, allowed, timestamp: new Date().toISOString() });
+      
+      if (!allowed) {
+        escalateToManager('cancel', shift);
+        return;
+      }
+      
+      try {
+        await staffApi.requestCancel(shift.id);
+        console.log('✅ REQUEST_CANCEL success', { shift, timestamp: new Date().toISOString() });
+        queryClient.invalidateQueries({ queryKey: ['/api/my-shifts'] });
+        toast({ title: "Cancellation Requested", description: "Your shift cancellation has been requested." });
+        onClose();
+      } catch (err) {
+        console.error('❌ REQUEST_CANCEL error', { shift, error: err, timestamp: new Date().toISOString() });
+        toast({ variant: "destructive", title: "Error", description: "Could not request cancellation. Please try again." });
+      }
+    };
+
+    // Escalation helper
+    const escalateToManager = (type: 'swap' | 'cancel', shift: any) => {
+      console.log('🆙 ESCALATE_TO_MANAGER', { type, shift, timestamp: new Date().toISOString() });
+      toast({ 
+        title: "Request Escalated", 
+        description: `Your ${type} request has been escalated to management for approval.`,
+        duration: 5000
+      });
+      // TODO: Fire API to notify manager
+    };
     
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -530,57 +587,89 @@ export default function MyWork() {
             )}
           </div>
           
-          {/* Sprint 3 Action Buttons: Duplicate, Create, Delete */}
+          {/* Role-based Action Buttons */}
           <div className="flex justify-between items-center mt-6 pt-4 border-t">
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  console.log('🔄 DUPLICATE_SHIFT_BUTTON_CLICK', {
-                    originalShiftId: shift.id,
-                    role: shift.role,
-                    date: shift.date,
-                    timestamp: new Date().toISOString()
-                  });
-                  // TODO: Implement duplicate shift functionality
-                }}
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicate
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  console.log('➕ CREATE_SHIFT_BUTTON_CLICK', {
-                    baseShiftId: shift.id,
-                    timestamp: new Date().toISOString()
-                  });
-                  // TODO: Open create new shift modal
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create
-              </Button>
-              
-              {(shift.status === 'assigned' || shift.status === 'confirmed') && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => {
-                    console.log('🗑️ DELETE_SHIFT_BUTTON_CLICK', {
-                      shiftId: shift.id,
-                      status: shift.status,
-                      timestamp: new Date().toISOString()
-                    });
-                    // TODO: Open delete confirmation modal
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
+              {role === 'staff' ? (
+                <>
+                  <Button 
+                    data-cy="swap-btn"
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleSwap}
+                    disabled={!checkSwapPolicyStatus(shift)}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Request Swap
+                  </Button>
+                  
+                  <Button 
+                    data-cy="cancel-btn"
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={!checkCancelPolicyStatus(shift)}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Request Cancellation
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* Owner-only CRUD buttons */}
+                  <Button 
+                    data-cy="duplicate-btn"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      console.log('🔄 DUPLICATE_SHIFT_BUTTON_CLICK', {
+                        originalShiftId: shift.id,
+                        role: shift.role,
+                        date: shift.date,
+                        timestamp: new Date().toISOString()
+                      });
+                      // TODO: Implement duplicate shift functionality
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate
+                  </Button>
+                  
+                  <Button 
+                    data-cy="create-btn"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      console.log('➕ CREATE_SHIFT_BUTTON_CLICK', {
+                        baseShiftId: shift.id,
+                        timestamp: new Date().toISOString()
+                      });
+                      // TODO: Open create new shift modal
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create
+                  </Button>
+                  
+                  {(shift.status === 'assigned' || shift.status === 'confirmed') && (
+                    <Button 
+                      data-cy="delete-btn"
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => {
+                        console.log('🗑️ DELETE_SHIFT_BUTTON_CLICK', {
+                          shiftId: shift.id,
+                          status: shift.status,
+                          timestamp: new Date().toISOString()
+                        });
+                        // TODO: Open delete confirmation modal
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
+                </>
               )}
             </div>
             

@@ -186,5 +186,58 @@ export const staffApi = {
       console.error("❌ CAN_CLAIM_SHIFT FAILED", { userId, tenantId, error, timestamp: new Date() });
       throw new Error("Failed to check shift claim eligibility");
     }
+  },
+
+  /**
+   * Request a shift swap
+   */
+  async requestSwap(shiftId: number): Promise<any> {
+    console.log("📡 REQUEST_SWAP API", { shiftId, timestamp: new Date() });
+    
+    try {
+      const response = await apiRequest("POST", `/api/swap-requests`, {
+        originalShiftId: shiftId,
+        targetShiftId: null, // Will be filled by user selection
+        reason: "Staff requested swap via My Shifts"
+      });
+      const data = await response.json();
+      
+      console.log("✅ REQUEST_SWAP SUCCESS", { 
+        shiftId,
+        swapRequestId: data.id,
+        timestamp: new Date() 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("❌ REQUEST_SWAP FAILED", { shiftId, error, timestamp: new Date() });
+      throw new Error("Failed to request shift swap");
+    }
+  },
+
+  /**
+   * Request shift cancellation
+   */
+  async requestCancel(shiftId: number): Promise<any> {
+    console.log("📡 REQUEST_CANCEL API", { shiftId, timestamp: new Date() });
+    
+    try {
+      const response = await apiRequest("PUT", `/api/shifts/${shiftId}`, {
+        status: "cancelled",
+        notes: "Staff requested cancellation via My Shifts"
+      });
+      const data = await response.json();
+      
+      console.log("✅ REQUEST_CANCEL SUCCESS", { 
+        shiftId,
+        newStatus: data.status,
+        timestamp: new Date() 
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("❌ REQUEST_CANCEL FAILED", { shiftId, error, timestamp: new Date() });
+      throw new Error("Failed to request shift cancellation");
+    }
   }
 };
