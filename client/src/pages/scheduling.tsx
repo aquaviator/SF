@@ -64,11 +64,12 @@ const shiftFormSchema = z.object({
 
 type ShiftFormData = z.infer<typeof shiftFormSchema>;
 
-// Define enhanced template schema with slots
+// Define enhanced template schema with slots that match shift creation patterns
 const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
   slots: z.array(z.object({
     role: z.string(),
     quantity: z.number().min(1),
+    assignmentType: z.enum(["open", "assigned"]).default("open"), // Individual assignment choice per slot
     staffIds: z.array(z.number()).default([])
   })).optional().default([])
 });
@@ -230,7 +231,7 @@ export default function Scheduling() {
       recurrence: "weekly",
       isActive: true,
       createdBy: Number(user?.id) || 1,
-      slots: [{ role: "", quantity: 1, staffIds: [] }]
+      slots: [{ role: "", quantity: 1, assignmentType: "open", staffIds: [] }]
     }
   });
 
@@ -247,7 +248,7 @@ export default function Scheduling() {
       recurrence: "weekly",
       isActive: true,
       createdBy: Number(user?.id) || 1,
-      slots: [{ role: "", quantity: 1, staffIds: [] }]
+      slots: [{ role: "", quantity: 1, assignmentType: "open", staffIds: [] }]
     });
     setTemplateModalOpen(true);
   };
@@ -859,27 +860,7 @@ export default function Scheduling() {
                     )}
                   />
 
-                  <FormField
-                    control={templateForm.control}
-                    name="assignmentType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assignment Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select assignment type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="assigned">Pre-assigned</SelectItem>
-                            <SelectItem value="opportunity">Open Opportunity</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </div>
 
                 <FormField
@@ -906,29 +887,69 @@ export default function Scheduling() {
 
               {/* Section 2: Position Slots */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Position Requirements</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Template Lines</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const currentSlots = templateForm.getValues("slots") || [];
+                      templateForm.setValue("slots", [
+                        ...currentSlots,
+                        {
+                          role: "",
+                          quantity: 1,
+                          assignmentType: "open" as const,
+                          staffIds: []
+                        }
+                      ]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Line
+                  </Button>
+                </div>
                 
                 {templateForm.watch("slots")?.map((slot, index) => (
                   <div key={index} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Position {index + 1}</h4>
-                      {templateForm.watch("slots")!.length > 1 && (
+                      <h4 className="font-medium">Line {index + 1}</h4>
+                      <div className="flex gap-2">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => {
                             const currentSlots = templateForm.getValues("slots") || [];
-                            const newSlots = currentSlots.filter((_, i) => i !== index);
-                            templateForm.setValue("slots", newSlots);
+                            const slotToDuplicate = currentSlots[index];
+                            templateForm.setValue("slots", [
+                              ...currentSlots.slice(0, index + 1),
+                              { ...slotToDuplicate },
+                              ...currentSlots.slice(index + 1)
+                            ]);
                           }}
                         >
-                          Remove
+                          <Copy className="h-4 w-4" />
                         </Button>
-                      )}
+                        {templateForm.watch("slots")!.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const currentSlots = templateForm.getValues("slots") || [];
+                              const newSlots = currentSlots.filter((_, i) => i !== index);
+                              templateForm.setValue("slots", newSlots);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <FormField
                         control={templateForm.control}
                         name={`slots.${index}.role`}
@@ -972,9 +993,31 @@ export default function Scheduling() {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={templateForm.control}
+                        name={`slots.${index}.assignmentType`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assignment Type</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="open">Open Opportunity</SelectItem>
+                                <SelectItem value="assigned">Pre-Assigned</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
-                    {templateForm.watch("assignmentType") === "assigned" && (
+                    {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
                       <div>
                         <FormLabel>Pre-assign Staff (Optional)</FormLabel>
                         <div className="mt-2 space-y-2">
@@ -1019,7 +1062,7 @@ export default function Scheduling() {
                   variant="outline"
                   onClick={() => {
                     const currentSlots = templateForm.getValues("slots") || [];
-                    templateForm.setValue("slots", [...currentSlots, { role: "", quantity: 1, staffIds: [] }]);
+                    templateForm.setValue("slots", [...currentSlots, { role: "", quantity: 1, assignmentType: "open", staffIds: [] }]);
                   }}
                   className="w-full"
                 >
