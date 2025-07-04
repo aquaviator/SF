@@ -2037,26 +2037,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all shifts for the next 7 days
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
       const nextWeek = new Date();
       nextWeek.setDate(today.getDate() + 7);
+      nextWeek.setHours(23, 59, 59, 999); // End of next week
       
       const shifts = await storage.getShiftsByTenant(tenantId);
+      // Check what dates we actually have in the shifts
+      const shiftDates = shifts.map(s => s.date).sort();
+      const todayShifts = shifts.filter(s => s.date === '2025-07-04');
+      
       console.log("🔍 SHIFTS_RAW_DATA", { 
         tenantId, 
         totalShifts: shifts.length, 
-        sampleShift: shifts[0],
+        todayShifts: todayShifts.length,
+        sampleTodayShift: todayShifts[0],
+        allDates: shiftDates.slice(0, 10), // First 10 dates
         today: today.toISOString().split('T')[0],
         nextWeek: nextWeek.toISOString().split('T')[0]
       });
       
       const filteredShifts = shifts.filter(shift => {
+        // Parse the shift date and set to start of day
         const shiftDate = new Date(shift.date);
+        shiftDate.setHours(0, 0, 0, 0);
+        
         const isInRange = shiftDate >= today && shiftDate <= nextWeek;
-        if (shifts.indexOf(shift) < 3) { // Log first 3 for debugging
+        if (shifts.indexOf(shift) < 5) { // Log first 5 for debugging
           console.log("🔍 SHIFT_FILTER_DEBUG", { 
             shiftId: shift.id,
             shiftDate: shift.date, 
             shiftDateParsed: shiftDate.toISOString().split('T')[0],
+            todayParsed: today.toISOString().split('T')[0],
+            nextWeekParsed: nextWeek.toISOString().split('T')[0],
             isInRange,
             status: shift.status,
             assignedTo: shift.assignedTo
