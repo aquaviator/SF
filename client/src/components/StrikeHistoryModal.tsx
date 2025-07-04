@@ -53,6 +53,7 @@ export function StrikeHistoryModal({
   initialAction = "view"
 }: StrikeHistoryModalProps) {
   const [strikes, setStrikes] = useState<StaffStrike[]>([]);
+  const [userShifts, setUserShifts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
@@ -105,9 +106,39 @@ export function StrikeHistoryModal({
     }
   };
 
+  const fetchUserShifts = async () => {
+    if (!userId || !tenantId) return;
+
+    try {
+      console.log("📡 Fetching user shifts", { userId, tenantId, timestamp: new Date() });
+      
+      // Fetch shifts for this user from the last 30 days
+      const response = await fetch(`/api/shifts?tenantId=${tenantId}&assignedTo=${userId}&limit=20`);
+      const shifts = await response.json();
+      
+      // Sort by date (most recent first) and filter out future shifts
+      const recentShifts = shifts
+        .filter((shift: any) => new Date(shift.date) <= new Date())
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 10); // Show last 10 shifts
+      
+      setUserShifts(recentShifts);
+      
+      console.log("✅ User shifts loaded", { 
+        userId,
+        shiftCount: recentShifts.length,
+        timestamp: new Date() 
+      });
+    } catch (error) {
+      console.error("❌ Failed to load user shifts:", error);
+      setUserShifts([]);
+    }
+  };
+
   useEffect(() => {
     if (isOpen && userId && tenantId) {
       fetchStrikeHistory();
+      fetchUserShifts();
     }
   }, [isOpen, userId, tenantId]);
 
@@ -392,16 +423,22 @@ export function StrikeHistoryModal({
                     name="shiftId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Shift ID (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Enter shift ID if applicable"
-                            className="min-h-[44px]"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          />
-                        </FormControl>
+                        <FormLabel>Related Shift (Optional)</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger className="min-h-[44px]">
+                              <SelectValue placeholder="Select a recent shift" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">No specific shift</SelectItem>
+                            {userShifts.map((shift) => (
+                              <SelectItem key={shift.id} value={shift.id.toString()}>
+                                {format(new Date(shift.date), "MMM d")} - {shift.role} ({shift.startTime} - {shift.endTime})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
