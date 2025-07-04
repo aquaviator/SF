@@ -202,24 +202,62 @@ export default function MyWork() {
 
   const swapRequestMutation = useMutation({
     mutationFn: async (data: SwapRequestFormData) => {
+      console.log("📨 SWAP_REQUEST_INITIATED", {
+        shiftId: data.originalShiftId,
+        userId: user?.id,
+        reason: data.reason,
+        timestamp: new Date()
+      });
+
       const submitData = {
         tenantId,
-        requesterId: user?.id || 1,
-        originalShiftId: parseInt(data.originalShiftId),
-        targetShiftId: parseInt(data.targetShiftId),
+        shiftId: parseInt(data.originalShiftId),
+        requestedBy: user?.id || 1,
         reason: data.reason,
-        status: "pending" as const,
       };
-      return apiRequest("POST", "/api/swap-requests", submitData);
+      return apiRequest("POST", "/api/shift-actions/request-swap", submitData);
     },
-    onSuccess: () => {
-      toast({ title: "Swap request submitted successfully!" });
-      swapForm.reset();
-      setIsSwapModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/swap-requests", tenantId, user?.id] });
+    onSuccess: (result: any) => {
+      console.log("✅ SWAP_REQUEST_RESULT", result);
+      
+      if (result.success) {
+        let toastMessage = "Swap request submitted successfully!";
+        let toastVariant: "default" | "destructive" = "default";
+        
+        switch (result.action) {
+          case "peer":
+            toastMessage = `Swap request opened to team members. ${result.message}`;
+            break;
+          case "escalated":
+            toastMessage = `Swap request escalated to management. ${result.message}`;
+            break;
+          case "denied":
+            toastMessage = `Swap request denied. ${result.message}`;
+            toastVariant = "destructive";
+            break;
+        }
+        
+        toast({ 
+          title: toastMessage,
+          variant: toastVariant,
+          description: result.strikeAssigned ? "Strike point assigned for late cancellation attempt." : undefined
+        });
+        
+        if (result.success) {
+          swapForm.reset();
+          setIsSwapModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/swap-requests", tenantId, user?.id] });
+          queryClient.invalidateQueries({ queryKey: ["/api/my-shifts", tenantId, user?.id] });
+        }
+      }
     },
-    onError: () => {
-      toast({ title: "Failed to submit swap request", variant: "destructive" });
+    onError: (error: any) => {
+      console.error("❌ SWAP_REQUEST_ERROR", error);
+      toast({ 
+        title: "Failed to submit swap request", 
+        description: error?.message || "Please try again later",
+        variant: "destructive" 
+      });
     },
   });
 

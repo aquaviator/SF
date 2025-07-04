@@ -388,6 +388,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New policy-driven swap action endpoint
+  app.post("/api/shift-actions/request-swap", async (req, res) => {
+    try {
+      const { tenantId, shiftId, requestedBy, reason } = req.body;
+      
+      if (!tenantId || !shiftId || !requestedBy) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const { shiftSwapService } = await import("./shift-swap-service");
+      const result = await shiftSwapService.requestSwap({
+        tenantId,
+        shiftId: parseInt(shiftId),
+        requestedBy: parseInt(requestedBy),
+        reason
+      });
+
+      if (result.success) {
+        res.status(200).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error processing swap request:", error);
+      res.status(500).json({ 
+        success: false, 
+        action: "denied", 
+        message: "Failed to process swap request" 
+      });
+    }
+  });
+
+  // Accept a peer swap
+  app.post("/api/shift-actions/accept-swap", async (req, res) => {
+    try {
+      const { swapRequestId, acceptingUserId } = req.body;
+      
+      const { shiftSwapService } = await import("./shift-swap-service");
+      const result = await shiftSwapService.acceptSwap(
+        parseInt(swapRequestId), 
+        parseInt(acceptingUserId)
+      );
+
+      if (result.success) {
+        res.status(200).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error accepting swap:", error);
+      res.status(500).json({ 
+        success: false, 
+        action: "denied", 
+        message: "Failed to accept swap" 
+      });
+    }
+  });
+
+  // Manager escalation actions
+  app.post("/api/shift-actions/manager-resolve", async (req, res) => {
+    try {
+      const { swapRequestId, managerId, action, newUserId } = req.body;
+      
+      const { shiftSwapService } = await import("./shift-swap-service");
+      const result = await shiftSwapService.managerApprove(
+        parseInt(swapRequestId),
+        parseInt(managerId),
+        action,
+        newUserId ? parseInt(newUserId) : undefined
+      );
+
+      if (result.success) {
+        res.status(200).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error resolving escalated swap:", error);
+      res.status(500).json({ 
+        success: false, 
+        action: "denied", 
+        message: "Failed to resolve escalated swap" 
+      });
+    }
+  });
+
   app.put("/api/swap-requests/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
