@@ -18,6 +18,13 @@ export function SidebarNav() {
     enabled: !!tenantId,
   });
 
+  // Fetch staff users for dev mode dropdown
+  const { data: staffUsers } = useQuery({
+    queryKey: ["/api/staff", tenantId],
+    queryFn: () => fetch(`/api/staff?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: role === 'staff' && !!tenantId,
+  });
+
   // Fetch pending requests count for owners
   const { data: pendingRequestsCount = 0 } = useQuery({
     queryKey: ["/api/pending-requests-count", tenantId],
@@ -128,11 +135,11 @@ export function SidebarNav() {
                 onChange={(e) => switchStaff(parseInt(e.target.value))}
                 className="text-xs bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
               >
-                <option value={2}>Mike Chen</option>
-                <option value={3}>Emma Davis</option>
-                <option value={4}>Alex Martinez</option>
-                <option value={5}>Jamie Wilson</option>
-                <option value={6}>Taylor Brown</option>
+                {staffUsers?.filter(user => user.role === 'staff').map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
               </select>
             </div>
           )}

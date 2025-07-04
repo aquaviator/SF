@@ -1918,6 +1918,9 @@ export default function MyWork() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Request Time Off</DialogTitle>
+                      <DialogDescription>
+                        Submit a request for vacation, sick leave, or other time off. Requests will be reviewed by management.
+                      </DialogDescription>
                     </DialogHeader>
                     <Form {...holidayForm}>
                       <form onSubmit={holidayForm.handleSubmit((data) => holidayRequestMutation.mutate(data))} className="space-y-4">
@@ -2105,6 +2108,9 @@ export default function MyWork() {
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle>Request Shift Swap</DialogTitle>
+                      <DialogDescription>
+                        Select one of your shifts to swap with another staff member's shift. Requests are subject to management approval based on policy.
+                      </DialogDescription>
                     </DialogHeader>
                     <Form {...swapForm}>
                       <form onSubmit={swapForm.handleSubmit((data) => swapRequestMutation.mutate(data))} className="space-y-4">
