@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -34,21 +34,21 @@ export const shifts = pgTable("shifts", {
   role: text("role").notNull(),
   description: text("description").notNull(),
   location: text("location").notNull(),
-  assignedTo: integer("assigned_to"),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: 'cascade' }),
   status: text("status").notNull().$type<"open" | "claimed" | "assigned" | "confirmed" | "clocked_in" | "clocked_out" | "completed" | "declined" | "cancelled">(),
   assignmentType: text("assignment_type").notNull().$type<"assigned" | "opportunity">().default("assigned"),
   requiredStaff: integer("required_staff").notNull().default(1),
   claimedBy: text("claimed_by").array(), // Array of user IDs who claimed this opportunity
-  templateId: integer("template_id"), // Reference to schedule template if created from template
+  templateId: integer("template_id").references(() => scheduleTemplates.id, { onDelete: 'cascade' }), // Reference to schedule template if created from template
   notes: text("notes"),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: 'cascade' }),
 });
 
 // Opportunities table
 export const opportunities = pgTable("opportunities", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  shiftId: integer("shift_id").notNull(),
+  shiftId: integer("shift_id").notNull().references(() => shifts.id, { onDelete: 'cascade' }),
   description: text("description").notNull(),
   requirements: text("requirements"),
   isActive: boolean("is_active").notNull().default(true),
@@ -58,9 +58,9 @@ export const opportunities = pgTable("opportunities", {
 export const swapRequests = pgTable("swap_requests", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  requesterId: integer("requester_id").notNull(),
-  originalShiftId: integer("original_shift_id").notNull(),
-  targetShiftId: integer("target_shift_id"),
+  requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  originalShiftId: integer("original_shift_id").notNull().references(() => shifts.id, { onDelete: 'cascade' }),
+  targetShiftId: integer("target_shift_id").references(() => shifts.id, { onDelete: 'cascade' }),
   status: text("status").notNull().$type<"pending" | "approved" | "rejected">(),
   reason: text("reason"),
 });
@@ -96,9 +96,9 @@ export type InsertSwapRequest = z.infer<typeof insertSwapRequestSchema>;
 export const assignments = pgTable("assignments", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  shiftId: integer("shift_id").notNull(),
-  assignedTo: integer("assigned_to").notNull(),
-  assignedBy: integer("assigned_by").notNull(),
+  shiftId: integer("shift_id").notNull().references(() => shifts.id, { onDelete: 'cascade' }),
+  assignedTo: integer("assigned_to").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  assignedBy: integer("assigned_by").notNull().references(() => users.id, { onDelete: 'cascade' }),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
   status: text("status").notNull().default("pending"), // pending, accepted, declined
   notes: text("notes"),
@@ -108,14 +108,14 @@ export const assignments = pgTable("assignments", {
 export const holidayRequests = pgTable("holiday_requests", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  requesterId: integer("requester_id").notNull(),
+  requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
   reason: text("reason"),
   status: text("status").notNull().default("pending").$type<"pending" | "approved" | "rejected" | "declined">(), // Extended for backward compatibility
   type: text("type").default("vacation").$type<"vacation" | "sick" | "personal" | "emergency" | "bereavement" | "maternity" | "paternity" | "study" | "other">(), // New optional field
   priority: text("priority").default("normal").$type<"low" | "normal" | "high" | "urgent">(), // New optional field
-  reviewedBy: integer("reviewed_by"),
+  reviewedBy: integer("reviewed_by").references(() => users.id, { onDelete: 'cascade' }),
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -134,7 +134,7 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   staffAssignments: text("staff_assignments"), // JSON: {position: string, staffIds: number[], slots: number}[] (deprecated)
   slots: jsonb("slots").notNull().default("[]"), // Array of {role: string, staffIds: number[], quantity: number}
   isActive: boolean("is_active").notNull().default(true),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -194,7 +194,7 @@ export const departments = pgTable("departments", {
   tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  managerId: integer("manager_id"),
+  managerId: integer("manager_id").references(() => users.id, { onDelete: 'cascade' }),
   budget: text("budget"), // Using text for flexible budget formatting
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -304,7 +304,7 @@ export const analyticsReports = pgTable("analytics_reports", {
   period: text("period").notNull(), // monthly, weekly, daily
   dataPoints: text("data_points").notNull(), // JSON string of chart data
   filters: text("filters"), // JSON string of applied filters
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -325,7 +325,7 @@ export const analyticsMetrics = pgTable("analytics_metrics", {
 export const activityLogs = pgTable("activity_logs", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   action: text("action").notNull(),
   resourceType: text("resource_type").notNull(),
   resourceId: text("resource_id"),
@@ -339,7 +339,7 @@ export const activityLogs = pgTable("activity_logs", {
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull().unique(),
-  planId: text("plan_id").notNull(),
+  planId: text("plan_id").notNull().references(() => subscriptionPlans.id, { onDelete: 'cascade' }),
   status: text("status").notNull().$type<"active" | "trial" | "expired" | "cancelled" | "past_due">(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
@@ -412,8 +412,8 @@ export const billingInfo = pgTable("billing_info", {
 export const timeEntries = pgTable("time_entries", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  userId: integer("user_id").notNull(),
-  shiftId: integer("shift_id"),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  shiftId: integer("shift_id").references(() => shifts.id, { onDelete: 'cascade' }),
   clockInTime: timestamp("clock_in_time"),
   clockOutTime: timestamp("clock_out_time"),
   breakStartTime: timestamp("break_start_time"),
@@ -424,11 +424,11 @@ export const timeEntries = pgTable("time_entries", {
   earlyByMinutes: integer("early_by_minutes"), // How early they clocked out
   scheduledStartTime: timestamp("scheduled_start_time"), // From the shift
   scheduledEndTime: timestamp("scheduled_end_time"), // From the shift
-  adjustedBy: integer("adjusted_by"), // Owner who made adjustments
+  adjustedBy: integer("adjusted_by").references(() => users.id, { onDelete: 'cascade' }), // Owner who made adjustments
   adjustedAt: timestamp("adjusted_at"), // When adjustment was made
   adjustmentReason: text("adjustment_reason"), // Why it was adjusted
   notes: text("notes"),
-  approvedBy: integer("approved_by"),
+  approvedBy: integer("approved_by").references(() => users.id, { onDelete: 'cascade' }),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -438,11 +438,11 @@ export const timeEntries = pgTable("time_entries", {
 export const staffStrikes = pgTable("staff_strikes", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   points: integer("points").notNull().default(0),
   reason: text("reason").notNull().$type<"no_show" | "late_cancellation" | "manual_adjustment">(),
-  shiftId: integer("shift_id"), // Reference to the shift that caused the strike
-  issuedBy: integer("issued_by"), // Owner who issued the strike (if manual)
+  shiftId: integer("shift_id").references(() => shifts.id, { onDelete: 'cascade' }), // Reference to the shift that caused the strike
+  issuedBy: integer("issued_by").references(() => users.id, { onDelete: 'cascade' }), // Owner who issued the strike (if manual)
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"), // Based on resetPeriodDays policy
   notes: text("notes"),
@@ -453,7 +453,7 @@ export const staffStrikes = pgTable("staff_strikes", {
 export const performanceMetrics = pgTable("performance_metrics", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   metricType: text("metric_type").notNull().$type<"attendance" | "punctuality" | "shift_completion" | "rating">(),
   value: text("value").notNull(),
   period: text("period").notNull(), // weekly, monthly, quarterly
@@ -465,7 +465,7 @@ export const performanceMetrics = pgTable("performance_metrics", {
 export const holidayEntitlements = pgTable("holiday_entitlements", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   entitlementDays: integer("entitlement_days").notNull().default(25), // Annual entitlement
   usedDays: integer("used_days").notNull().default(0), // Days already taken
   pendingDays: integer("pending_days").notNull().default(0), // Days in pending requests
