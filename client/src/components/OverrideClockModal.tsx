@@ -68,6 +68,14 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     otherNote: ""
   });
 
+  // Editing state for each field
+  const [editing, setEditing] = useState({
+    inDate: false,
+    inTime: false,
+    outDate: false,
+    outTime: false
+  });
+
   const reasonOptions = [
     "Late arrival",
     "Early departure", 
@@ -79,6 +87,14 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     const hasBasicFields = formData.inDate && formData.inTime && formData.outDate && formData.outTime && formData.reason;
     const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
     return hasBasicFields && hasValidReason;
+  };
+
+  const handleFieldEdit = (field: keyof typeof editing) => {
+    setEditing(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleFieldBlur = (field: keyof typeof editing) => {
+    setEditing(prev => ({ ...prev, [field]: false }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,20 +178,49 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           <div className="space-y-2">
             <Label>Clock In</Label>
             <div className="flex gap-2">
-              <Input
-                type="date"
-                value={formData.inDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, inDate: e.target.value }))}
-                required
-                className="flex-1"
-              />
-              <Input
-                type="time"
-                value={formData.inTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, inTime: e.target.value }))}
-                required
-                className="flex-1"
-              />
+              {editing.inDate ? (
+                <Input
+                  type="date"
+                  value={formData.inDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, inDate: e.target.value }))}
+                  onBlur={() => handleFieldBlur('inDate')}
+                  autoFocus
+                  required
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
+                  onClick={() => handleFieldEdit('inDate')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  aria-label="Click to edit clock in date"
+                  title="Click to edit date"
+                >
+                  {formData.inDate || "Select date"}
+                </span>
+              )}
+              
+              {editing.inTime ? (
+                <Input
+                  type="time"
+                  value={formData.inTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, inTime: e.target.value }))}
+                  onBlur={() => handleFieldBlur('inTime')}
+                  autoFocus
+                  required
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
+                  onClick={() => handleFieldEdit('inTime')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  aria-label="Click to edit clock in time"
+                  title="Click to edit time"
+                >
+                  {formData.inTime || "Select time"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -183,20 +228,49 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           <div className="space-y-2">
             <Label>Clock Out</Label>
             <div className="flex gap-2">
-              <Input
-                type="date"
-                value={formData.outDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, outDate: e.target.value }))}
-                required
-                className="flex-1"
-              />
-              <Input
-                type="time"
-                value={formData.outTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, outTime: e.target.value }))}
-                required
-                className="flex-1"
-              />
+              {editing.outDate ? (
+                <Input
+                  type="date"
+                  value={formData.outDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, outDate: e.target.value }))}
+                  onBlur={() => handleFieldBlur('outDate')}
+                  autoFocus
+                  required
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
+                  onClick={() => handleFieldEdit('outDate')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  aria-label="Click to edit clock out date"
+                  title="Click to edit date"
+                >
+                  {formData.outDate || "Select date"}
+                </span>
+              )}
+              
+              {editing.outTime ? (
+                <Input
+                  type="time"
+                  value={formData.outTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, outTime: e.target.value }))}
+                  onBlur={() => handleFieldBlur('outTime')}
+                  autoFocus
+                  required
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
+                  onClick={() => handleFieldEdit('outTime')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
+                  aria-label="Click to edit clock out time"
+                  title="Click to edit time"
+                >
+                  {formData.outTime || "Select time"}
+                </span>
+              )}
             </div>
           </div>
 
