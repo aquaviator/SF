@@ -191,6 +191,34 @@ export default function MyWork() {
     return `${hours}h ${minutes}m`;
   };
 
+  // Policy-driven swap status check
+  const checkSwapPolicyStatus = (shift: any) => {
+    const shiftStart = new Date(`${shift.date}T${shift.startTime}`);
+    const now = new Date();
+    const hoursUntilShift = (shiftStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    // Policy-driven escalation logic
+    if (hoursUntilShift > 24) {
+      return {
+        canSwap: true,
+        escalationLevel: 'peer',
+        message: `Swap until ${Math.floor(hoursUntilShift - 24)}h before start`
+      };
+    } else if (hoursUntilShift > 4) {
+      return {
+        canSwap: true,
+        escalationLevel: 'management',
+        message: `Escalates to Manager in ${Math.floor(hoursUntilShift - 4)}h`
+      };
+    } else {
+      return {
+        canSwap: false,
+        escalationLevel: 'denied',
+        message: 'Too late to swap - would result in strike'
+      };
+    }
+  };
+
 
 
   // Modal handlers
