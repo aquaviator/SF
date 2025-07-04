@@ -127,6 +127,8 @@ export const scheduleTemplates = pgTable("schedule_templates", {
   tenantId: text("tenant_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  startTime: text("start_time").notNull(), // Time in HH:MM format
+  endTime: text("end_time").notNull(), // Time in HH:MM format
   positions: text("positions").array().notNull(), // Array of position/role definitions (deprecated)
   assignmentType: text("assignment_type").notNull().$type<"assigned" | "open_opportunity">(),
   requiredStaffPerPosition: integer("required_staff_per_position").notNull().default(1), // deprecated

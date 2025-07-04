@@ -81,12 +81,40 @@ export default function Scheduling() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Function to check if staff member is on holiday for a given date
+  const checkStaffAvailability = async (staffId: number, date: string) => {
+    try {
+      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}`);
+      const holidayRequests = await response.json();
+      
+      const staffHolidays = holidayRequests.filter((req: any) => 
+        req.requesterId === staffId && 
+        req.status === "approved" &&
+        date >= req.startDate && 
+        date <= req.endDate
+      );
+      
+      return {
+        isAvailable: staffHolidays.length === 0,
+        reason: staffHolidays.length > 0 ? "On approved holiday" : null
+      };
+    } catch (error) {
+      console.error("Error checking staff availability:", error);
+      return { isAvailable: true, reason: null };
+    }
+  };
+
   // Template modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateSubmitting, setTemplateSubmitting] = useState(false);
   const [templateDeleteDialogOpen, setTemplateDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<ScheduleTemplate | null>(null);
+
+  // Create shifts from template modal state
+  const [createShiftsModalOpen, setCreateShiftsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
+  const [templateDate, setTemplateDate] = useState<Date>(new Date());
 
   // Calendar functionality
   const [calendarView, setCalendarView] = useState('month');
@@ -357,6 +385,103 @@ export default function Scheduling() {
     }
   };
 
+  // Function to create shifts from template
+  const createShiftsFromTemplate = async (template: any, date: Date) => {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Validate staff availability for pre-assigned slots
+      const validationErrors = [];
+      const shiftsToCreate = [];
+      
+      for (const slot of template.slots || []) {
+        if (slot.assignmentType === "assigned" && slot.staffIds?.length > 0) {
+          // Check each assigned staff member for holidays
+          for (const staffId of slot.staffIds) {
+            const availability = await checkStaffAvailability(staffId, dateStr);
+            if (!availability.isAvailable) {
+              const staffMember = (staff as any[]).find((s: any) => s.id === staffId);
+              validationErrors.push(`${staffMember?.firstName} ${staffMember?.lastName} is ${availability.reason?.toLowerCase()} on ${dateStr}`);
+            }
+          }
+          
+          // Create assigned shift
+          if (validationErrors.length === 0) {
+            shiftsToCreate.push({
+              date: dateStr,
+              startTime: template.startTime,
+              endTime: template.endTime,
+              role: slot.role,
+              location: template.location || "",
+              status: "assigned",
+              assignedTo: slot.staffIds[0], // Pre-assigned slots only have one staff member
+              notes: `Created from template: ${template.name}`,
+              tenantId: tenantId
+            });
+          }
+        } else {
+          // Create open opportunity for each required staff position
+          for (let i = 0; i < slot.quantity; i++) {
+            shiftsToCreate.push({
+              date: dateStr,
+              startTime: template.startTime,
+              endTime: template.endTime,
+              role: slot.role,
+              location: template.location || "",
+              status: "open",
+              assignedTo: null,
+              notes: `Created from template: ${template.name}`,
+              tenantId: tenantId
+            });
+          }
+        }
+      }
+      
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Staff Unavailable",
+          description: validationErrors.join(", "),
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Create all shifts
+      const createPromises = shiftsToCreate.map(shiftData => 
+        fetch("/api/shifts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(shiftData)
+        })
+      );
+      
+      const responses = await Promise.all(createPromises);
+      const failedCreations = responses.filter(r => !r.ok);
+      
+      if (failedCreations.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Created ${responses.length - failedCreations.length} shifts, ${failedCreations.length} failed`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Created ${shiftsToCreate.length} shifts from template`
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/shifts?tenantId=${tenantId}`] });
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create shifts from template",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Use template to generate shifts
   const useTemplateMutation = useMutation({
     mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
@@ -483,12 +608,14 @@ export default function Scheduling() {
           </Button>
           <Button
             size="sm"
-            onClick={() => handleUseTemplate(template.id)}
-            disabled={useTemplateMutation.isPending}
+            onClick={() => {
+              setSelectedTemplate(template);
+              setCreateShiftsModalOpen(true);
+            }}
             className="h-8 px-2 text-xs"
           >
-            <Settings className="h-3 w-3 mr-1" />
-            {useTemplateMutation.isPending ? "Using..." : "Use"}
+            <Plus className="h-3 w-3 mr-1" />
+            Create Shifts
           </Button>
           <Button
             size="sm"
@@ -588,7 +715,7 @@ export default function Scheduling() {
               </CardHeader>
               <CardContent>
                 <DataTable 
-                  data={templates} 
+                  data={templates as any[]} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
                 />
@@ -985,10 +1112,21 @@ export default function Scheduling() {
                               <Input 
                                 type="number" 
                                 min="1" 
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                max={slot.assignmentType === "assigned" ? "1" : undefined}
+                                disabled={slot.assignmentType === "assigned"}
+                                value={slot.assignmentType === "assigned" ? "1" : field.value}
+                                onChange={(e) => {
+                                  if (slot.assignmentType === "assigned") {
+                                    field.onChange(1);
+                                  } else {
+                                    field.onChange(parseInt(e.target.value) || 1);
+                                  }
+                                }}
                               />
                             </FormControl>
+                            <FormDescription>
+                              {slot.assignmentType === "assigned" ? "Pre-assigned lines can only have 1 staff member" : "Number of staff needed for this role"}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1037,7 +1175,12 @@ export default function Scheduling() {
                                   }
                                   
                                   if (e.target.checked) {
-                                    updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
+                                    // For pre-assigned slots, only allow one staff member
+                                    if (slot.assignmentType === "assigned") {
+                                      updatedSlots[index].staffIds = [member.id];
+                                    } else {
+                                      updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
+                                    }
                                   } else {
                                     updatedSlots[index].staffIds = updatedSlots[index].staffIds.filter(id => id !== member.id);
                                   }
@@ -1111,6 +1254,70 @@ export default function Scheduling() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Shifts from Template Modal */}
+      <Dialog open={createShiftsModalOpen} onOpenChange={setCreateShiftsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Shifts from Template</DialogTitle>
+            <DialogDescription>
+              Select a date to create shifts from the template "{selectedTemplate?.name}".
+              Pre-assigned staff will be validated for holiday availability.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Select Date</label>
+              <input
+                type="date"
+                value={templateDate.toISOString().split('T')[0]}
+                onChange={(e) => setTemplateDate(new Date(e.target.value))}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            {selectedTemplate && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h4 className="font-medium text-sm">Template Details:</h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Time: {selectedTemplate.startTime || '08:00'} - {selectedTemplate.endTime || '17:00'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  Roles: {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 
+                    ? selectedTemplate.slots.map((slot: any) => 
+                        `${slot.role} (${slot.quantity}${slot.assignmentType === 'assigned' ? ' pre-assigned' : ' open'})`
+                      ).join(', ')
+                    : selectedTemplate.positions?.join(', ') || 'No roles defined'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setCreateShiftsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={async () => {
+                if (selectedTemplate) {
+                  await createShiftsFromTemplate(selectedTemplate, templateDate);
+                  setCreateShiftsModalOpen(false);
+                  setSelectedTemplate(null);
+                }
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Shifts
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
     </>
