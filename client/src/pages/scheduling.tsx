@@ -1,37 +1,54 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTable, Column } from "@/components/DataTable";
+import { CalendarView } from "@/components/CalendarView";
+import { CalendarLegend } from "@/components/CalendarLegend";
+import { useCrud } from "@/hooks/useCrud";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, Users, MoreHorizontal, Calendar as CalendarIcon, Plus, Eye, Edit2, Trash2, Copy, Loader2 } from "lucide-react";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/DataTable";
 import { 
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle 
-} from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
-} from "@/components/ui/alert-dialog";
-import { 
-  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { 
+  Calendar,
+  Clock,
+  Users,
+  Settings,
+  Play,
+  Pause,
+  CheckCircle,
+  AlertCircle,
+  Plus,
+  Copy,
+  Loader2,
+  List,
+  CalendarDays,
+  Trash2,
+  Edit
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
+import { insertScheduleTemplateSchema } from "@shared/schema";
+import { z } from "zod";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
 // Define shift form schema
 const shiftFormSchema = z.object({
@@ -39,52 +56,96 @@ const shiftFormSchema = z.object({
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
   role: z.string().min(1, "Role is required"),
+  description: z.string().min(1, "Description is required"),
   location: z.string().min(1, "Location is required"),
   assignedTo: z.string().optional(),
-  description: z.string().min(1, "Description is required"),
   notes: z.string().optional(),
 });
 
-// Simple template form schema - same fields as shift creation
-const templateFormSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  description: z.string().optional(),
-  role: z.string().min(1, "Role is required"),
-  location: z.string().min(1, "Location is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  assignedTo: z.string().optional(),
-  defaultDescription: z.string().min(1, "Default description is required"),
-  defaultNotes: z.string().optional(),
-  isActive: z.boolean().default(true),
+type ShiftFormData = z.infer<typeof shiftFormSchema>;
+
+// Define enhanced template schema with slots that match shift creation patterns
+const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
+  slots: z.array(z.object({
+    role: z.string(),
+    quantity: z.number().min(1),
+    assignmentType: z.enum(["open", "assigned"]).default("open"), // Individual assignment choice per slot
+    staffIds: z.array(z.number()).default([])
+  })).optional().default([])
 });
 
-type ShiftFormData = z.infer<typeof shiftFormSchema>;
-type TemplateFormData = z.infer<typeof templateFormSchema>;
+type EnhancedTemplateData = z.infer<typeof enhancedTemplateSchema>;
 
-const Scheduling = () => {
-  const { user, tenantId } = useAuth();
+export default function Scheduling() {
+  const { user, tenantId, role } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Calendar state
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(null);
+  // Function to check if staff member is on holiday for a given date
+  const checkStaffAvailability = async (staffId: number, date: string) => {
+    try {
+      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}`);
+      const holidayRequests = await response.json();
+      
+      const staffHolidays = holidayRequests.filter((req: any) => 
+        req.requesterId === staffId && 
+        req.status === "approved" &&
+        date >= req.startDate && 
+        date <= req.endDate
+      );
+      
+      return {
+        isAvailable: staffHolidays.length === 0,
+        reason: staffHolidays.length > 0 ? "On approved holiday" : null
+      };
+    } catch (error) {
+      console.error("Error checking staff availability:", error);
+      return { isAvailable: true, reason: null };
+    }
+  };
 
-  // Modal states
-  const [shiftModalOpen, setShiftModalOpen] = useState(false);
+  // Template modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
-  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
-
-  // Editing states
-  const [editingShift, setEditingShift] = useState<any>(null);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
-  const [templateToDelete, setTemplateToDelete] = useState<any>(null);
-
-  // Loading states
-  const [shiftSubmitting, setShiftSubmitting] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateSubmitting, setTemplateSubmitting] = useState(false);
+  const [templateDeleteDialogOpen, setTemplateDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<ScheduleTemplate | null>(null);
 
-  // Form initialization
+  // Create shifts from template modal state
+  const [createShiftsModalOpen, setCreateShiftsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
+  const [templateDate, setTemplateDate] = useState<Date>(new Date());
+
+  // Calendar functionality
+  const [calendarView, setCalendarView] = useState('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [calendarEditMode, setCalendarEditMode] = useState(false);
+  
+
+
+  // Shift CRUD functionality
+  const {
+    data: shifts = [],
+    isLoading: shiftsLoading,
+    isModalOpen: shiftModalOpen,
+    editingItem: editingShift,
+    isSubmitting: shiftSubmitting,
+    deleteDialogOpen: shiftDeleteDialogOpen,
+    itemToDelete: shiftToDelete,
+    openCreateModal: openCreateShiftModal,
+    openEditModal: openEditShiftModal,
+    closeModal: closeShiftModal,
+    handleSubmit: handleShiftSubmit,
+    handleDelete: handleShiftDelete,
+    confirmDelete: confirmShiftDelete,
+    cancelDelete: cancelShiftDelete,
+  } = useCrud<Shift>({
+    queryKey: [`/api/shifts?tenantId=${tenantId}`],
+    endpoint: `/api/shifts?tenantId=${tenantId}`,
+  });
+
+  // Shift form with default values
   const shiftForm = useForm<ShiftFormData>({
     resolver: zodResolver(shiftFormSchema),
     defaultValues: {
@@ -92,80 +153,53 @@ const Scheduling = () => {
       startTime: "",
       endTime: "",
       role: "",
-      location: "",
-      assignedTo: "unassigned",
       description: "",
-      notes: ""
-    }
-  });
-
-  const templateForm = useForm<TemplateFormData>({
-    resolver: zodResolver(templateFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      role: "",
       location: "",
-      startTime: "",
-      endTime: "",
-      assignedTo: "unassigned",
-      defaultDescription: "",
-      defaultNotes: "",
-      isActive: true
+      assignedTo: "",
+      notes: "",
     }
   });
 
   // Reset form when editing changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (editingShift) {
       shiftForm.reset({
-        date: editingShift.date || "",
-        startTime: editingShift.startTime || "",
-        endTime: editingShift.endTime || "",
-        role: editingShift.role || "",
-        location: editingShift.location || "",
-        assignedTo: editingShift.assignedTo?.toString() || "unassigned",
-        description: editingShift.description || "",
-        notes: editingShift.notes || ""
+        date: editingShift.date,
+        startTime: editingShift.startTime,
+        endTime: editingShift.endTime,
+        role: editingShift.role,
+        description: editingShift.description,
+        location: editingShift.location,
+        assignedTo: editingShift.assignedTo?.toString() || "",
+        notes: editingShift.notes || "",
       });
     } else {
-      shiftForm.reset();
+      shiftForm.reset({
+        date: "",
+        startTime: "",
+        endTime: "",
+        role: "",
+        description: "",
+        location: "",
+        assignedTo: "",
+        notes: "",
+      });
     }
   }, [editingShift, shiftForm]);
 
-  useEffect(() => {
-    if (editingTemplate) {
-      templateForm.reset({
-        name: editingTemplate.name || "",
-        description: editingTemplate.description || "",
-        role: editingTemplate.role || "",
-        location: editingTemplate.location || "",
-        startTime: editingTemplate.startTime || "",
-        endTime: editingTemplate.endTime || "",
-        assignedTo: editingTemplate.assignedTo?.toString() || "unassigned",
-        defaultDescription: editingTemplate.defaultDescription || "",
-        defaultNotes: editingTemplate.defaultNotes || "",
-        isActive: editingTemplate.isActive ?? true
-      });
-    } else {
-      templateForm.reset();
-    }
-  }, [editingTemplate, templateForm]);
-
-  // Data queries
-  const { data: shifts = [], isLoading: shiftsLoading, refetch: refetchShifts } = useQuery({
-    queryKey: [`/api/shifts?tenantId=${tenantId}`],
-    enabled: !!tenantId
-  });
-
-  const { data: templates = [], isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
+  // Additional data queries for shift form dropdowns
+  const { data: templates = [], isLoading: templatesLoading } = useQuery({
     queryKey: [`/api/schedule-templates?tenantId=${tenantId}`],
     enabled: !!tenantId
   });
 
-  // Additional data queries for form dropdowns
   const { data: jobRoles = [] } = useQuery({
     queryKey: [`/api/job-roles?tenantId=${tenantId}`],
+    enabled: !!tenantId
+  });
+
+  const { data: staff = [] } = useQuery({
+    queryKey: [`/api/staff?tenantId=${tenantId}`],
     enabled: !!tenantId
   });
 
@@ -174,14 +208,8 @@ const Scheduling = () => {
     enabled: !!tenantId
   });
 
-  const { data: staff = [] } = useQuery({
-    queryKey: [`/api/users?tenantId=${tenantId}&role=staff`],
-    enabled: !!tenantId
-  });
-
   // Handle shift form submission
   const onShiftSubmit = async (formData: ShiftFormData) => {
-    setShiftSubmitting(true);
     try {
       const shiftData = {
         ...formData,
@@ -189,238 +217,412 @@ const Scheduling = () => {
         status: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open") as "assigned" | "open",
         tenantId,
         assignmentType: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "opportunity") as "assigned" | "opportunity",
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        createdBy: user?.id,
+        requiredStaff: 1,
+        claimedBy: null,
+        templateId: null,
+        createdBy: Number(user?.id) || 1,
         notes: formData.notes || null,
       };
 
-      if (editingShift) {
-        await apiRequest(`/api/shifts/${editingShift.id}`, {
-          method: "PUT",
-          body: JSON.stringify(shiftData)
-        });
-        toast({ title: "Shift updated successfully" });
-      } else {
-        await apiRequest("/api/shifts", {
-          method: "POST",
-          body: JSON.stringify(shiftData)
-        });
-        toast({ title: "Shift created successfully" });
-      }
-
-      refetchShifts();
-      closeShiftModal();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setShiftSubmitting(false);
+      await handleShiftSubmit(shiftData);
+    } catch (error) {
+      console.error("Error submitting shift:", error);
     }
   };
 
-  // Handle template form submission
-  const onTemplateSubmit = async (formData: TemplateFormData) => {
-    setTemplateSubmitting(true);
-    try {
-      const templateData = {
-        ...formData,
-        assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
-        tenantId,
-        createdBy: user?.id,
-      };
-
-      if (editingTemplate) {
-        await apiRequest(`/api/schedule-templates/${editingTemplate.id}`, {
-          method: "PUT",
-          body: JSON.stringify(templateData)
-        });
-        toast({ title: "Template updated successfully" });
-      } else {
-        await apiRequest("/api/schedule-templates", {
-          method: "POST",
-          body: JSON.stringify(templateData)
-        });
-        toast({ title: "Template created successfully" });
-      }
-
-      refetchTemplates();
-      closeTemplateModal();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setTemplateSubmitting(false);
-    }
+  // Handle shift duplication
+  const handleShiftDuplicate = (shift: Shift) => {
+    // Open create modal with shift data pre-filled
+    shiftForm.reset({
+      date: shift.date,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      role: shift.role,
+      description: shift.description,
+      location: shift.location,
+      assignedTo: shift.assignedTo?.toString() || "",
+      notes: shift.notes || "",
+    });
+    openCreateShiftModal();
   };
 
-  // Modal handlers
-  const closeShiftModal = () => {
-    setShiftModalOpen(false);
-    setEditingShift(null);
-    shiftForm.reset();
+  // Initialize template form with slots support
+  const templateForm = useForm<EnhancedTemplateData>({
+    resolver: zodResolver(enhancedTemplateSchema),
+    defaultValues: {
+      tenantId: tenantId,
+      name: "",
+      description: "",
+      positions: [],
+      assignmentType: "assigned",
+      requiredStaffPerPosition: 1,
+      recurrence: "weekly",
+      isActive: true,
+      createdBy: Number(user?.id) || 1,
+      slots: [{ role: "", quantity: 1, assignmentType: "open", staffIds: [] }]
+    }
+  });
+
+  // Template management functions
+  const openTemplateModal = () => {
+    setEditingTemplate(null);
+    templateForm.reset({
+      tenantId: tenantId,
+      name: "",
+      description: "",
+      positions: [],
+      assignmentType: "assigned",
+      requiredStaffPerPosition: 1,
+      recurrence: "weekly",
+      isActive: true,
+      createdBy: Number(user?.id) || 1,
+      slots: [{ role: "", quantity: 1, assignmentType: "open", staffIds: [] }]
+    });
+    setTemplateModalOpen(true);
   };
 
   const closeTemplateModal = () => {
     setTemplateModalOpen(false);
     setEditingTemplate(null);
-    templateForm.reset();
   };
 
-  const openCreateShiftModal = (date?: Date) => {
-    setEditingShift(null);
-    if (date) {
-      const dateStr = date.toISOString().split('T')[0];
-      shiftForm.setValue("date", dateStr);
-    }
-    setShiftModalOpen(true);
-  };
-
-  const openEditShiftModal = (shift: any) => {
-    setEditingShift(shift);
-    setShiftModalOpen(true);
-  };
-
-  const openCreateTemplateModal = () => {
-    setEditingTemplate(null);
-    setTemplateModalOpen(true);
-  };
-
-  const openEditTemplateModal = (template: any) => {
+  const openEditTemplateModal = (template: ScheduleTemplate) => {
     setEditingTemplate(template);
+    templateForm.reset({
+      tenantId: template.tenantId,
+      name: template.name,
+      description: template.description || "",
+      positions: template.positions || [],
+      assignmentType: template.assignmentType,
+      requiredStaffPerPosition: template.requiredStaffPerPosition,
+      recurrence: template.recurrence,
+      isActive: template.isActive,
+      createdBy: template.createdBy,
+      slots: (template.slots || [{ role: "", quantity: 1, staffIds: [] }]) as Array<{ role?: string; quantity?: number; staffIds?: number[] }>
+    });
     setTemplateModalOpen(true);
   };
 
-  const openDeleteTemplateDialog = (template: any) => {
+  const openDeleteTemplateDialog = (template: ScheduleTemplate) => {
     setTemplateToDelete(template);
-    setDeleteTemplateDialogOpen(true);
+    setTemplateDeleteDialogOpen(true);
   };
+
+
 
   const confirmTemplateDelete = async () => {
     if (!templateToDelete) return;
     
     try {
-      await apiRequest(`/api/schedule-templates/${templateToDelete.id}`, {
+      await fetch(`/api/schedule-templates/${templateToDelete.id}`, {
         method: "DELETE"
       });
-      toast({ title: "Template deleted successfully" });
-      refetchTemplates();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setDeleteTemplateDialogOpen(false);
+      
+      toast({
+        title: "Template Deleted",
+        description: "Template has been successfully deleted.",
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/schedule-templates", tenantId] });
+      setTemplateDeleteDialogOpen(false);
       setTemplateToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  // Apply template to create shift
-  const applyTemplate = (template: any, date?: Date) => {
-    const targetDate = date || selectedDate || new Date();
-    shiftForm.reset({
-      date: targetDate.toISOString().split('T')[0],
-      startTime: template.startTime,
-      endTime: template.endTime,
-      role: template.role,
-      location: template.location,
-      assignedTo: template.assignedTo?.toString() || "unassigned",
-      description: template.defaultDescription,
-      notes: template.defaultNotes || ""
-    });
-    setShiftModalOpen(true);
+  const cancelTemplateDelete = () => {
+    setTemplateDeleteDialogOpen(false);
+    setTemplateToDelete(null);
   };
 
-  // Table columns for shifts
-  const shiftColumns = [
-    {
+  const handleTemplateSubmit = async (formData: EnhancedTemplateData) => {
+    try {
+      setTemplateSubmitting(true);
+      
+      // Clean up slots data
+      const cleanedSlots = formData.slots?.filter(slot => slot.role && slot.quantity > 0) || [];
+      
+      const templateData = {
+        ...formData,
+        slots: cleanedSlots,
+        // Keep positions for backward compatibility
+        positions: cleanedSlots.map(slot => slot.role)
+      };
+
+      if (editingTemplate) {
+        const response = await fetch(`/api/schedule-templates/${editingTemplate.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(templateData)
+        });
+        if (!response.ok) throw new Error("Failed to update template");
+        toast({ title: "Template updated successfully" });
+      } else {
+        const response = await fetch("/api/schedule-templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(templateData)
+        });
+        if (!response.ok) throw new Error("Failed to create template");
+        toast({ title: "Template created successfully" });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/schedule-templates"] });
+      closeTemplateModal();
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to save template",
+        variant: "destructive" 
+      });
+    } finally {
+      setTemplateSubmitting(false);
+    }
+  };
+
+  // Function to create shifts from template
+  const createShiftsFromTemplate = async (template: any, date: Date) => {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Validate staff availability for pre-assigned slots
+      const validationErrors = [];
+      const shiftsToCreate = [];
+      
+      for (const slot of template.slots || []) {
+        if (slot.assignmentType === "assigned" && slot.staffIds?.length > 0) {
+          // Check each assigned staff member for holidays
+          for (const staffId of slot.staffIds) {
+            const availability = await checkStaffAvailability(staffId, dateStr);
+            if (!availability.isAvailable) {
+              const staffMember = (staff as any[]).find((s: any) => s.id === staffId);
+              validationErrors.push(`${staffMember?.firstName} ${staffMember?.lastName} is ${availability.reason?.toLowerCase()} on ${dateStr}`);
+            }
+          }
+          
+          // Create assigned shift
+          if (validationErrors.length === 0) {
+            shiftsToCreate.push({
+              date: dateStr,
+              startTime: template.startTime,
+              endTime: template.endTime,
+              role: slot.role,
+              location: template.location || "",
+              status: "assigned",
+              assignedTo: slot.staffIds[0], // Pre-assigned slots only have one staff member
+              notes: `Created from template: ${template.name}`,
+              tenantId: tenantId
+            });
+          }
+        } else {
+          // Create open opportunity for each required staff position
+          for (let i = 0; i < slot.quantity; i++) {
+            shiftsToCreate.push({
+              date: dateStr,
+              startTime: template.startTime,
+              endTime: template.endTime,
+              role: slot.role,
+              location: template.location || "",
+              status: "open",
+              assignedTo: null,
+              notes: `Created from template: ${template.name}`,
+              tenantId: tenantId
+            });
+          }
+        }
+      }
+      
+      if (validationErrors.length > 0) {
+        toast({
+          title: "Staff Unavailable",
+          description: validationErrors.join(", "),
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Create all shifts
+      const createPromises = shiftsToCreate.map(shiftData => 
+        fetch("/api/shifts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(shiftData)
+        })
+      );
+      
+      const responses = await Promise.all(createPromises);
+      const failedCreations = responses.filter(r => !r.ok);
+      
+      if (failedCreations.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Created ${responses.length - failedCreations.length} shifts, ${failedCreations.length} failed`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Created ${shiftsToCreate.length} shifts from template`
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/shifts?tenantId=${tenantId}`] });
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create shifts from template",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Use template to generate shifts
+  const useTemplateMutation = useMutation({
+    mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
+      apiRequest(`/api/schedule-templates/${templateId}/use`, "POST", { startDate, endDate }),
+    onSuccess: (result: any) => {
+      toast({ 
+        title: "Shifts Generated",
+        description: `Created shifts from template successfully`
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to generate shifts from template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleUseTemplate = (templateId: number) => {
+    // For demo purposes, use current date and next 7 days
+    const startDate = new Date().toISOString().split('T')[0];
+    const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    useTemplateMutation.mutate({ templateId, startDate, endDate });
+  };
+
+  const shiftColumns: Column<Shift>[] = [
+    { 
       key: "date",
-      accessorKey: "date",
-      header: "Date",
-      cell: (item: any) => new Date(item.date).toLocaleDateString()
+      header: "Date", 
+      cell: (shift) => shift.date 
     },
-    {
+    { 
       key: "role",
-      accessorKey: "role",
-      header: "Role"
+      header: "Role", 
+      cell: (shift) => shift.role 
     },
-    {
-      key: "location",
-      accessorKey: "location", 
-      header: "Location"
-    },
-    {
+    { 
       key: "time",
-      accessorKey: "startTime",
-      header: "Time",
-      cell: (item: any) => `${item.startTime} - ${item.endTime}`
+      header: "Time", 
+      cell: (shift) => `${shift.startTime} - ${shift.endTime}` 
     },
-    {
+    { 
+      key: "location",
+      header: "Location", 
+      cell: (shift) => shift.location 
+    },
+    { 
       key: "status",
-      accessorKey: "status",
-      header: "Status",
-      cell: (item: any) => (
-        <Badge variant={item.status === "assigned" ? "default" : "secondary"}>
-          {item.status}
+      header: "Status", 
+      cell: (shift) => (
+        <Badge variant={shift.status === "assigned" ? "default" : "secondary"}>
+          {shift.status}
         </Badge>
       )
     },
     {
       key: "actions",
-      id: "actions",
       header: "Actions",
-      cell: (item: any) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => openEditShiftModal(item)}>
-            <Edit2 className="h-4 w-4" />
+      cell: (shift) => (
+        <div className="flex items-center space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openEditShiftModal(shift)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleShiftDelete(shift)}
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       )
     }
   ];
 
-  // Table columns for templates
-  const templateColumns = [
-    {
+  const templateColumns: Column<ScheduleTemplate>[] = [
+    { 
       key: "name",
-      accessorKey: "name",
-      header: "Name"
+      header: "Name", 
+      cell: (template) => template.name 
     },
-    {
-      key: "role",
-      accessorKey: "role",
-      header: "Role"
+    { 
+      key: "recurrence",
+      header: "Recurrence", 
+      cell: (template) => template.recurrence 
     },
-    {
-      key: "location",
-      accessorKey: "location",
-      header: "Location"
+    { 
+      key: "roles",
+      header: "Roles", 
+      cell: (template) => {
+        if (template.slots && Array.isArray(template.slots)) {
+          return template.slots.map((slot: any) => slot.role).join(", ");
+        }
+        return template.positions?.join(", ") || "";
+      }
     },
-    {
-      key: "time",
-      accessorKey: "startTime",
-      header: "Time",
-      cell: (item: any) => `${item.startTime} - ${item.endTime}`
-    },
-    {
+    { 
       key: "status",
-      accessorKey: "isActive",
-      header: "Status",
-      cell: (item: any) => (
-        <Badge variant={item.isActive ? "default" : "secondary"}>
-          {item.isActive ? "Active" : "Inactive"}
-        </Badge>
-      )
+      header: "Status", 
+      cell: (template) => 
+        template.isActive ? 
+          <Badge variant="default">Active</Badge> : 
+          <Badge variant="secondary">Inactive</Badge>
     },
     {
       key: "actions",
-      id: "actions",
       header: "Actions",
-      cell: (item: any) => (
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => applyTemplate(item)}>
-            <Plus className="h-4 w-4" />
+      cell: (template) => (
+        <div className="flex items-center space-x-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openEditTemplateModal(template)}
+            className="h-8 w-8 p-0"
+          >
+            <Edit className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onClick={() => openEditTemplateModal(item)}>
-            <Edit2 className="h-4 w-4" />
+          <Button
+            size="sm"
+            onClick={() => {
+              setSelectedTemplate(template);
+              setCreateShiftsModalOpen(true);
+            }}
+            className="h-8 px-2 text-xs"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Create Shifts
           </Button>
-          <Button size="sm" variant="outline" onClick={() => openDeleteTemplateDialog(item)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openDeleteTemplateDialog(template)}
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -429,85 +631,98 @@ const Scheduling = () => {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Scheduling</h2>
-        <Button onClick={() => openCreateShiftModal()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Shift
-        </Button>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg">Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md"
-              showOutsideDays
-            />
-            {selectedDate && (
-              <Button 
-                className="w-full mt-4" 
-                variant="outline"
-                onClick={() => openCreateShiftModal(selectedDate)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Shift
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="md:col-span-3">
-          <Tabs defaultValue="shifts" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="shifts">Shifts</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="shifts" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Shifts</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DataTable 
-                    data={shifts as any[]} 
-                    columns={shiftColumns}
-                    isLoading={shiftsLoading}
-                    title="Shifts"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="templates" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Schedule Templates</CardTitle>
-                  <Button onClick={openCreateTemplateModal}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Template
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <DataTable 
-                    data={templates as any[]} 
-                    columns={templateColumns}
-                    isLoading={templatesLoading}
-                    title="Templates"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+    <>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Scheduling</h1>
+          <div className="flex items-center space-x-2">
+            <Button onClick={openCreateShiftModal} className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Create Shift</span>
+            </Button>
+            <Button onClick={openTemplateModal} variant="outline" className="flex items-center space-x-2">
+              <Copy className="h-4 w-4" />
+              <span>Create Template</span>
+            </Button>
+          </div>
         </div>
+
+        <Tabs defaultValue="shifts" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 gap-1">
+            <TabsTrigger value="shifts" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Shifts</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs md:text-sm p-2 min-h-[44px]">
+              <span className="truncate">Templates</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="shifts" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Shifts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DataTable 
+                  title="Shifts"
+                  data={shifts} 
+                  columns={shiftColumns}
+                  isLoading={shiftsLoading}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="calendar" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Calendar View</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Role Legend */}
+                <CalendarLegend />
+                
+                {/* Calendar View */}
+                <CalendarView 
+                  shifts={shifts}
+                  onCreateShift={(date: Date) => {
+                    // Convert Date object to YYYY-MM-DD string format
+                    const dateString = date.toISOString().split('T')[0];
+                    openCreateShiftModal();
+                    // Pre-fill the date in the form
+                    shiftForm.setValue('date', dateString);
+                  }}
+                  onEditShift={openEditShiftModal}
+                  onDuplicateShift={handleShiftDuplicate}
+                  onDeleteShift={(shiftId: number) => {
+                    const shift = shifts.find(s => s.id === shiftId);
+                    if (shift) handleShiftDelete(shift);
+                  }}
+
+                  userRole={role || "staff"}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="templates" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Schedule Templates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DataTable 
+                  data={templates as any[]} 
+                  columns={templateColumns}
+                  isLoading={templatesLoading}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Shift CRUD Modal */}
@@ -515,9 +730,6 @@ const Scheduling = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingShift ? "Edit Shift" : "Create Shift"}</DialogTitle>
-            <DialogDescription>
-              {editingShift ? "Update shift details" : "Create a new shift assignment"}
-            </DialogDescription>
           </DialogHeader>
           
           <Form {...shiftForm}>
@@ -694,59 +906,39 @@ const Scheduling = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Template CRUD Modal - Same structure as shift modal */}
-      <Dialog open={templateModalOpen} onOpenChange={closeTemplateModal}>
-        <DialogContent className="max-w-lg">
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={shiftDeleteDialogOpen}
+        onClose={() => cancelShiftDelete()}
+        onConfirm={() => confirmShiftDelete()}
+        title="Delete Shift"
+        description="Are you sure you want to delete this shift? This action cannot be undone."
+      />
+
+      {/* Enhanced Template Form Modal */}
+      <Dialog open={templateModalOpen} onOpenChange={setTemplateModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
             <DialogDescription>
-              {editingTemplate ? "Update template details" : "Create a reusable shift template"}
+              Create reusable schedule templates with staff assignments and recurring patterns.
             </DialogDescription>
           </DialogHeader>
           
           <Form {...templateForm}>
-            <form onSubmit={templateForm.handleSubmit(onTemplateSubmit)} className="space-y-4">
-              <FormField
-                control={templateForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Template Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Morning Customer Service" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Template description"
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={templateForm.handleSubmit(handleTemplateSubmit)} className="space-y-6">
+              {/* Section 1: Template Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Template Details</h3>
+                
                 <FormField
                   control={templateForm.control}
-                  name="startTime"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start Time</FormLabel>
+                      <FormLabel>Template Name</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <Input placeholder="e.g., Morning Customer Service" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -755,148 +947,273 @@ const Scheduling = () => {
 
                 <FormField
                   control={templateForm.control}
-                  name="endTime"
+                  name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>End Time</FormLabel>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} />
+                        <Textarea 
+                          placeholder="Template description"
+                          {...field} 
+                          value={field.value || ""}
+                        />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={templateForm.control}
+                    name="recurrence"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Recurrence Pattern</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select recurrence" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+
+                </div>
+
+                <FormField
+                  control={templateForm.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Active Template</FormLabel>
+                        <FormDescription>
+                          Enable this template for shift generation
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
               </div>
 
-              <FormField
-                control={templateForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
-                          <SelectItem key={role.id} value={role.title}>
-                            {role.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a location" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.isArray(locations) && locations.map((location: any) => (
-                          <SelectItem key={location.id} value={location.name}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="assignedTo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Assignment (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select staff member" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {Array.isArray(staff) && staff.map((member: any) => (
-                          <SelectItem key={member.id} value={member.id.toString()}>
-                            {member.firstName} {member.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="defaultDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Default shift description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="defaultNotes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Notes (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Default additional notes"
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={templateForm.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Active Template</FormLabel>
-                      <FormDescription>
-                        Enable this template for shift generation
-                      </FormDescription>
+              {/* Section 2: Position Slots */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Template Lines</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const currentSlots = templateForm.getValues("slots") || [];
+                      templateForm.setValue("slots", [
+                        ...currentSlots,
+                        {
+                          role: "",
+                          quantity: 1,
+                          assignmentType: "open" as const,
+                          staffIds: []
+                        }
+                      ]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Line
+                  </Button>
+                </div>
+                
+                {templateForm.watch("slots")?.map((slot, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Line {index + 1}</h4>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const currentSlots = templateForm.getValues("slots") || [];
+                            const slotToDuplicate = currentSlots[index];
+                            templateForm.setValue("slots", [
+                              ...currentSlots.slice(0, index + 1),
+                              { ...slotToDuplicate },
+                              ...currentSlots.slice(index + 1)
+                            ]);
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        {templateForm.watch("slots")!.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const currentSlots = templateForm.getValues("slots") || [];
+                              const newSlots = currentSlots.filter((_, i) => i !== index);
+                              templateForm.setValue("slots", newSlots);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={templateForm.control}
+                        name={`slots.${index}.role`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Role</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
+                                  <SelectItem key={role.id} value={role.title}>
+                                    {role.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
+
+                      <FormField
+                        control={templateForm.control}
+                        name={`slots.${index}.quantity`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Required Staff</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="1" 
+                                max={slot.assignmentType === "assigned" ? "1" : undefined}
+                                disabled={slot.assignmentType === "assigned"}
+                                value={slot.assignmentType === "assigned" ? "1" : field.value}
+                                onChange={(e) => {
+                                  if (slot.assignmentType === "assigned") {
+                                    field.onChange(1);
+                                  } else {
+                                    field.onChange(parseInt(e.target.value) || 1);
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {slot.assignmentType === "assigned" ? "Pre-assigned lines can only have 1 staff member" : "Number of staff needed for this role"}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={templateForm.control}
+                        name={`slots.${index}.assignmentType`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assignment Type</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="open">Open Opportunity</SelectItem>
+                                <SelectItem value="assigned">Pre-Assigned</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
+                      <div>
+                        <FormLabel>Pre-assign Staff (Optional)</FormLabel>
+                        <div className="mt-2 space-y-2">
+                          {Array.isArray(staff) && staff
+                            .filter((member: any) => !member.role || slot.role === "" || member.role === slot.role)
+                            .map((member: any) => (
+                            <div key={member.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`staff-${index}-${member.id}`}
+                                checked={slot.staffIds?.includes(member.id) || false}
+                                onChange={(e) => {
+                                  const currentSlots = templateForm.getValues("slots") || [];
+                                  const updatedSlots = [...currentSlots];
+                                  if (!updatedSlots[index].staffIds) {
+                                    updatedSlots[index].staffIds = [];
+                                  }
+                                  
+                                  if (e.target.checked) {
+                                    // For pre-assigned slots, only allow one staff member
+                                    if (slot.assignmentType === "assigned") {
+                                      updatedSlots[index].staffIds = [member.id];
+                                    } else {
+                                      updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
+                                    }
+                                  } else {
+                                    updatedSlots[index].staffIds = updatedSlots[index].staffIds.filter(id => id !== member.id);
+                                  }
+                                  
+                                  templateForm.setValue("slots", updatedSlots);
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <label htmlFor={`staff-${index}-${member.id}`} className="text-sm">
+                                {member.firstName} {member.lastName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const currentSlots = templateForm.getValues("slots") || [];
+                    templateForm.setValue("slots", [...currentSlots, { role: "", quantity: 1, assignmentType: "open", staffIds: [] }]);
+                  }}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Position
+                </Button>
+              </div>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeTemplateModal}>
                   Cancel
@@ -916,24 +1233,93 @@ const Scheduling = () => {
           </Form>
         </DialogContent>
       </Dialog>
-      
-      {/* Delete Template Confirmation */}
-      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
+
+      {/* Template Delete Dialog */}
+      <AlertDialog open={templateDeleteDialogOpen} onOpenChange={setTemplateDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this template? This action cannot be undone.
+              Are you sure you want to delete the template "{templateToDelete?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmTemplateDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={cancelTemplateDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmTemplateDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-};
 
-export default Scheduling;
+      {/* Create Shifts from Template Modal */}
+      <Dialog open={createShiftsModalOpen} onOpenChange={setCreateShiftsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Shifts from Template</DialogTitle>
+            <DialogDescription>
+              Select a date to create shifts from the template "{selectedTemplate?.name}".
+              Pre-assigned staff will be validated for holiday availability.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Select Date</label>
+              <input
+                type="date"
+                value={templateDate.toISOString().split('T')[0]}
+                onChange={(e) => setTemplateDate(new Date(e.target.value))}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            {selectedTemplate && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h4 className="font-medium text-sm">Template Details:</h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Time: {selectedTemplate.startTime || '08:00'} - {selectedTemplate.endTime || '17:00'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  Roles: {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 
+                    ? selectedTemplate.slots.map((slot: any) => 
+                        `${slot.role} (${slot.quantity}${slot.assignmentType === 'assigned' ? ' pre-assigned' : ' open'})`
+                      ).join(', ')
+                    : selectedTemplate.positions?.join(', ') || 'No roles defined'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setCreateShiftsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={async () => {
+                if (selectedTemplate) {
+                  await createShiftsFromTemplate(selectedTemplate, templateDate);
+                  setCreateShiftsModalOpen(false);
+                  setSelectedTemplate(null);
+                }
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Shifts
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+    </>
+  );
+}
