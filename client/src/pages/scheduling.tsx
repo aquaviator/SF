@@ -115,6 +115,7 @@ export default function Scheduling() {
   const [createShiftsModalOpen, setCreateShiftsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateDate, setTemplateDate] = useState<Date>(new Date());
+  const [staffAssignments, setStaffAssignments] = useState<{[key: string]: number}>({});
 
   // Calendar functionality
   const [calendarView, setCalendarView] = useState('month');
@@ -386,7 +387,7 @@ export default function Scheduling() {
   };
 
   // Function to create shifts from template
-  const createShiftsFromTemplate = async (template: any, date: Date) => {
+  const createShiftsFromTemplate = async (template: any, date: Date, staffAssignments: {[key: string]: number} = {}) => {
     try {
       const dateStr = date.toISOString().split('T')[0];
       
@@ -394,38 +395,46 @@ export default function Scheduling() {
       const validationErrors = [];
       const shiftsToCreate = [];
       
-      for (const slot of template.slots || []) {
-        if (slot.assignmentType === "assigned" && slot.staffIds?.length > 0) {
-          // Check each assigned staff member for holidays
-          for (const staffId of slot.staffIds) {
-            const availability = await checkStaffAvailability(staffId, dateStr);
-            if (!availability.isAvailable) {
-              const staffMember = (staff as any[]).find((s: any) => s.id === staffId);
-              validationErrors.push(`${staffMember?.firstName} ${staffMember?.lastName} is ${availability.reason?.toLowerCase()} on ${dateStr}`);
+      const templateSlots = template.slots || template.positions || [];
+      
+      for (const slot of templateSlots) {
+        const slotQuantity = slot.quantity || slot.requiredStaffPerPosition || 1;
+        
+        if (slot.assignmentType === "assigned") {
+          // Create assigned shifts for each position in the slot
+          for (let i = 0; i < slotQuantity; i++) {
+            const assignmentKey = `${slot.role}-${i}`;
+            const assignedStaffId = staffAssignments[assignmentKey];
+            
+            if (assignedStaffId) {
+              // Check staff availability for holidays
+              const availability = await checkStaffAvailability(assignedStaffId, dateStr);
+              if (!availability.isAvailable) {
+                const staffMember = (staff as any[]).find((s: any) => s.id === assignedStaffId);
+                validationErrors.push(`${staffMember?.firstName} ${staffMember?.lastName} is ${availability.reason?.toLowerCase()} on ${dateStr}`);
+              } else {
+                // Create assigned shift
+                shiftsToCreate.push({
+                  date: dateStr,
+                  startTime: template.startTime || '08:00',
+                  endTime: template.endTime || '17:00',
+                  role: slot.role,
+                  location: template.location || "",
+                  status: "assigned",
+                  assignedTo: assignedStaffId,
+                  notes: `Created from template: ${template.name}`,
+                  tenantId: tenantId
+                });
+              }
             }
-          }
-          
-          // Create assigned shift
-          if (validationErrors.length === 0) {
-            shiftsToCreate.push({
-              date: dateStr,
-              startTime: template.startTime,
-              endTime: template.endTime,
-              role: slot.role,
-              location: template.location || "",
-              status: "assigned",
-              assignedTo: slot.staffIds[0], // Pre-assigned slots only have one staff member
-              notes: `Created from template: ${template.name}`,
-              tenantId: tenantId
-            });
           }
         } else {
           // Create open opportunity for each required staff position
-          for (let i = 0; i < slot.quantity; i++) {
+          for (let i = 0; i < slotQuantity; i++) {
             shiftsToCreate.push({
               date: dateStr,
-              startTime: template.startTime,
-              endTime: template.endTime,
+              startTime: template.startTime || '08:00',
+              endTime: template.endTime || '17:00',
               role: slot.role,
               location: template.location || "",
               status: "open",
@@ -610,6 +619,7 @@ export default function Scheduling() {
             size="sm"
             onClick={() => {
               setSelectedTemplate(template);
+              setStaffAssignments({}); // Reset staff assignments
               setCreateShiftsModalOpen(true);
             }}
             className="h-8 px-2 text-xs"
@@ -1292,6 +1302,56 @@ export default function Scheduling() {
                 </p>
               </div>
             )}
+
+            {/* Staff Assignment Section for Pre-assigned Templates */}
+            {selectedTemplate && Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.some((slot: any) => slot.assignmentType === 'assigned') && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Staff Assignments</h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select staff members for pre-assigned positions:
+                </p>
+                
+                {selectedTemplate.slots
+                  .filter((slot: any) => slot.assignmentType === 'assigned')
+                  .map((slot: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <label className="text-sm font-medium">
+                        {slot.role} ({slot.quantity} position{slot.quantity > 1 ? 's' : ''})
+                      </label>
+                      
+                      {Array.from({ length: slot.quantity }, (_, i) => (
+                        <div key={i} className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 w-16">
+                            Position {i + 1}:
+                          </span>
+                          <Select
+                            value={staffAssignments[`${slot.role}-${i}`]?.toString() || ''}
+                            onValueChange={(value) => {
+                              setStaffAssignments(prev => ({
+                                ...prev,
+                                [`${slot.role}-${i}`]: parseInt(value)
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select staff member" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(staff as any[] || [])
+                                .filter((s: any) => s.isActive)
+                                .map((staffMember: any) => (
+                                  <SelectItem key={staffMember.id} value={staffMember.id.toString()}>
+                                    {staffMember.firstName} {staffMember.lastName}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -1306,9 +1366,35 @@ export default function Scheduling() {
               type="button" 
               onClick={async () => {
                 if (selectedTemplate) {
-                  await createShiftsFromTemplate(selectedTemplate, templateDate);
+                  // Validate staff assignments for pre-assigned slots
+                  const templateSlots = selectedTemplate.slots || selectedTemplate.positions || [];
+                  const preAssignedSlots = templateSlots.filter((slot: any) => slot.assignmentType === 'assigned');
+                  let missingAssignments = false;
+                  
+                  for (const slot of preAssignedSlots) {
+                    const slotQuantity = slot.quantity || slot.requiredStaffPerPosition || 1;
+                    for (let i = 0; i < slotQuantity; i++) {
+                      if (!staffAssignments[`${slot.role}-${i}`]) {
+                        missingAssignments = true;
+                        break;
+                      }
+                    }
+                    if (missingAssignments) break;
+                  }
+                  
+                  if (missingAssignments) {
+                    toast({
+                      title: "Missing Staff Assignments",
+                      description: "Please assign staff members to all pre-assigned positions before creating shifts.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  await createShiftsFromTemplate(selectedTemplate, templateDate, staffAssignments);
                   setCreateShiftsModalOpen(false);
                   setSelectedTemplate(null);
+                  setStaffAssignments({});
                 }
               }}
             >
