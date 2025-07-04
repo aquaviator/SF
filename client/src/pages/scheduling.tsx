@@ -116,6 +116,9 @@ export default function Scheduling() {
   const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateDate, setTemplateDate] = useState<Date>(new Date());
   const [staffAssignments, setStaffAssignments] = useState<{[key: string]: number}>({});
+  
+  // State for Quick Staff Creation modal
+  const [quickStaffModalOpen, setQuickStaffModalOpen] = useState(false);
 
   // Calendar functionality
   const [calendarView, setCalendarView] = useState('month');
@@ -199,7 +202,7 @@ export default function Scheduling() {
     enabled: !!tenantId
   });
 
-  const { data: staff = [] } = useQuery({
+  const { data: staff = [], refetch: refetchStaff } = useQuery({
     queryKey: [`/api/staff?tenantId=${tenantId}`],
     enabled: !!tenantId
   });
@@ -728,6 +731,7 @@ export default function Scheduling() {
                   data={templates as any[]} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
+                  title="Schedule Templates"
                 />
               </CardContent>
             </Card>
@@ -1167,7 +1171,18 @@ export default function Scheduling() {
 
                     {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
                       <div>
-                        <FormLabel>Pre-assign Staff (Optional)</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Pre-assign Staff (Optional)</FormLabel>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setQuickStaffModalOpen(true)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add New Staff
+                          </Button>
+                        </div>
                         <div className="mt-2 space-y-2">
                           {Array.isArray(staff) && staff
                             .filter((member: any) => !member.role || slot.role === "" || member.role === slot.role)
@@ -1367,8 +1382,8 @@ export default function Scheduling() {
               onClick={async () => {
                 if (selectedTemplate) {
                   // Validate staff assignments for pre-assigned slots
-                  const templateSlots = selectedTemplate.slots || selectedTemplate.positions || [];
-                  const preAssignedSlots = templateSlots.filter((slot: any) => slot.assignmentType === 'assigned');
+                  const templateSlots = selectedTemplate?.slots || selectedTemplate?.positions || [];
+                  const preAssignedSlots = Array.isArray(templateSlots) ? templateSlots.filter((slot: any) => slot.assignmentType === 'assigned') : [];
                   let missingAssignments = false;
                   
                   for (const slot of preAssignedSlots) {
@@ -1402,6 +1417,111 @@ export default function Scheduling() {
               Create Shifts
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Staff Creation Modal */}
+      <Dialog open={quickStaffModalOpen} onOpenChange={setQuickStaffModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Staff Member</DialogTitle>
+            <DialogDescription>
+              Quickly add a new staff member to assign to template positions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            
+            try {
+              const response = await fetch('/api/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  username: formData.get('username'),
+                  password: 'temp123', // Default password
+                  firstName: formData.get('firstName'),
+                  lastName: formData.get('lastName'),
+                  email: formData.get('email'),
+                  role: 'staff',
+                  isActive: true,
+                  tenantId: tenantId
+                })
+              });
+              
+              if (response.ok) {
+                // Refresh staff list
+                await refetchStaff?.();
+                setQuickStaffModalOpen(false);
+                toast({
+                  title: "Staff Added",
+                  description: "New staff member has been added successfully."
+                });
+              }
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to add staff member.",
+                variant: "destructive"
+              });
+            }
+          }} className="space-y-4">
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <input 
+                  name="firstName" 
+                  type="text" 
+                  required 
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <input 
+                  name="lastName" 
+                  type="text" 
+                  required 
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Username</label>
+              <input 
+                name="username" 
+                type="text" 
+                required 
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="john.doe"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <input 
+                name="email" 
+                type="email" 
+                required 
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="john.doe@company.com"
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setQuickStaffModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Add Staff Member
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
