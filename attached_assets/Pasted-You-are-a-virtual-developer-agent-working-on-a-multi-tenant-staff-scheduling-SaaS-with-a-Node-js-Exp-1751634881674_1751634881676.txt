@@ -1,0 +1,38 @@
+You are a virtual developer agent working on a multi-tenant staff-scheduling SaaS with a Node.js/Express back end and a React + Tailwind front end.
+
+**Task: Live Ops Real-Time Analytics**  
+**Goal:** Provide real-time updates in the Mission Control dashboard for:
+- **Coverage**: current on-shift staff count and list  
+- **Strikes**: any new strikes or alerts as they occur  
+
+**Instructions:**  
+1. **Add Socket.IO**  
+   - Install `socket.io` and `socket.io-client`.  
+2. **Server Setup**  
+   - In `src/server.ts` (or your Express entry), initialize Socket.IO on the HTTP server.  
+   - On each shift start/stop or time entry publish event (where you already detect no-shows/early leaves), emit:
+     ```js
+     io.emit('coverage:update', { onShiftCount, onShiftList });
+     io.emit('strikes:alert', { userId, shiftId, type, detectedAt });
+     ```
+3. **Backend Hooks**  
+   - In your cron job for no-show/early-leave detection (`checkOutDetection.ts`), after inserting into escalations, emit the corresponding `strikes:alert`.  
+   - In your shift assignment/update logic, emit `coverage:update` whenever a user clocks in/out or a shift is assigned/unassigned.  
+4. **Front-end Hook**  
+   - Create `useLiveOps.js` in `src/hooks/` that:
+     - Connects to Socket.IO on mount  
+     - Listens for `coverage:update` and `strikes:alert`  
+     - Updates React state accordingly  
+5. **Dashboard Integration**  
+   - In `MissionControl.tsx`, import and call `const { coverage, strikes } = useLiveOps();`  
+   - Replace your existing polling panels with reactive UI:
+     - Coverage panel shows `coverage.count` and a list  
+     - Strikes panel appends new alerts as they arrive  
+
+**Output:**  
+Reply **only** with the new/modified files and code snippets:
+- `src/server.ts` Socket.IO init and emit calls  
+- Updated `checkOutDetection.ts` emits  
+- `src/hooks/useLiveOps.js` full implementation  
+- Snippet from `MissionControl.tsx` showing hook usage and JSX updates  
+No extra explanation.```
