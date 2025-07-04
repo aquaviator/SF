@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverrideClockModal } from "@/components/OverrideClockModal";
+import { EscalationModal } from "@/components/EscalationModal";
 import { 
   MonitorSpeaker, 
   Users, 
@@ -555,6 +556,7 @@ export default function OwnerOperationsPage() {
   const [showCoverageModal, setShowCoverageModal] = useState(false);
   const [showTimeEntryModal, setShowTimeEntryModal] = useState(false);
   const [showBulkHolidayModal, setShowBulkHolidayModal] = useState(false);
+  const [showEscalationModal, setShowEscalationModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number>();
   const [selectedUserName, setSelectedUserName] = useState<string>();
 
@@ -950,7 +952,7 @@ export default function OwnerOperationsPage() {
               )}
               <div className="flex justify-center">
                 <Button 
-                  onClick={navigateToScheduling}
+                  onClick={() => setShowEscalationModal(true)}
                   variant="outline"
                   className="min-h-[44px]"
                   aria-label="Manage escalations in scheduling"
@@ -982,6 +984,13 @@ export default function OwnerOperationsPage() {
         isOpen={showBulkHolidayModal}
         onClose={() => setShowBulkHolidayModal(false)}
         pendingRequests={pendingRequestsData}
+      />
+      
+      <EscalationModal 
+        isOpen={showEscalationModal}
+        onClose={() => setShowEscalationModal(false)}
+        escalations={escalationsData || []}
+        tenantId={tenantId!}
       />
     </div>
   );
