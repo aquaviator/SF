@@ -196,8 +196,8 @@ export const staffApi = {
     
     try {
       const response = await apiRequest("POST", `/api/swap-requests`, {
-        originalShiftId: shiftId,
-        targetShiftId: null, // Will be filled by user selection
+        originalShiftId: shiftId.toString(), // Convert to string for backend validation
+        targetShiftId: "", // Empty string instead of null
         reason: "Staff requested swap via My Shifts"
       });
       const data = await response.json();
@@ -222,7 +222,12 @@ export const staffApi = {
     console.log("📡 REQUEST_CANCEL API", { shiftId, timestamp: new Date() });
     
     try {
+      // Get current shift data first to preserve required fields
+      const getResponse = await apiRequest("GET", `/api/shifts/${shiftId}`);
+      const currentShift = await getResponse.json();
+      
       const response = await apiRequest("PUT", `/api/shifts/${shiftId}`, {
+        ...currentShift,
         status: "cancelled",
         notes: "Staff requested cancellation via My Shifts"
       });
