@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverrideClockModal } from "@/components/OverrideClockModal";
 import { 
   MonitorSpeaker, 
@@ -34,31 +35,330 @@ interface CoverageDetailsModalProps {
 }
 
 function CoverageDetailsModal({ isOpen, onClose, coverageData }: CoverageDetailsModalProps) {
+  const { tenantId } = useAuth();
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [coverageThreshold, setCoverageThreshold] = useState(80);
+  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [autoAssign, setAutoAssign] = useState(false);
+
   console.log("🎯 COVERAGE_MODAL_RENDER", { isOpen, hasData: !!coverageData, timestamp: new Date() });
+
+  // Fetch additional data for comprehensive coverage management
+  const { data: shiftsData, isLoading: shiftsLoading } = useQuery({
+    queryKey: ["/api/shifts", tenantId],
+    enabled: isOpen && !!tenantId,
+  });
+
+  const { data: staffData, isLoading: staffLoading } = useQuery({
+    queryKey: ["/api/staff", tenantId],
+    enabled: isOpen && !!tenantId,
+  });
+
+  const handleQuickAssign = async (shiftId: number, staffId: number) => {
+    try {
+      console.log("🔄 QUICK_ASSIGN_SHIFT", { shiftId, staffId, timestamp: new Date() });
+      const response = await fetch(`/api/shifts/${shiftId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignedTo: staffId })
+      });
+      
+      if (response.ok) {
+        console.log("✅ SHIFT_ASSIGNED", { shiftId, staffId, timestamp: new Date() });
+        // Refresh data after successful assignment
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("❌ ASSIGN_SHIFT_ERROR", { error: error.message, timestamp: new Date() });
+    }
+  };
+
+  const handleNavigateToScheduling = () => {
+    console.log("📅 NAVIGATE_TO_SCHEDULING_FROM_COVERAGE", { timestamp: new Date() });
+    onClose();
+    navigate("/owner/scheduling");
+  };
+
+  const getUnfilledShifts = () => {
+    if (!shiftsData) return [];
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+    
+    return shiftsData.filter((shift: any) => {
+      const shiftDate = new Date(shift.date);
+      return shiftDate >= today && 
+             shiftDate <= nextWeek && 
+             shift.status === "open" && 
+             !shift.assignedTo;
+    });
+  };
+
+  const getCoverageRate = () => {
+    if (!coverageData?.details) return 0;
+    const total = coverageData.details.reduce((sum: number, day: any) => sum + day.shifts, 0);
+    const filled = coverageData.details.reduce((sum: number, day: any) => sum + day.filled, 0);
+    return total > 0 ? Math.round((filled / total) * 100) : 0;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-labelledby="coverage-modal-title">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-labelledby="coverage-modal-title">
         <DialogHeader>
-          <DialogTitle id="coverage-modal-title">Shift Coverage Details</DialogTitle>
+          <DialogTitle id="coverage-modal-title">Shift Coverage Management</DialogTitle>
           <DialogDescription>
-            Detailed breakdown of shift coverage across your business locations
+            Comprehensive shift coverage monitoring, configuration, and management
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          {coverageData?.details?.map((day: any, index: number) => (
-            <div key={index} className="border rounded-lg p-4">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">{new Date(day.date).toLocaleDateString()}</h3>
-                <Badge variant={day.understaffed ? "destructive" : "default"}>
-                  {day.filled}/{day.shifts} filled
-                </Badge>
+        
+        <div className="space-y-6">
+          {/* Coverage Overview Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{getCoverageRate()}%</div>
+                <div className="text-sm text-muted-foreground">Coverage Rate</div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                {day.understaffed ? "⚠️ Understaffed" : "✅ Fully covered"}
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{coverageData?.active || 0}</div>
+                <div className="text-sm text-muted-foreground">Active Shifts</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{coverageData?.unfilled || 0}</div>
+                <div className="text-sm text-muted-foreground">Unfilled</div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{coverageData?.underUtilized || 0}</div>
+                <div className="text-sm text-muted-foreground">Under-utilized</div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Tabs for different views */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Daily Overview</TabsTrigger>
+              <TabsTrigger value="unfilled">
+                Unfilled Shifts ({getUnfilledShifts().length})
+              </TabsTrigger>
+              <TabsTrigger value="settings">
+                <Settings className="h-4 w-4 mr-1" />
+                Settings
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="mt-6">
+              <div className="space-y-4">
+                {coverageData?.details?.map((day: any, index: number) => (
+                  <Card key={index} className={day.understaffed ? "border-red-200 bg-red-50" : ""}>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-medium">{new Date(day.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}</h3>
+                            <Badge variant={day.understaffed ? "destructive" : "default"}>
+                              {day.filled}/{day.shifts} filled
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {day.understaffed ? (
+                              <span className="text-red-600 flex items-center gap-1">
+                                <AlertTriangle className="h-4 w-4" />
+                                Below {coverageThreshold}% coverage threshold
+                              </span>
+                            ) : (
+                              <span className="text-green-600 flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4" />
+                                Meeting coverage requirements
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleNavigateToScheduling}
+                          >
+                            <Calendar className="h-4 w-4 mr-2" />
+                            View Schedule
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="unfilled" className="mt-6">
+            <div className="space-y-4">
+              {shiftsLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-muted-foreground">Loading unfilled shifts...</div>
+                </div>
+              ) : getUnfilledShifts().length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">All Shifts Covered</h3>
+                  <p className="text-muted-foreground">No unfilled shifts in the next 7 days</p>
+                </div>
+              ) : (
+                getUnfilledShifts().map((shift: any) => (
+                  <Card key={shift.id} className="border-orange-200 bg-orange-50">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-medium">{new Date(shift.date).toLocaleDateString()}</h3>
+                            <Badge variant="secondary">{shift.role}</Badge>
+                            <Badge variant="outline">{shift.location}</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {shift.startTime} - {shift.endTime}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleNavigateToScheduling}
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Assign Staff
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            </TabsContent>
+
+            <TabsContent value="settings" className="mt-6">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Coverage Thresholds</CardTitle>
+                  <CardDescription>
+                    Configure when shifts are considered understaffed
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Minimum Coverage Threshold: {coverageThreshold}%
+                    </label>
+                    <input
+                      type="range"
+                      min="50"
+                      max="100"
+                      value={coverageThreshold}
+                      onChange={(e) => setCoverageThreshold(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>50%</span>
+                      <span>75%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alert Preferences</CardTitle>
+                  <CardDescription>
+                    Configure how you receive coverage notifications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Coverage Alerts</div>
+                      <div className="text-sm text-muted-foreground">
+                        Get notified when shifts fall below threshold
+                      </div>
+                    </div>
+                    <Button
+                      variant={alertsEnabled ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAlertsEnabled(!alertsEnabled)}
+                    >
+                      {alertsEnabled ? (
+                        <>
+                          <Bell className="h-4 w-4 mr-2" />
+                          Enabled
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="h-4 w-4 mr-2" />
+                          Disabled
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Auto-Assignment</div>
+                      <div className="text-sm text-muted-foreground">
+                        Automatically suggest staff for unfilled shifts
+                      </div>
+                    </div>
+                    <Button
+                      variant={autoAssign ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAutoAssign(!autoAssign)}
+                    >
+                      {autoAssign ? (
+                        <>
+                          <Activity className="h-4 w-4 mr-2" />
+                          Enabled
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="h-4 w-4 mr-2" />
+                          Disabled
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  console.log("💾 SAVE_COVERAGE_SETTINGS", { 
+                    threshold: coverageThreshold, 
+                    alerts: alertsEnabled, 
+                    autoAssign,
+                    timestamp: new Date() 
+                  });
+                  onClose();
+                }}>
+                  Save Settings
+                </Button>
               </div>
             </div>
-          ))}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
