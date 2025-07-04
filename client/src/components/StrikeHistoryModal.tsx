@@ -424,14 +424,14 @@ export function StrikeHistoryModal({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Related Shift (Optional)</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                        <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
                           <FormControl>
                             <SelectTrigger className="min-h-[44px]">
                               <SelectValue placeholder="Select a recent shift" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No specific shift</SelectItem>
+                            <SelectItem value="none">No specific shift</SelectItem>
                             {userShifts.map((shift) => (
                               <SelectItem key={shift.id} value={shift.id.toString()}>
                                 {format(new Date(shift.date), "MMM d")} - {shift.role} ({shift.startTime} - {shift.endTime})

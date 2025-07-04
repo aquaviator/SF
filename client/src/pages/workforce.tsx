@@ -135,7 +135,20 @@ export default function Workforce() {
   // Get performance data from database
   const { data: timeEntries = [] } = useQuery({
     queryKey: ["/api/time-entries", tenantId],
-    queryFn: () => fetch(`/api/time-entries?tenantId=${tenantId}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/time-entries?tenantId=${tenantId}`);
+        if (!response.ok) {
+          console.warn("Time entries API error:", response.status, response.statusText);
+          return [];
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.warn("Time entries fetch error:", error);
+        return [];
+      }
+    },
     enabled: !!tenantId,
   });
 
