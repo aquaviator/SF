@@ -219,9 +219,11 @@ export default function OwnerDashboard() {
     queryFn: () => fetch(`/api/dashboard/live-time-entries?tenantId=${tenantId}`).then(res => res.json()),
   });
 
-  // Map staff status using real time entry data to match Live Operations
-  const staffStatus: StaffStatus[] = staffData.slice(0, 5).map((staff) => {
-    const timeEntry = liveTimeEntries.find((entry: any) => entry.userId === staff.id);
+  // Map staff status using ONLY staff with active time entries to match Live Operations exactly
+  const staffStatus: StaffStatus[] = liveTimeEntries.map((timeEntry: any) => {
+    const staff = staffData.find(s => s.id === timeEntry.userId);
+    if (!staff) return null;
+    
     const todayShifts = shiftsData.filter(shift => 
       shift.assignedTo === staff.id && 
       shift.date === new Date().toISOString().split('T')[0]
@@ -232,12 +234,10 @@ export default function OwnerDashboard() {
     );
 
     // Map time entry status to staff status format
-    let status: "clocked-in" | "clocked-out" | "break" | "absent" = "clocked-out";
-    if (timeEntry) {
-      status = timeEntry.status === "on_break" ? "break" : 
-               timeEntry.status === "clocked_in" ? "clocked-in" : 
-               timeEntry.status === "clocked_out" ? "clocked-out" : "absent";
-    }
+    const status: "clocked-in" | "clocked-out" | "break" | "absent" = 
+      timeEntry.status === "on_break" ? "break" : 
+      timeEntry.status === "clocked_in" ? "clocked-in" : 
+      timeEntry.status === "clocked_out" ? "clocked-out" : "absent";
 
     return {
       id: staff.id,
@@ -246,7 +246,7 @@ export default function OwnerDashboard() {
       currentShift: activeShift?.role || timeEntry?.currentShift?.role,
       hoursToday: Math.round((6 + Math.random() * 3) * 10) / 10 // Calculated hours
     };
-  });
+  }).filter(Boolean) as StaffStatus[];
 
   // Fetch activity logs from database
   const { data: activityLogs = [], isLoading: activitiesLoading } = useQuery({
