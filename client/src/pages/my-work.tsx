@@ -130,13 +130,19 @@ export default function MyWork() {
     shifts.forEach((shift) => {
       const shiftDate = new Date(shift.date);
       
+      // Today shifts
       if (shiftDate.toDateString() === today.toDateString()) {
         todayShifts.push(shift);
-      } else if (shiftDate < today) {
-        completedShifts.push(shift);
-      } else if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
+      }
+      
+      // Week shifts (includes today)
+      if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
         weekShifts.push(shift);
+      } else if (shiftDate < today) {
+        // Completed shifts (past shifts)
+        completedShifts.push(shift);
       } else {
+        // Upcoming shifts (beyond this week)
         upcomingShifts.push(shift);
       }
     });
