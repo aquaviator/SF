@@ -1409,6 +1409,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Activity logs route
+  app.get("/api/activity-logs", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      console.log("📝 FETCH_ACTIVITY_LOGS", { tenantId, timestamp: new Date() });
+      
+      const activityLogs = await storage.getActivityLogsByTenant(tenantId);
+      
+      console.log("✅ ACTIVITY_LOGS_SUCCESS", { 
+        tenantId, 
+        logCount: activityLogs.length,
+        timestamp: new Date() 
+      });
+      
+      res.json(activityLogs);
+    } catch (error) {
+      console.error("❌ ACTIVITY_LOGS_ERROR", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
   app.get("/api/activity-logs", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
