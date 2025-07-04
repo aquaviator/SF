@@ -330,38 +330,44 @@ const Scheduling = () => {
   // Table columns for shifts
   const shiftColumns = [
     {
+      key: "date",
       accessorKey: "date",
       header: "Date",
-      cell: ({ row }: any) => new Date(row.getValue("date")).toLocaleDateString()
+      cell: (item: any) => new Date(item.date).toLocaleDateString()
     },
     {
+      key: "role",
       accessorKey: "role",
       header: "Role"
     },
     {
+      key: "location",
       accessorKey: "location", 
       header: "Location"
     },
     {
+      key: "time",
       accessorKey: "startTime",
       header: "Time",
-      cell: ({ row }: any) => `${row.getValue("startTime")} - ${row.original.endTime}`
+      cell: (item: any) => `${item.startTime} - ${item.endTime}`
     },
     {
+      key: "status",
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }: any) => (
-        <Badge variant={row.getValue("status") === "assigned" ? "default" : "secondary"}>
-          {row.getValue("status")}
+      cell: (item: any) => (
+        <Badge variant={item.status === "assigned" ? "default" : "secondary"}>
+          {item.status}
         </Badge>
       )
     },
     {
+      key: "actions",
       id: "actions",
       header: "Actions",
-      cell: ({ row }: any) => (
+      cell: (item: any) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => openEditShiftModal(row.original)}>
+          <Button size="sm" variant="outline" onClick={() => openEditShiftModal(item)}>
             <Edit2 className="h-4 w-4" />
           </Button>
         </div>
@@ -372,43 +378,49 @@ const Scheduling = () => {
   // Table columns for templates
   const templateColumns = [
     {
+      key: "name",
       accessorKey: "name",
       header: "Name"
     },
     {
+      key: "role",
       accessorKey: "role",
       header: "Role"
     },
     {
+      key: "location",
       accessorKey: "location",
       header: "Location"
     },
     {
+      key: "time",
       accessorKey: "startTime",
       header: "Time",
-      cell: ({ row }: any) => `${row.getValue("startTime")} - ${row.original.endTime}`
+      cell: (item: any) => `${item.startTime} - ${item.endTime}`
     },
     {
+      key: "status",
       accessorKey: "isActive",
       header: "Status",
-      cell: ({ row }: any) => (
-        <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
-          {row.getValue("isActive") ? "Active" : "Inactive"}
+      cell: (item: any) => (
+        <Badge variant={item.isActive ? "default" : "secondary"}>
+          {item.isActive ? "Active" : "Inactive"}
         </Badge>
       )
     },
     {
+      key: "actions",
       id: "actions",
       header: "Actions",
-      cell: ({ row }: any) => (
+      cell: (item: any) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => applyTemplate(row.original)}>
+          <Button size="sm" variant="outline" onClick={() => applyTemplate(item)}>
             <Plus className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onClick={() => openEditTemplateModal(row.original)}>
+          <Button size="sm" variant="outline" onClick={() => openEditTemplateModal(item)}>
             <Edit2 className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onClick={() => openDeleteTemplateDialog(row.original)}>
+          <Button size="sm" variant="outline" onClick={() => openDeleteTemplateDialog(item)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
