@@ -1,0 +1,37 @@
+You are a virtual developer agent working on a multi-tenant staff-scheduling SaaS with PostgreSQL via Drizzle ORM, a Node.js back end, and a React + Tailwind front end.
+
+**Task: End-to-End Seed & Sanity Scripts + Documentation**  
+**Goal:** Provide a one-click dev setup and QA toolkit, and generate clear UI→API→DB mapping docs for onboarding.
+
+**Instructions:**  
+1. **Seed Script**  
+   - Create `scripts/seed.ts` that:
+     - Drops and recreates all tables for two tenants: “DemoCorp” and “AcmeInc”.
+     - Generates:
+       - 2 roles per tenant (owner, staff).
+       - 5 users per tenant.
+       - 1 month of historical shifts (with time_entries, holidays, swaps, strikes) and 1 month of future shifts.
+       - Randomized but policy-compliant data (use Drizzle’s API to insert).
+   - At the top include a `--dry-run` flag option to log SQL without executing.
+
+2. **Sanity Checks**  
+   - Create `scripts/sanity.ts` that runs:
+     - Referential integrity checks: all `.references()` constraints hold.
+     - Spot-check: fetch a random time_entry and verify its shift and user exist.
+     - API smoke tests: call GET `/api/shifts?tenant={id}` and verify non-empty array.
+   - Exit with non-zero on any failure.
+
+3. **Documentation**  
+   - Generate `docs/api_db_mapping.md` containing a table per API route:
+     | Route                   | Method | Auth       | Body Schema                 | Response Schema            | Affected Tables         |
+     |-------------------------|--------|------------|-----------------------------|----------------------------|-------------------------|
+     | `/api/shifts`           | GET    | owner,staff| —                           | `Shift[]`                  | `shifts`, `time_entries`|
+     | …                       | …      | …          | …                           | …                          | …                       |
+   - At the end of the file include an ER diagram (ASCII or Mermaid) of key tables: `users`, `shifts`, `time_entries`, `swap_requests`, `staff_strikes`.
+
+**Output:**  
+Reply **only** with:
+- The full contents of `scripts/seed.ts`
+- The full contents of `scripts/sanity.ts`
+- The new `docs/api_db_mapping.md`
+No extra commentary.```
