@@ -26,6 +26,7 @@ export function ModalForm<T extends FieldValues = FieldValues>({
   isLoading = false,
 }: ModalFormProps<T>) {
   const handleSubmit = (data: T) => {
+    console.log("🔧 MODAL_FORM_SUBMIT", { data, formErrors: form.formState.errors });
     onSubmit(data);
   };
 
@@ -47,7 +48,12 @@ export function ModalForm<T extends FieldValues = FieldValues>({
               <Button type="button" variant="outline" onClick={onClose} className="min-h-[44px]">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading} className="min-h-[44px]">
+              <Button 
+                type="submit" 
+                disabled={isLoading} 
+                className="min-h-[44px]"
+                onClick={() => console.log("🔧 SUBMIT_BUTTON_CLICKED", { isLoading, formValid: form.formState.isValid })}
+              >
                 {isLoading ? "Saving..." : submitLabel}
               </Button>
             </div>
