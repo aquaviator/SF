@@ -94,10 +94,7 @@ export const staffApi = {
     });
     
     try {
-      const response = await apiRequest(`/api/staff/${request.userId}/strikes`, {
-        method: "POST",
-        body: JSON.stringify(request),
-      });
+      const response = await apiRequest("POST", `/api/staff/${request.userId}/strikes`, request);
       
       console.log("✅ CREATE_STRIKE SUCCESS", { 
         userId: request.userId,
@@ -130,10 +127,7 @@ export const staffApi = {
     });
     
     try {
-      const response = await apiRequest(`/api/staff/${userId}/strikes/${strikeId}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      });
+      const response = await apiRequest("PUT", `/api/staff/${userId}/strikes/${strikeId}`, updates);
       
       console.log("✅ UPDATE_STRIKE SUCCESS", { 
         userId,

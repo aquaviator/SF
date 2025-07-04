@@ -346,6 +346,11 @@ export default function OwnerOperationsPage() {
     navigate("/owner/scheduling?filter=escalations");
   };
 
+  const navigateToRequests = () => {
+    console.log("📋 NAVIGATE_TO_REQUESTS", { destination: "/owner/requests", timestamp: new Date() });
+    navigate("/owner/requests");
+  };
+
   const getStatusDotColor = (status: string) => {
     switch (status) {
       case "clocked_in": return "bg-green-500";
@@ -585,7 +590,7 @@ export default function OwnerOperationsPage() {
                   <div className="text-xs text-muted-foreground">Urgent</div>
                 </div>
                 <Button 
-                  onClick={openBulkHolidayModal}
+                  onClick={navigateToRequests}
                   variant="outline" 
                   size="sm" 
                   className="w-full min-h-[44px]"

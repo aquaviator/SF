@@ -29,6 +29,7 @@ export default function OwnerStrikesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalAction, setModalAction] = useState<"view" | "add" | "adjust">("view");
   const [searchTerm, setSearchTerm] = useState("");
 
   console.log("LOAD_ALL_STRIKES", { tenantId: user?.tenantId, timestamp: new Date() });
@@ -64,19 +65,22 @@ export default function OwnerStrikesPage() {
   const handleViewHistory = (userId: number) => {
     console.log("OPEN_STAFF_STRIKE_HISTORY", { userId, timestamp: new Date() });
     setSelectedUserId(userId);
+    setModalAction("view");
     setIsModalOpen(true);
   };
 
   const handleManualStrike = (userId: number) => {
     console.log("MANUAL_STRIKE_ASSIGN", { userId, timestamp: new Date() });
     setSelectedUserId(userId);
+    setModalAction("add");
     setIsModalOpen(true);
   };
 
   const handleAdjustStrike = (userId: number) => {
     console.log("STRIKE_ADJUST", { userId, timestamp: new Date() });
-    // TODO: Implement strike adjustment
-    alert("Strike adjustment will be implemented in future sprint");
+    setSelectedUserId(userId);
+    setModalAction("adjust");
+    setIsModalOpen(true);
   };
 
   const filteredStaff = strikesData?.strikes.filter(staff => 
@@ -387,7 +391,7 @@ export default function OwnerStrikesPage() {
         userId={selectedUserId}
         tenantId={user?.tenantId}
         mode="owner"
-        initialAction="add"
+        initialAction={modalAction}
         onStrikeUpdated={() => {
           // Refresh the strikes data when a strike is updated
           const fetchAllStrikes = async () => {
