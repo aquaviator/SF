@@ -1173,15 +1173,17 @@ export default function Scheduling() {
                       <div>
                         <div className="flex items-center justify-between">
                           <FormLabel>Pre-assign Staff (Optional)</FormLabel>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setQuickStaffModalOpen(true)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add New Staff
-                          </Button>
+                          {Array.isArray(staff) && staff.length === 0 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setQuickStaffModalOpen(true)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add New Staff
+                            </Button>
+                          )}
                         </div>
                         <div className="mt-2 space-y-2">
                           {Array.isArray(staff) && staff
