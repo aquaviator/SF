@@ -84,9 +84,14 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
   ];
 
   const isFormValid = () => {
-    const hasBasicFields = formData.inDate && formData.inTime && formData.outDate && formData.outTime && formData.reason;
+    const hasRequiredFields = formData.inDate && formData.inTime && formData.reason;
     const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
-    return hasBasicFields && hasValidReason;
+    
+    // For completed entries, require clock-out. For active entries, clock-out is optional
+    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break";
+    const hasValidClockOut = isActiveEntry || (formData.outDate && formData.outTime);
+    
+    return hasRequiredFields && hasValidReason && hasValidClockOut;
   };
 
   const handleFieldEdit = (field: keyof typeof editing) => {
@@ -111,15 +116,28 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
 
     // Combine date and time into ISO format
     const inDateTime = `${formData.inDate}T${formData.inTime}:00`;
-    const outDateTime = `${formData.outDate}T${formData.outTime}:00`;
+    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break";
+    
+    // For active entries, clock-out is optional
+    let payload: any = {
+      in: inDateTime,
+      note: formData.reason === "Other" ? formData.otherNote : formData.reason
+    };
 
-    if (new Date(inDateTime) >= new Date(outDateTime)) {
-      toast({
-        title: "Error", 
-        description: "Clock out time must be after clock in time",
-        variant: "destructive"
-      });
-      return;
+    if (!isActiveEntry || (formData.outDate && formData.outTime)) {
+      const outDateTime = `${formData.outDate}T${formData.outTime}:00`;
+      
+      // Only validate clock-out time if it's provided
+      if (new Date(inDateTime) >= new Date(outDateTime)) {
+        toast({
+          title: "Error", 
+          description: "Clock out time must be after clock in time",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      payload.out = outDateTime;
     }
 
     setIsLoading(true);
@@ -130,11 +148,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          in: inDateTime,
-          out: outDateTime,
-          note: formData.reason === "Other" ? formData.otherNote : formData.reason
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -226,7 +240,12 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
 
           {/* Clock Out Date & Time */}
           <div className="space-y-2">
-            <Label>Clock Out</Label>
+            <Label>
+              Clock Out
+              {(entry.status === "clocked_in" || entry.status === "on_break") && (
+                <span className="text-sm text-muted-foreground ml-2">(optional for active shifts)</span>
+              )}
+            </Label>
             <div className="flex gap-2">
               {editing.outDate ? (
                 <Input
@@ -235,7 +254,6 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
                   onChange={(e) => setFormData(prev => ({ ...prev, outDate: e.target.value }))}
                   onBlur={() => handleFieldBlur('outDate')}
                   autoFocus
-                  required
                   className="flex-1"
                 />
               ) : (
@@ -257,7 +275,6 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
                   onChange={(e) => setFormData(prev => ({ ...prev, outTime: e.target.value }))}
                   onBlur={() => handleFieldBlur('outTime')}
                   autoFocus
-                  required
                   className="flex-1"
                 />
               ) : (

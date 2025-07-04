@@ -858,9 +858,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { in: clockInTime, out: clockOutTime, note } = req.body;
       
-      // Validate request body
-      if (!clockInTime || !clockOutTime || !note) {
-        return res.status(400).json({ message: "Clock in time, clock out time, and note are required" });
+      // Validate request body - clock-out is now optional for active entries
+      if (!clockInTime || !note) {
+        return res.status(400).json({ message: "Clock in time and note are required" });
       }
       
       // Get the existing time entry to validate tenant access
@@ -873,23 +873,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // This would require passing user context or adding authentication middleware
       
       // Update the time entry with override data
-      const updateData = {
+      const updateData: any = {
         tenantId: existingEntry.tenantId,
         userId: existingEntry.userId,
         clockInTime: new Date(clockInTime),
-        clockOutTime: new Date(clockOutTime),
         overrideNote: note,
         status: "adjusted" as const,
         adjustedAt: new Date(),
         // TODO: Add adjustedBy when user context is available
       };
+
+      // Only update clock-out time if provided
+      if (clockOutTime) {
+        updateData.clockOutTime = new Date(clockOutTime);
+      }
       
       const updatedEntry = await storage.updateTimeEntry(id, updateData);
       if (!updatedEntry) {
         return res.status(404).json({ message: "Time entry not found" });
       }
       
-      console.log(`TIME_ENTRY_OVERRIDE: Entry ${id} overridden - ${clockInTime} to ${clockOutTime}`);
+      const logMessage = clockOutTime 
+        ? `TIME_ENTRY_OVERRIDE: Entry ${id} overridden - ${clockInTime} to ${clockOutTime}`
+        : `TIME_ENTRY_OVERRIDE: Entry ${id} clock-in overridden - ${clockInTime} (clock-out unchanged)`;
+      console.log(logMessage);
       res.json(updatedEntry);
     } catch (error) {
       console.error("Override time entry error:", error);
