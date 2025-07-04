@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataTable, Column } from "@/components/DataTable";
@@ -33,6 +33,10 @@ import {
   RefreshCw,
   Loader2,
   Plus,
+  Timer,
+  Eye,
+  RotateCcw,
+  X,
   Shield,
   AlertTriangle
 } from "lucide-react";
@@ -94,6 +98,324 @@ export default function MyWork() {
       return response.json();
     },
   });
+
+  // Shift grouping and pagination state
+  const [upcomingPage, setUpcomingPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [isShiftDetailModalOpen, setIsShiftDetailModalOpen] = useState(false);
+
+  // Group shifts into categories
+  const groupedShifts = useMemo(() => {
+    if (!shifts.length) return { today: [], week: [], upcoming: [], completed: [] };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Get start of this week (Monday)
+    const startOfWeek = new Date(today);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+    startOfWeek.setDate(diff);
+    
+    // Get end of this week (Sunday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const todayShifts: Shift[] = [];
+    const weekShifts: Shift[] = [];
+    const upcomingShifts: Shift[] = [];
+    const completedShifts: Shift[] = [];
+
+    shifts.forEach((shift) => {
+      const shiftDate = new Date(shift.date);
+      
+      if (shiftDate.toDateString() === today.toDateString()) {
+        todayShifts.push(shift);
+      } else if (shiftDate < today) {
+        completedShifts.push(shift);
+      } else if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
+        weekShifts.push(shift);
+      } else {
+        upcomingShifts.push(shift);
+      }
+    });
+
+    // Sort arrays by date/time
+    const sortByDateTime = (a: Shift, b: Shift) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.startTime.localeCompare(b.startTime);
+    };
+
+    todayShifts.sort(sortByDateTime);
+    weekShifts.sort(sortByDateTime);
+    upcomingShifts.sort(sortByDateTime);
+    completedShifts.sort((a, b) => b.date.localeCompare(a.date)); // Most recent first
+
+    console.log('MyShifts-Today:', todayShifts);
+    console.log('MyShifts-Week:', weekShifts);
+    console.log('MyShifts-Upcoming (page', upcomingPage, '):', upcomingShifts.slice(0, upcomingPage * 10));
+    console.log('MyShifts-Completed (page', completedPage, '):', completedShifts.slice(0, completedPage * 10));
+
+    return {
+      today: todayShifts,
+      week: weekShifts,
+      upcoming: upcomingShifts,
+      completed: completedShifts
+    };
+  }, [shifts, upcomingPage, completedPage]);
+
+  // Utility functions for countdown and policy checks
+  const calculateTimeUntilShift = (shift: Shift) => {
+    const shiftStart = new Date(`${shift.date}T${shift.startTime}`);
+    const now = new Date();
+    return Math.max(0, shiftStart.getTime() - now.getTime());
+  };
+
+  const formatCountdown = (milliseconds: number) => {
+    if (milliseconds <= 0) return "Now";
+    
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours === 0) return `${minutes}m`;
+    return `${hours}h ${minutes}m`;
+  };
+
+
+
+  // Modal handlers
+  const openShiftDetailModal = (shift: Shift) => {
+    console.log('Open ShiftDetailModal:', shift.id);
+    setSelectedShift(shift);
+    setIsShiftDetailModalOpen(true);
+  };
+
+  const closeShiftDetailModal = () => {
+    console.log('Close ShiftDetailModal');
+    setSelectedShift(null);
+    setIsShiftDetailModalOpen(false);
+  };
+
+  // ShiftCard component for ultra-lean shift cards
+  const ShiftCard = ({ shift, actions, onCardClick, showActions = false, isCompleted = false }) => {
+    const timeUntilShift = calculateTimeUntilShift(shift);
+    const formattedCountdown = formatCountdown(timeUntilShift);
+    
+    return (
+      <div 
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={onCardClick}
+      >
+        <div className="flex items-start justify-between">
+          {/* Left side - Main shift info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-2">
+              <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
+                {shift.status}
+              </Badge>
+              <span className="font-medium text-sm truncate">{shift.role}</span>
+            </div>
+            
+            <div className="text-sm text-muted-foreground mb-1">
+              {new Date(shift.date).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+            </div>
+            
+            <div className="text-sm font-medium">
+              {shift.startTime} - {shift.endTime}
+            </div>
+            
+            <div className="text-xs text-muted-foreground mt-1">
+              📍 {shift.location}
+            </div>
+            
+            {/* Escalation warning */}
+            {actions?.escalationMessage && (
+              <div className="mt-2 flex items-center space-x-1 text-xs text-orange-600 dark:text-orange-400">
+                <AlertTriangle className="h-3 w-3" />
+                <span>{actions.escalationMessage}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Right side - Countdown & Actions */}
+          <div className="flex flex-col items-end space-y-2">
+            {/* Countdown timer */}
+            {!isCompleted && (
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">starts in</div>
+                <div className="text-sm font-medium">{formattedCountdown}</div>
+              </div>
+            )}
+            
+            {/* Quick actions */}
+            {showActions && !isCompleted && (
+              <div className="flex space-x-1">
+                {actions?.canSwap && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Swap shift:', shift.id);
+                    }}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+                
+                {actions?.canCancel && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Cancel shift:', shift.id);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('View shift details:', shift.id);
+                    onCardClick();
+                  }}
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            
+            {/* Completed badge */}
+            {isCompleted && (
+              <div className="text-xs text-green-600 dark:text-green-400 flex items-center space-x-1">
+                <CheckCircle className="h-3 w-3" />
+                <span>Completed</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ShiftDetailModal component for detailed shift information
+  const ShiftDetailModal = ({ shift, isOpen, onClose }) => {
+    if (!shift) return null;
+    
+    const actions = getShiftActions(shift);
+    
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Shift Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
+                {shift.status}
+              </Badge>
+              <span className="font-medium">{shift.role}</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Date</div>
+                <div className="text-sm">{new Date(shift.date).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Time</div>
+                <div className="text-sm">{shift.startTime} - {shift.endTime}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Location</div>
+                <div className="text-sm">{shift.location}</div>
+              </div>
+              
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Status</div>
+                <div className="text-sm">{shift.status}</div>
+              </div>
+            </div>
+            
+            {shift.description && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Description</div>
+                <div className="text-sm">{shift.description}</div>
+              </div>
+            )}
+            
+            {shift.notes && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Notes</div>
+                <div className="text-sm">{shift.notes}</div>
+              </div>
+            )}
+            
+            {actions?.escalationMessage && (
+              <div className="flex items-center space-x-2 p-3 bg-orange-50 dark:bg-orange-950 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <span className="text-sm text-orange-600 dark:text-orange-400">
+                  {actions.escalationMessage}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-2 mt-6">
+            {actions?.canSwap && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  console.log('Request swap for shift:', shift.id);
+                  // TODO: Open swap request modal
+                }}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Request Swap
+              </Button>
+            )}
+            
+            {actions?.canCancel && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  console.log('Cancel shift:', shift.id);
+                  // TODO: Open cancel confirmation
+                }}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel Shift
+              </Button>
+            )}
+            
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   // Fetch my assignments
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
@@ -289,6 +611,29 @@ export default function MyWork() {
       return response.json();
     },
   });
+
+  // Shift action logic (must be after timePolicy query)
+  const getShiftActions = (shift: Shift) => {
+    const timeUntilShift = calculateTimeUntilShift(shift);
+    const hoursUntilShift = timeUntilShift / (1000 * 60 * 60);
+    const policy = timePolicy;
+    
+    const cancellationDeadline = policy?.cancellationDeadlineHours || 4;
+    const minNoticeHours = policy?.minNoticeHours || 24;
+    
+    // Check if within escalation window
+    const isWithinEscalationWindow = hoursUntilShift < minNoticeHours && hoursUntilShift >= cancellationDeadline;
+    const isTooLate = hoursUntilShift < cancellationDeadline;
+    
+    return {
+      canSwap: hoursUntilShift >= cancellationDeadline,
+      canCancel: hoursUntilShift >= cancellationDeadline,
+      willEscalate: isWithinEscalationWindow,
+      tooLate: isTooLate,
+      timeUntilDeadline: Math.max(0, cancellationDeadline * 60 * 60 * 1000 - (Date.now() - new Date(`${shift.date}T${shift.startTime}`).getTime() + timeUntilShift)),
+      escalationMessage: isWithinEscalationWindow ? `⚠️ Escalates to Manager in ${formatCountdown(timeUntilShift)}` : null
+    };
+  };
 
   // Working time tracking state
   const [localTimeEntries, setLocalTimeEntries] = useState<any[]>([]);
@@ -871,59 +1216,159 @@ export default function MyWork() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="my-shifts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Shifts</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Your scheduled shifts and assignments
-              </p>
-            </CardHeader>
-            <CardContent>
-              {shiftsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : shifts.length > 0 ? (
-                <div className="space-y-3">
-                  {shifts.map((shift) => (
-                    <div
-                      key={shift.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={shift.status === "confirmed" ? "default" : "secondary"}>
-                            {shift.status}
-                          </Badge>
-                          <span className="font-medium">{shift.role}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {shift.date} • {shift.startTime} - {shift.endTime}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          📍 {shift.location}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">{shift.description}</div>
-                        {shift.notes && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {shift.notes}
-                          </div>
-                        )}
-                      </div>
+        <TabsContent value="my-shifts" className="space-y-6">
+          {shiftsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading your shifts...</span>
+            </div>
+          ) : (
+            <>
+              {/* Today Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Today ({groupedShifts.today.length})</span>
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {groupedShifts.today.length > 0 ? (
+                    <div className="space-y-3">
+                      {groupedShifts.today.map((shift) => (
+                        <ShiftCard 
+                          key={shift.id} 
+                          shift={shift} 
+                          actions={getShiftActions(shift)}
+                          onCardClick={() => openShiftDetailModal(shift)}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-8 w-8 mx-auto mb-2" />
-                  <p>No shifts scheduled at the moment</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Calendar className="h-8 w-8 mx-auto mb-2" />
+                      <p>No shifts scheduled for today</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* This Week Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>This Week ({groupedShifts.week.length})</span>
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {groupedShifts.week.length > 0 ? (
+                    <div className="space-y-3">
+                      {groupedShifts.week.map((shift) => (
+                        <ShiftCard 
+                          key={shift.id} 
+                          shift={shift} 
+                          actions={getShiftActions(shift)}
+                          onCardClick={() => openShiftDetailModal(shift)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Calendar className="h-8 w-8 mx-auto mb-2" />
+                      <p>No shifts scheduled for this week</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Upcoming Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Upcoming ({groupedShifts.upcoming.length})</span>
+                    <Timer className="h-5 w-5 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {groupedShifts.upcoming.length > 0 ? (
+                    <>
+                      <div className="space-y-3">
+                        {groupedShifts.upcoming.slice(0, upcomingPage * 10).map((shift) => (
+                          <ShiftCard 
+                            key={shift.id} 
+                            shift={shift} 
+                            actions={getShiftActions(shift)}
+                            onCardClick={() => openShiftDetailModal(shift)}
+                            showActions={true}
+                          />
+                        ))}
+                      </div>
+                      {groupedShifts.upcoming.length > upcomingPage * 10 && (
+                        <div className="mt-4 text-center">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setUpcomingPage(prev => prev + 1)}
+                            className="min-h-[44px] min-w-[44px]"
+                          >
+                            Load More ({groupedShifts.upcoming.length - upcomingPage * 10} remaining)
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Calendar className="h-8 w-8 mx-auto mb-2" />
+                      <p>No upcoming shifts beyond this week</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Completed Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Completed ({groupedShifts.completed.length})</span>
+                    <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {groupedShifts.completed.length > 0 ? (
+                    <>
+                      <div className="space-y-3">
+                        {groupedShifts.completed.slice(0, completedPage * 10).map((shift) => (
+                          <ShiftCard 
+                            key={shift.id} 
+                            shift={shift} 
+                            actions={getShiftActions(shift)}
+                            onCardClick={() => openShiftDetailModal(shift)}
+                            isCompleted={true}
+                          />
+                        ))}
+                      </div>
+                      {groupedShifts.completed.length > completedPage * 10 && (
+                        <div className="mt-4 text-center">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setCompletedPage(prev => prev + 1)}
+                            className="min-h-[44px] min-w-[44px]"
+                          >
+                            Load More ({groupedShifts.completed.length - completedPage * 10} remaining)
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p>No completed shifts to display</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="my-strikes" className="space-y-6">
@@ -1564,6 +2009,13 @@ export default function MyWork() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Shift Detail Modal */}
+      <ShiftDetailModal 
+        shift={selectedShift} 
+        isOpen={isShiftDetailModalOpen} 
+        onClose={closeShiftDetailModal} 
+      />
     </div>
   );
 }
