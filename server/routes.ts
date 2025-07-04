@@ -2340,7 +2340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🔄 ESCALATION_REASSIGN", { escalationId, tenantId, action, timestamp: new Date() });
       
       // Convert shift to high-priority opportunity
-      const shift = await storage.getShiftById(escalationId);
+      const shift = await storage.getShift(escalationId);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
       }
@@ -2348,19 +2348,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create opportunity from unfilled shift
       const opportunity = await storage.createOpportunity({
         tenantId: shift.tenantId,
-        role: shift.role,
-        date: shift.date,
-        startTime: shift.startTime,
-        endTime: shift.endTime,
+        shiftId: shift.id,
         description: `URGENT: ${shift.description}`,
-        location: shift.location,
-        requiredStaff: 1,
-        hourlyRate: "25.00", // Premium rate for urgent coverage
-        status: "open",
-        assignmentType: "opportunity",
-        claimedBy: null,
-        notes: "Escalated from coverage gap - urgent coverage needed",
-        createdBy: 1
+        requirements: `Emergency coverage needed for ${shift.role} at ${shift.location} on ${shift.date} from ${shift.startTime}-${shift.endTime}`,
+        isActive: true
       });
       
       console.log("✅ ESCALATION_REASSIGN_SUCCESS", { escalationId, opportunityId: opportunity.id, timestamp: new Date() });
@@ -2380,7 +2371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // In real implementation, this would send notifications to staff
       // For now, we'll log the notification
-      const shift = await storage.getShiftById(escalationId);
+      const shift = await storage.getShift(escalationId);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
       }
@@ -2410,7 +2401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // In real implementation, this would mark escalation as resolved
       // For demo, we'll just log the dismissal
-      const shift = await storage.getShiftById(escalationId);
+      const shift = await storage.getShift(escalationId);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
       }
