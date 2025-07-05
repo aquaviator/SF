@@ -467,6 +467,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Changed "Currently working shifts" → "Staff assigned and confirmed" since all shifts are scheduled for future dates
   - Updated Time Tracking section: "No active time entries" → "No staff currently working" for clarity
   - System now accurately reflects real-time data: 1 confirmed shift, 1 unfilled shift, 1 escalation alert
+- July 05, 2025. Enhanced time tracking with precise lateness calculation and status synchronization:
+  - Added "Late by" duration display in Time Entry Details modal showing exact HH:MM:SS format for staff lateness
+  - Fixed Owner Dashboard Staff Status mapping to properly handle "late" time entry status as "clocked-in"
+  - Resolved Alice Johnson showing as "Absent" when actually working (just late) by updating status mapping logic
+  - Time Entry Details modal now calculates and displays precise late duration between scheduled and actual clock-in times
+  - Staff Status section in dashboard now correctly shows late staff as "Clocked In" rather than "Absent"
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

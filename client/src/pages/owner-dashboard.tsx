@@ -412,7 +412,7 @@ export default function OwnerDashboard() {
     // Map time entry status to staff status format
     const status: "clocked-in" | "clocked-out" | "break" | "absent" = 
       timeEntry.status === "on_break" ? "break" : 
-      timeEntry.status === "clocked_in" ? "clocked-in" : 
+      timeEntry.status === "clocked_in" || timeEntry.status === "late" ? "clocked-in" : 
       timeEntry.status === "clocked_out" ? "clocked-out" : "absent";
 
     return {
