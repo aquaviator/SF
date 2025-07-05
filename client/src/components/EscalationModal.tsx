@@ -36,34 +36,34 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
     }
   };
 
-  const handleReassignShift = async (escalationId: number) => {
-    console.log("🔄 ESCALATION_REASSIGN", { escalationId, tenantId, timestamp: new Date() });
+  const handleSystemWideAlert = async (escalationId: number) => {
+    console.log("📢 ESCALATION_SYSTEM_WIDE_ALERT", { escalationId, tenantId, timestamp: new Date() });
     
     setProcessingId(escalationId);
     
     try {
-      // For coverage gaps, we need to create an opportunity or alert management
-      const response = await apiRequest("POST", `/api/escalations/${escalationId}/reassign`, {
+      // Send urgent system-wide notification to ALL staff members
+      const response = await apiRequest("POST", `/api/escalations/${escalationId}/system-alert`, {
         tenantId,
-        action: "create_opportunity",
-        priority: "urgent"
+        action: "urgent_broadcast",
+        priority: "critical"
       });
 
       if (response.ok) {
         toast({
-          title: "Escalation Handled",
-          description: "Shift has been converted to high-priority opportunity",
+          title: "System-Wide Alert Sent",
+          description: "Urgent notification broadcast to all staff members",
         });
         
-        console.log("✅ ESCALATION_REASSIGN_SUCCESS", { escalationId, timestamp: new Date() });
+        console.log("✅ ESCALATION_SYSTEM_ALERT_SUCCESS", { escalationId, timestamp: new Date() });
       } else {
-        throw new Error("Failed to reassign shift");
+        throw new Error("Failed to send system-wide alert");
       }
     } catch (error) {
-      console.error("❌ ESCALATION_REASSIGN_FAILED", { escalationId, error, timestamp: new Date() });
+      console.error("❌ ESCALATION_SYSTEM_ALERT_FAILED", { escalationId, error, timestamp: new Date() });
       toast({
         title: "Error",
-        description: "Failed to handle escalation. Please try again.",
+        description: "Failed to send system-wide alert. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -71,72 +71,7 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
     }
   };
 
-  const handleNotifyStaff = async (escalationId: number) => {
-    console.log("📢 ESCALATION_NOTIFY", { escalationId, tenantId, timestamp: new Date() });
-    
-    setProcessingId(escalationId);
-    
-    try {
-      const response = await apiRequest("POST", `/api/escalations/${escalationId}/notify`, {
-        tenantId,
-        action: "broadcast_urgent",
-        message: "Urgent shift coverage needed"
-      });
 
-      if (response.ok) {
-        toast({
-          title: "Staff Notified",
-          description: "Urgent notification sent to all available staff",
-        });
-        
-        console.log("✅ ESCALATION_NOTIFY_SUCCESS", { escalationId, timestamp: new Date() });
-      } else {
-        throw new Error("Failed to notify staff");
-      }
-    } catch (error) {
-      console.error("❌ ESCALATION_NOTIFY_FAILED", { escalationId, error, timestamp: new Date() });
-      toast({
-        title: "Error", 
-        description: "Failed to notify staff. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleDismiss = async (escalationId: number) => {
-    console.log("✖️ ESCALATION_DISMISS", { escalationId, tenantId, timestamp: new Date() });
-    
-    setProcessingId(escalationId);
-    
-    try {
-      const response = await apiRequest("POST", `/api/escalations/${escalationId}/dismiss`, {
-        tenantId,
-        reason: "manually_resolved"
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Escalation Dismissed",
-          description: "Escalation has been marked as resolved",
-        });
-        
-        console.log("✅ ESCALATION_DISMISS_SUCCESS", { escalationId, timestamp: new Date() });
-      } else {
-        throw new Error("Failed to dismiss escalation");
-      }
-    } catch (error) {
-      console.error("❌ ESCALATION_DISMISS_FAILED", { escalationId, error, timestamp: new Date() });
-      toast({
-        title: "Error",
-        description: "Failed to dismiss escalation. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setProcessingId(null);
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -190,38 +125,22 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
                       {escalation.affectedShifts} shift{escalation.affectedShifts !== 1 ? 's' : ''} affected
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReassignShift(escalation.id)}
-                        disabled={processingId === escalation.id}
-                        className="min-h-[44px]"
-                      >
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                        Create Opportunity
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      {escalation.type === "assignment_declined" && (
+                        <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded border-l-4 border-blue-400">
+                          <span className="font-medium">✓ Auto-handled:</span> Opportunity created automatically when declined outside policy window
+                        </div>
+                      )}
                       
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
-                        onClick={() => handleNotifyStaff(escalation.id)}
+                        onClick={() => handleSystemWideAlert(escalation.id)}
                         disabled={processingId === escalation.id}
                         className="min-h-[44px]"
                       >
                         <Users className="h-4 w-4 mr-2" />
-                        Notify Staff
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDismiss(escalation.id)}
-                        disabled={processingId === escalation.id}
-                        className="min-h-[44px]"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Dismiss
+                        {processingId === escalation.id ? "Broadcasting..." : "Send System-Wide Alert"}
                       </Button>
                     </div>
                   </div>

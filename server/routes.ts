@@ -2646,34 +2646,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/escalations/:id/dismiss", async (req, res) => {
+  app.post("/api/escalations/:id/send-to-team", async (req, res) => {
     try {
       const escalationId = parseInt(req.params.id);
-      const { tenantId, reason } = req.body;
+      const { tenantId, action, priority } = req.body;
       
-      console.log("✖️ ESCALATION_DISMISS", { escalationId, tenantId, reason, timestamp: new Date() });
+      console.log("📢 ESCALATION_SEND_TO_TEAM", { escalationId, tenantId, action, timestamp: new Date() });
       
-      // In real implementation, this would mark escalation as resolved
-      // For demo, we'll just log the dismissal
+      // Get the shift that needs coverage
       const shift = await storage.getShift(escalationId);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
       }
       
-      console.log("📝 ESCALATION_DISMISSED", {
+      // Create opportunity from the declined/unfilled shift
+      const opportunity = await storage.createOpportunity({
+        tenantId: shift.tenantId,
+        shiftId: shift.id,
+        description: `URGENT: ${shift.description}`,
+        requirements: `Emergency coverage needed for ${shift.role} at ${shift.location} on ${shift.date} from ${shift.startTime}-${shift.endTime}`,
+        isActive: true
+      });
+      
+      // Log team broadcast notification
+      console.log("📱 TEAM_OPPORTUNITY_BROADCAST", {
         escalationId,
+        opportunityId: opportunity.id,
         shiftRole: shift.role,
         shiftDate: shift.date,
-        reason,
-        dismissedBy: "Owner",
+        message: `Urgent coverage needed: ${shift.role} shift on ${shift.date}`,
         timestamp: new Date()
       });
       
-      console.log("✅ ESCALATION_DISMISS_SUCCESS", { escalationId, timestamp: new Date() });
-      res.json({ success: true });
+      console.log("✅ ESCALATION_SEND_TO_TEAM_SUCCESS", { 
+        escalationId, 
+        opportunityId: opportunity.id, 
+        timestamp: new Date() 
+      });
+      
+      res.json({ 
+        success: true, 
+        opportunityId: opportunity.id,
+        message: "Opportunity created and broadcast to team"
+      });
     } catch (error) {
-      console.error("❌ ESCALATION_DISMISS_FAILED", { error: error.message, timestamp: new Date() });
-      res.status(500).json({ message: "Failed to dismiss escalation" });
+      console.error("❌ ESCALATION_SEND_TO_TEAM_FAILED", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to send opportunity to team" });
+    }
+  });
+
+  app.post("/api/escalations/:id/system-alert", async (req, res) => {
+    try {
+      const escalationId = parseInt(req.params.id);
+      const { tenantId, action, priority } = req.body;
+      
+      console.log("📢 ESCALATION_SYSTEM_ALERT", { escalationId, tenantId, action, timestamp: new Date() });
+      
+      // Get the shift that needs urgent coverage
+      const shift = await storage.getShift(escalationId);
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      // Get all active staff members for system-wide notification
+      // For now, simulate getting staff members - in real implementation would query users table
+      const staffMembers = [
+        { id: 1, firstName: "John", lastName: "Doe" },
+        { id: 3, firstName: "Jane", lastName: "Smith" },
+        { id: 4, firstName: "Mike", lastName: "Johnson" }
+      ];
+      
+      console.log("📱 SYSTEM_WIDE_URGENT_BROADCAST", {
+        escalationId,
+        shiftRole: shift.role,
+        shiftDate: shift.date,
+        shiftTime: `${shift.startTime}-${shift.endTime}`,
+        location: shift.location,
+        staffNotified: staffMembers.length,
+        urgentMessage: `URGENT: Emergency coverage needed for ${shift.role} shift on ${shift.date} at ${shift.location}`,
+        timestamp: new Date()
+      });
+      
+      // Log individual staff notifications (in real system this would trigger SMS/push notifications)
+      staffMembers.forEach(staff => {
+        console.log("📱 URGENT_STAFF_NOTIFICATION", {
+          escalationId,
+          staffId: staff.id,
+          staffName: `${staff.firstName} ${staff.lastName}`,
+          message: `URGENT: Emergency coverage needed for ${shift.role} shift`,
+          timestamp: new Date()
+        });
+      });
+      
+      console.log("✅ ESCALATION_SYSTEM_ALERT_SUCCESS", { 
+        escalationId, 
+        staffNotified: staffMembers.length,
+        timestamp: new Date() 
+      });
+      
+      res.json({ 
+        success: true, 
+        staffNotified: staffMembers.length,
+        message: `Urgent alert sent to ${staffMembers.length} staff members`
+      });
+    } catch (error) {
+      console.error("❌ ESCALATION_SYSTEM_ALERT_FAILED", { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to send system-wide alert" });
     }
   });
 
@@ -2718,7 +2796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         escalations.push({
           id: shift.id,
           type: "assignment_declined",
-          description: `${shift.role} assignment declined - requires new assignment`,
+          description: `${shift.role} assignment declined - opportunity auto-created`,
           affectedShifts: 1,
           urgency: "high",
           createdAt: shift.updatedAt || new Date().toISOString()
