@@ -3486,6 +3486,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Permanently Delete User API (Hard Delete - Only for inactive users)
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Get user first to check if exists and is inactive
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId));
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.isActive) {
+        return res.status(400).json({ 
+          message: "Cannot delete active user. Please off-board the user first." 
+        });
+      }
+
+      // Delete user permanently from database
+      await db
+        .delete(users)
+        .where(eq(users.id, userId));
+
+      console.log(`🗑️ USER_DELETED_PERMANENTLY`, { 
+        userId, 
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        timestamp: new Date()
+      });
+
+      res.json({ 
+        message: "User permanently deleted from database",
+        userDeleted: true
+      });
+
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: "Failed to delete user: " + error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

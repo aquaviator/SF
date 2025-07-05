@@ -25,11 +25,13 @@ import {
   Clock,
   Target,
   UserX,
-  Edit
+  Edit,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { User } from "@shared/schema";
 import { OffboardUserModal } from "@/components/OffboardUserModal";
+import { DeleteUserModal } from "@/components/DeleteUserModal";
 
 const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -96,6 +98,10 @@ export default function Workforce() {
   const [offboardingUser, setOffboardingUser] = React.useState<User | null>(null);
   const [isOffboardModalOpen, setIsOffboardModalOpen] = React.useState(false);
 
+  // Delete modal state
+  const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+
   const openOffboardModal = (user: User) => {
     setOffboardingUser(user);
     setIsOffboardModalOpen(true);
@@ -108,6 +114,22 @@ export default function Workforce() {
 
   const handleOffboardComplete = (response: { shiftsUpdated: number; userDeactivated: boolean }) => {
     // Refresh the staff list after successful off-boarding
+    window.location.reload();
+  };
+
+  // Delete modal functions
+  const openDeleteModal = (user: User) => {
+    setDeletingUser(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeletingUser(null);
+  };
+
+  const handleDeleteComplete = (response: { userDeleted: boolean }) => {
+    // Refresh the staff list after successful deletion
     window.location.reload();
   };
 
@@ -425,6 +447,54 @@ export default function Workforce() {
     },
   ];
 
+  // Columns for inactive staff with delete actions
+  const inactiveStaffColumns: Column<User>[] = [
+    {
+      key: "name",
+      header: "Staff Member",
+      cell: (staff) => (
+        <div>
+          <p className="font-medium text-sm">{staff.firstName} {staff.lastName}</p>
+          <p className="text-xs text-gray-500">{staff.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      cell: (staff) => (
+        <Badge variant="secondary">
+          {staff.role === "staff" ? "Staff" : "Owner"}
+        </Badge>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (staff) => (
+        <Badge variant="outline" className="text-red-600 border-red-300">
+          Inactive
+        </Badge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (staff) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openDeleteModal(staff)}
+            className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   const performanceColumns: Column<PerformanceMetric>[] = [
     {
       key: "name",
@@ -530,10 +600,14 @@ export default function Workforce() {
       </div>
 
       <Tabs defaultValue="staff" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 gap-1">
+        <TabsList className="grid w-full grid-cols-4 gap-1">
           <TabsTrigger value="staff" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
             <Users className="w-4 h-4 shrink-0" />
-            <span className="truncate">Staff</span>
+            <span className="truncate">Active</span>
+          </TabsTrigger>
+          <TabsTrigger value="inactive" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <UserX className="w-4 h-4 shrink-0" />
+            <span className="truncate">Inactive</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
             <TrendingUp className="w-4 h-4 shrink-0" />
@@ -620,6 +694,48 @@ export default function Workforce() {
               <div className="text-center py-8">
                 <TrendingUp className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                 <p className="text-gray-500">No performance data available</p>
+              </div>
+            }
+          />
+        </TabsContent>
+
+        <TabsContent value="inactive" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <UserX className="w-5 h-5 text-red-500" />
+                  <h3 className="font-medium">Inactive Staff</h3>
+                </div>
+                <p className="text-2xl font-bold text-red-600 mt-2">
+                  {staff?.filter(user => !user.isActive).length || 0}
+                </p>
+                <p className="text-sm text-gray-600">Off-boarded staff</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Trash2 className="w-5 h-5 text-red-500" />
+                  <h3 className="font-medium">Manage</h3>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Permanently delete inactive staff records
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <DataTable
+            data={staff?.filter(user => !user.isActive) || []}
+            columns={inactiveStaffColumns}
+            title="Inactive Staff"
+            isLoading={isLoading}
+            emptyState={
+              <div className="text-center py-8">
+                <UserX className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">No inactive staff records</p>
               </div>
             }
           />
@@ -726,6 +842,16 @@ export default function Workforce() {
           isOpen={isOffboardModalOpen}
           onClose={closeOffboardModal}
           onOffboarded={handleOffboardComplete}
+        />
+      )}
+
+      {/* Delete User Modal */}
+      {deletingUser && (
+        <DeleteUserModal
+          user={deletingUser}
+          isOpen={isDeleteModalOpen}
+          onClose={closeDeleteModal}
+          onDeleted={handleDeleteComplete}
         />
       )}
     </div>
