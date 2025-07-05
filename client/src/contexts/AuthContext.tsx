@@ -35,9 +35,9 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<UserRole>("owner");
-  const [tenantId] = useState("acme-corp"); // Stubbed tenant ID
+  const [tenantId] = useState("clean-business"); // Clean testing tenant
   const [currentStaffId, setCurrentStaffId] = useState<number>(() => {
-    return parseInt(localStorage.getItem("dev-staff-id") || "2");
+    return parseInt(localStorage.getItem("dev-staff-id") || "3");
   });
   const [user, setUser] = useState<{
     id: number;
@@ -66,8 +66,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Fetch user data based on role
   const fetchUserDataForRole = async (userRole: UserRole) => {
     try {
-      // Owner: Sarah Johnson (ID: 1), Staff: Use currentStaffId for demo staff user
-      const userId = userRole === "owner" ? 1 : currentStaffId;
+      // Owner: Business Owner (ID: 2), Staff: Use currentStaffId for demo staff user
+      const userId = userRole === "owner" ? 2 : currentStaffId;
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
