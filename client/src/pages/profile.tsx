@@ -32,7 +32,7 @@ export default function Profile() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   
 
 
@@ -121,64 +121,15 @@ export default function Profile() {
     },
   });
 
-  // Photo upload mutation - uploads file to server and gets permanent URL
-  const photoUploadMutation = useMutation<string, Error, File>({
-    mutationFn: async (file: File) => {
-      if (!user?.id) throw new Error("User ID not available");
-      
-      console.log('📤 PHOTO_UPLOAD_START', { 
-        fileName: file.name,
-        fileSize: file.size,
-        userId: user.id
-      });
-      
-      const formData = new FormData();
-      formData.append('photo', file);
-      formData.append('userId', String(user.id));
-      
-      const response = await apiRequest('POST', `/api/users/${user.id}/photo`, formData);
-      const result = await response.json();
-      
-      console.log('✅ PHOTO_UPLOAD_SUCCESS', { 
-        photoUrl: result.photoUrl?.substring(0, 50) + '...'
-      });
-      
-      return result.photoUrl;
-    },
-    onMutate: () => {
-      setIsUploadingPhoto(true);
-    },
-    onSuccess: (photoUrl: string) => {
-      setIsUploadingPhoto(false);
-      toast({
-        title: "Success",
-        description: "Profile photo updated successfully!",
-      });
-      
-      // Invalidate sidebar cache to show new photo immediately
-      queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
-      
-      // Update the profile with the permanent URL
-      if (userData && user?.id) {
-        const updateData = {
-          firstName: userData.firstName || "",
-          lastName: userData.lastName || "",
-          email: userData.email,
-          photoUrl: photoUrl
-        };
-        
-        updateMutation.mutate(updateData);
-      }
-    },
-    onError: (error: Error) => {
-      setIsUploadingPhoto(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to upload photo",
-        variant: "destructive",
-      });
-    },
-  });
+  // Track photo upload state
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
+
+  // Initialize currentPhotoUrl when userData loads
+  useEffect(() => {
+    if (userData?.photoUrl && !currentPhotoUrl) {
+      setCurrentPhotoUrl(userData.photoUrl);
+    }
+  }, [userData?.photoUrl, currentPhotoUrl]);
 
 
 
@@ -241,9 +192,20 @@ export default function Profile() {
               <div className="mt-2">
                 <PhotoUpload
                   type="avatar"
-                  currentImage={userData?.photoUrl}
-                  onFileSelect={(file) => photoUploadMutation.mutate(file)}
-                  isLoading={photoUploadMutation.isPending}
+                  currentImage={currentPhotoUrl || userData?.photoUrl}
+                  onImageChange={(imageUrl) => {
+                    setCurrentPhotoUrl(imageUrl);
+                    // Update profile immediately with Base64 image
+                    if (userData && user?.id) {
+                      const updateData = {
+                        firstName: userData.firstName || "",
+                        lastName: userData.lastName || "",
+                        email: userData.email,
+                        photoUrl: imageUrl
+                      };
+                      updateMutation.mutate(updateData);
+                    }
+                  }}
                   size="md"
                 />
               </div>
