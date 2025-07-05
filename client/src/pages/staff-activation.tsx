@@ -1,151 +1,142 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { apiRequest } from '@/lib/queryClient';
 
 const activationSchema = z.object({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Please confirm your password"),
-}).refine(data => data.password === data.confirmPassword, {
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string().min(8, 'Password confirmation is required'),
+}).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
-type ActivationFormData = z.infer<typeof activationSchema>;
+type ActivationForm = z.infer<typeof activationSchema>;
 
 export default function StaffActivation() {
-  const [location, navigate] = useLocation();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [activationStatus, setActivationStatus] = useState<"pending" | "success" | "error">("pending");
-  const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
+  const [location] = useLocation();
+  const [token, setToken] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [activationStatus, setActivationStatus] = useState<'loading' | 'ready' | 'success' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Extract token from URL path
-  const token = location.split("/").pop(); // Gets the last segment from /staff/activate/:token
-
-  const form = useForm<ActivationFormData>({
+  const form = useForm<ActivationForm>({
     resolver: zodResolver(activationSchema),
     defaultValues: {
-      password: "",
-      confirmPassword: "",
+      password: '',
+      confirmPassword: '',
     },
   });
 
-  // Verify token on page load
+  // Extract token from URL
   useEffect(() => {
-    if (!token) {
-      setActivationStatus("error");
-      toast({
-        title: "Invalid Link",
-        description: "This activation link is invalid or missing.",
-        variant: "destructive",
-      });
-      return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenParam = urlParams.get('token');
+    
+    if (tokenParam) {
+      setToken(tokenParam);
+      validateToken(tokenParam);
+    } else {
+      setActivationStatus('error');
+      setErrorMessage('No activation token provided');
     }
+  }, [location]);
 
-    // Verify token is valid by making a request to the backend
-    const verifyToken = async () => {
-      try {
-        const response = await fetch(`/api/auth/verify-token?token=${token}`);
-        if (response.ok) {
-          const data = await response.json();
-          setUserInfo(data.user);
-        } else {
-          throw new Error("Invalid token");
-        }
-      } catch (error) {
-        setActivationStatus("error");
-        toast({
-          title: "Invalid or Expired Link",
-          description: "This activation link is invalid or has expired. Please request a new invitation.",
-          variant: "destructive",
-        });
+  const validateToken = async (tokenParam: string) => {
+    try {
+      const response = await fetch(`/api/auth/verify-token?token=${encodeURIComponent(tokenParam)}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUserInfo(data.user);
+        setActivationStatus('ready');
+      } else {
+        setActivationStatus('error');
+        setErrorMessage(data.message || 'Invalid or expired token');
       }
-    };
+    } catch (error) {
+      setActivationStatus('error');
+      setErrorMessage('Failed to validate token');
+    }
+  };
 
-    verifyToken();
-  }, [token, toast]);
-
-  const onSubmit = async (data: ActivationFormData) => {
+  const onSubmit = async (data: ActivationForm) => {
     if (!token) return;
 
-    setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/activate", {
+      const response = await apiRequest('POST', '/api/auth/activate', {
         token,
         password: data.password,
       });
 
-      setActivationStatus("success");
-      toast({
-        title: "Account Activated",
-        description: "Your account has been successfully activated. You can now log in.",
-      });
-
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-    } catch (error: any) {
-      toast({
-        title: "Activation Failed",
-        description: error?.message || "Failed to activate account. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      if (response.ok) {
+        setActivationStatus('success');
+      } else {
+        const errorData = await response.json();
+        setErrorMessage(errorData.message || 'Activation failed');
+      }
+    } catch (error) {
+      setErrorMessage('Failed to activate account');
     }
   };
 
-  if (!token || activationStatus === "error") {
+  if (activationStatus === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle>Invalid Activation Link</CardTitle>
-            <CardDescription>
-              This activation link is invalid or has expired. Please contact your administrator for a new invitation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => navigate("/")} 
-              className="w-full"
-            >
-              Return to Login
-            </Button>
+          <CardContent className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Validating activation link...</span>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (activationStatus === "success") {
+  if (activationStatus === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <CardTitle>Activation Failed</CardTitle>
+            <CardDescription>{errorMessage}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 text-center">
+              Please contact your administrator for a new invitation link.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (activationStatus === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <CardTitle>Account Activated</CardTitle>
+            <CardTitle>Account Activated!</CardTitle>
             <CardDescription>
-              Your account has been successfully activated. You will be redirected to the login page shortly.
+              Your account has been successfully activated. You can now sign in to ShiftFlo.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={() => navigate("/")} 
-              className="w-full"
+              className="w-full" 
+              onClick={() => window.location.href = '/'}
             >
-              Go to Login
+              Go to Sign In
             </Button>
           </CardContent>
         </Card>
@@ -154,66 +145,74 @@ export default function StaffActivation() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Activate Your Account</CardTitle>
+        <CardHeader className="text-center">
+          <CardTitle>Complete Your Account Setup</CardTitle>
           <CardDescription>
-            {userInfo ? (
-              <>Welcome {userInfo.firstName} {userInfo.lastName}! Set your password to complete account activation.</>
-            ) : (
-              "Set your password to complete account activation."
-            )}
+            Welcome {userInfo?.firstName}! Set your password to activate your ShiftFlo account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {userInfo && (
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    <strong>Email:</strong> {userInfo.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>Name:</strong> {userInfo.firstName} {userInfo.lastName}
-                  </p>
-                </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={userInfo?.email || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                {...form.register('password')}
+                placeholder="Enter your password"
+              />
+              {form.formState.errors.password && (
+                <p className="text-sm text-red-600">{form.formState.errors.password.message}</p>
               )}
+            </div>
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" placeholder="Enter your password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                {...form.register('confirmPassword')}
+                placeholder="Confirm your password"
               />
+              {form.formState.errors.confirmPassword && (
+                <p className="text-sm text-red-600">{form.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" placeholder="Confirm your password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {errorMessage && (
+              <Alert variant="destructive">
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoading ? "Activating..." : "Activate Account"}
-              </Button>
-            </form>
-          </Form>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Activating Account...
+                </>
+              ) : (
+                'Activate Account'
+              )}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

@@ -513,15 +513,17 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Resolved "User not found" errors by aligning authentication system with seeded database users
   - Business Profile functionality now working correctly with proper user data loading and form population
   - Profile updates and photo uploads now work correctly for both owner and staff users
-- July 05, 2025. Completed comprehensive email-based staff invitation system with full email integration:
+- July 05, 2025. Completed comprehensive email-based staff invitation and activation system:
   - Simplified both Owner Dashboard and Workforce forms to email-based invitation (removed username/password fields)
   - Updated backend API (/api/admin/staff) to use email as username for new user accounts
   - Added comprehensive email validation to both forms using Zod schema validation
   - Integrated Gmail SMTP with proper authentication using GOOGLE_DELEGATED_EMAIL and GOOGLE_APP_PASSWORD
-  - Created complete testing suite confirming both user creation and email delivery functionality
-  - System creates inactive users with activation tokens and sends professional invitation emails
-  - Form validation ensures proper email format before submission to prevent invalid invitation attempts
-  - Full workflow verified: Form submission → User creation → Database storage → Email delivery → Activation workflow ready
+  - Created complete activation system with frontend activation page (/activate) and backend APIs
+  - Built StaffActivation component with token validation, password setup, and account completion workflow
+  - Added activation API endpoints: GET /api/auth/verify-token and POST /api/auth/activate
+  - Updated email templates to use correct local development URLs (localhost:5000) instead of production domain
+  - Created comprehensive testing suite confirming all components: invitation, email delivery, token validation, and account activation
+  - Full end-to-end workflow verified: Form submission → User creation → Database storage → Email delivery → Token validation → Password setup → Account activation complete
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

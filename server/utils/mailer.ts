@@ -11,7 +11,11 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const sendActivationEmail = async (email: string, firstName: string, activationToken: string) => {
-  const activationUrl = `https://app.shiftflo.com/activate?token=${activationToken}`;
+  // Use local development URL for activation
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://app.shiftflo.com' 
+    : 'http://localhost:5000';
+  const activationUrl = `${baseUrl}/activate?token=${activationToken}`;
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,

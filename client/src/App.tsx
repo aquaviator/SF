@@ -72,7 +72,7 @@ function Router() {
               <Route path="/staff/requests" component={StaffRequests} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
-              <Route path="/staff/activate/:token" component={StaffActivation} />
+              <Route path="/activate" component={StaffActivation} />
               <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
             </Switch>
