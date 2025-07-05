@@ -148,6 +148,12 @@ export default function Profile() {
   };
 
   const handlePhotoUrlChange = (photoUrl: string) => {
+    console.log('🔄 HANDLE_PHOTO_URL_CHANGE_CALLED', { 
+      hasUserData: !!userData, 
+      hasUserId: !!user?.id,
+      photoUrlLength: photoUrl?.length
+    });
+    
     if (userData && user?.id) {
       console.log('📸 PHOTO_URL_CHANGE', { photoUrl: photoUrl?.substring(0, 50) + '...', userId: user.id });
       
@@ -165,6 +171,8 @@ export default function Profile() {
       
       console.log('📤 PROFILE_UPDATE_MUTATION', { updateData: { ...updateData, photoUrl: updateData.photoUrl?.substring(0, 50) + '...' } });
       updateMutation.mutate(updateData);
+    } else {
+      console.error('❌ PHOTO_UPLOAD_BLOCKED', { userData: !!userData, userId: !!user?.id });
     }
   };
 
