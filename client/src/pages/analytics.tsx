@@ -395,6 +395,7 @@ export default function Analytics() {
                     <p className="text-sm font-medium text-gray-600">Labor Cost</p>
                     <p className="text-2xl font-bold">$15,800</p>
                     <p className="text-xs text-green-600">+5.3% vs target</p>
+                    <p className="text-xs text-gray-500 mt-1">Total wages and benefits for selected period</p>
                   </div>
                   <DollarSign className="w-8 h-8 text-blue-600" />
                 </div>
@@ -408,6 +409,7 @@ export default function Analytics() {
                     <p className="text-sm font-medium text-gray-600">Avg Fill Rate</p>
                     <p className="text-2xl font-bold">88.3%</p>
                     <p className="text-xs text-green-600">+2.1% vs last month</p>
+                    <p className="text-xs text-gray-500 mt-1">Percentage of shifts successfully filled</p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
@@ -421,6 +423,7 @@ export default function Analytics() {
                     <p className="text-sm font-medium text-gray-600">Overtime Hours</p>
                     <p className="text-2xl font-bold">43h</p>
                     <p className="text-xs text-red-600">+12% vs last week</p>
+                    <p className="text-xs text-gray-500 mt-1">Extra hours worked beyond regular schedule</p>
                   </div>
                   <Clock className="w-8 h-8 text-orange-600" />
                 </div>
@@ -434,6 +437,7 @@ export default function Analytics() {
                     <p className="text-sm font-medium text-gray-600">Active Staff</p>
                     <p className="text-2xl font-bold">12</p>
                     <p className="text-xs text-blue-600">All departments</p>
+                    <p className="text-xs text-gray-500 mt-1">Currently employed staff members</p>
                   </div>
                   <Users className="w-8 h-8 text-purple-600" />
                 </div>

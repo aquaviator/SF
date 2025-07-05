@@ -134,6 +134,7 @@ export default function Opportunities() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Available</p>
                 <p className="text-lg font-semibold text-gray-900">{activeOpportunities.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Open shifts you can claim</p>
               </div>
             </div>
           </CardContent>
@@ -153,6 +154,7 @@ export default function Opportunities() {
                     return true;
                   }).length}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">Opportunities available this week</p>
               </div>
             </div>
           </CardContent>
@@ -167,6 +169,7 @@ export default function Opportunities() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-600">Applications</p>
                 <p className="text-lg font-semibold text-gray-900">0</p>
+                <p className="text-xs text-gray-500 mt-1">Your pending applications</p>
               </div>
             </div>
           </CardContent>

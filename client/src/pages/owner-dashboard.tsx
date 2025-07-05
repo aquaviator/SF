@@ -334,6 +334,7 @@ export default function OwnerDashboard() {
             <p className="text-xs text-muted-foreground">
               +2 from last month
             </p>
+            <p className="text-xs text-gray-500 mt-1">Active team members</p>
           </CardContent>
         </Card>
 
@@ -347,6 +348,7 @@ export default function OwnerDashboard() {
             <p className="text-xs text-muted-foreground">
               Running now
             </p>
+            <p className="text-xs text-gray-500 mt-1">Currently in progress</p>
           </CardContent>
         </Card>
 
@@ -360,6 +362,7 @@ export default function OwnerDashboard() {
             <p className="text-xs text-muted-foreground">
               Needs attention
             </p>
+            <p className="text-xs text-gray-500 mt-1">Awaiting your review</p>
           </CardContent>
         </Card>
 
@@ -373,6 +376,7 @@ export default function OwnerDashboard() {
             <p className="text-xs text-muted-foreground">
               +2.1% from last week
             </p>
+            <p className="text-xs text-gray-500 mt-1">Shifts completed on time</p>
           </CardContent>
         </Card>
       </div>

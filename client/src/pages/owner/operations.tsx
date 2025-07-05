@@ -731,24 +731,28 @@ export default function OwnerOperationsPage() {
                       {coverageData?.active || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">Active</div>
+                    <div className="text-xs text-gray-500 mt-1">Currently working shifts</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-blue-600">
                       {coverageData?.upcoming || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">Upcoming</div>
+                    <div className="text-xs text-gray-500 mt-1">Shifts starting soon</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-red-600">
                       {coverageData?.unfilled || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">Unfilled</div>
+                    <div className="text-xs text-gray-500 mt-1">Shifts needing staff</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-orange-600">
                       {coverageData?.underUtilized || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">Under-utilized</div>
+                    <div className="text-xs text-gray-500 mt-1">Shifts below capacity</div>
                   </div>
                 </div>
                 <Button 

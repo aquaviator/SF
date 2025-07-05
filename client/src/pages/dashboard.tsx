@@ -339,15 +339,17 @@ export default function Dashboard() {
                         </div>
                       )}
                     </div>
-                    {/* Add descriptive text for staff dashboard */}
-                    {role === "staff" && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {stat.title === "My Shifts" && "Your confirmed upcoming shifts"}
-                        {stat.title === "This Week" && "Shifts scheduled for this week"}
-                        {stat.title === "Available" && "Open opportunities you can claim"}
-                        {stat.title === "Requests" && "Your pending swap requests"}
-                      </p>
-                    )}
+                    {/* Add descriptive text for all dashboard metrics */}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {role === "staff" && stat.title === "My Shifts" && "Your confirmed upcoming shifts"}
+                      {role === "staff" && stat.title === "This Week" && "Shifts scheduled for this week"}
+                      {role === "staff" && stat.title === "Available" && "Open opportunities you can claim"}
+                      {role === "staff" && stat.title === "Requests" && "Your pending swap requests"}
+                      {role === "owner" && stat.title === "This Week" && "All shifts scheduled this week"}
+                      {role === "owner" && stat.title === "Assigned" && "Shifts with confirmed staff"}
+                      {role === "owner" && stat.title === "Pending" && "Shifts needing staff assignment"}
+                      {role === "owner" && stat.title === "Cancelled" && "Cancelled shifts this period"}
+                    </p>
                   </div>
                 </div>
               </CardContent>
