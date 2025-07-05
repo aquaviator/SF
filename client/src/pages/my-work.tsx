@@ -178,17 +178,30 @@ export default function MyWork() {
   const calculateTimeUntilShift = (shift: Shift) => {
     const shiftStart = new Date(`${shift.date}T${shift.startTime}`);
     const now = new Date();
-    return Math.max(0, shiftStart.getTime() - now.getTime());
+    return shiftStart.getTime() - now.getTime(); // Allow negative values for past shifts
   };
 
   const formatCountdown = (milliseconds: number) => {
-    if (milliseconds <= 0) return "Now";
+    if (milliseconds <= 0) {
+      // Past shift - show how long ago it started
+      const absMs = Math.abs(milliseconds);
+      const hours = Math.floor(absMs / (1000 * 60 * 60));
+      const minutes = Math.floor((absMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hours === 0) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ${minutes}m ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
     
+    // Future shift - show countdown
     const hours = Math.floor(milliseconds / (1000 * 60 * 60));
     const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
     
     if (hours === 0) return `${minutes}m`;
-    return `${hours}h ${minutes}m`;
+    if (hours < 24) return `${hours}h ${minutes}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
   };
 
   // Policy-driven swap status check
@@ -1043,16 +1056,44 @@ export default function MyWork() {
     });
   };
 
-  // Calculate time worked today
+  // Calculate time worked today from actual time entries
   const calculateTimeWorked = () => {
-    if (!isClocked || !clockInTime) return "Not clocked in";
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntries = (timeEntries || []).filter((entry: any) => {
+      const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+      return entryDate === today;
+    });
     
-    const now = new Date();
-    const diffMs = now.getTime() - clockInTime.getTime();
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (todayEntries.length === 0) return "No time tracked today";
     
-    return `${hours}h ${minutes}m`;
+    const currentEntry = todayEntries.find((entry: any) => !entry.clockOutTime);
+    if (currentEntry) {
+      const clockInTime = new Date(currentEntry.clockInTime);
+      const now = new Date();
+      const diffMs = now.getTime() - clockInTime.getTime();
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      return `${hours}h ${minutes}m (active)`;
+    }
+    
+    // Calculate total hours for completed entries today
+    const totalHours = todayEntries.reduce((total: number, entry: any) => {
+      return total + (parseFloat(entry.totalHours) || 0);
+    }, 0);
+    
+    return `${totalHours.toFixed(1)}h (completed)`;
+  };
+
+  // Check if user is currently clocked in from time entries
+  const isCurrentlyClockedIn = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntries = (timeEntries || []).filter((entry: any) => {
+      const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+      return entryDate === today;
+    });
+    
+    return todayEntries.some((entry: any) => !entry.clockOutTime && entry.status === 'clocked_in');
   };
 
   // Quick actions that staff can perform
@@ -1164,27 +1205,62 @@ export default function MyWork() {
   const totalScheduledShifts = shifts.filter(shift => new Date(shift.date) < today).length;
   const attendanceRate = totalScheduledShifts > 0 ? (completedShifts / totalScheduledShifts) * 100 : 100;
   
-  // Recent activity from multiple sources
-  const recentActivities = [
-    ...shifts.filter(shift => shift.status === 'completed' && new Date(shift.date) >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000))
-      .map(shift => ({
-        type: 'shift_completed',
-        title: 'Shift completed',
-        description: `${shift.role} - ${shift.location}`,
-        time: getTimeAgo(new Date(shift.date)),
-        icon: CheckCircle,
-        color: 'green'
-      })),
-    ...(holidayRequests || []).filter((req: any) => new Date(req.updatedAt) >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000))
-      .map((req: any) => ({
+  // Recent activity from multiple sources with proper time parsing
+  const recentActivities = useMemo(() => {
+    const activities = [];
+    
+    // Add completed shifts from last 7 days
+    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    shifts.filter(shift => shift.status === 'completed' && new Date(shift.date) >= oneWeekAgo)
+      .forEach(shift => {
+        activities.push({
+          type: 'shift_completed',
+          title: 'Shift completed',
+          description: `${shift.role} - ${shift.location}`,
+          time: new Date(shift.date),
+          icon: CheckCircle,
+          color: 'green',
+          id: `shift-${shift.id}`
+        });
+      });
+    
+    // Add recent holiday requests
+    (holidayRequests || []).filter((req: any) => {
+      const reqDate = req.updatedAt ? new Date(req.updatedAt) : new Date(req.createdAt);
+      return reqDate >= oneWeekAgo;
+    }).forEach((req: any) => {
+      const reqDate = req.updatedAt ? new Date(req.updatedAt) : new Date(req.createdAt);
+      activities.push({
         type: 'holiday_request',
         title: `Holiday request ${req.status}`,
         description: `${new Date(req.startDate).toLocaleDateString()} - ${new Date(req.endDate).toLocaleDateString()}`,
-        time: getTimeAgo(new Date(req.updatedAt)),
+        time: reqDate,
         icon: Calendar,
-        color: req.status === 'approved' ? 'blue' : 'orange'
-      }))
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 3);
+        color: req.status === 'approved' ? 'blue' : 'orange',
+        id: `holiday-${req.id}`
+      });
+    });
+    
+    // Add recent time entries (clock-ins) from last 3 days
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+    (timeEntries || []).filter((entry: any) => new Date(entry.clockInTime) >= threeDaysAgo)
+      .forEach((entry: any) => {
+        activities.push({
+          type: 'time_entry',
+          title: 'Clocked in',
+          description: `${entry.status === 'on_break' ? 'Currently on break' : entry.status.replace('_', ' ')}`,
+          time: new Date(entry.clockInTime),
+          icon: Clock,
+          color: 'blue',
+          id: `time-${entry.id}`
+        });
+      });
+    
+    // Sort by time (most recent first) and take top 5
+    return activities
+      .sort((a, b) => b.time.getTime() - a.time.getTime())
+      .slice(0, 5);
+  }, [shifts, holidayRequests, timeEntries, today]);
 
   // Helper functions
   function getWeekDates(date: Date) {
@@ -1342,7 +1418,7 @@ export default function MyWork() {
                             <p className="text-sm font-medium">{activity.title}</p>
                             <p className="text-xs text-muted-foreground">{activity.description}</p>
                           </div>
-                          <div className="text-xs text-muted-foreground ml-auto">{activity.time}</div>
+                          <div className="text-xs text-muted-foreground ml-auto">{getTimeAgo(activity.time)}</div>
                         </div>
                       );
                     })
@@ -1410,11 +1486,11 @@ export default function MyWork() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Current Status</p>
                   <p className="text-lg font-bold text-green-600">
-                    {isClockedIn ? "Clocked In" : "Not Clocked In"}
+                    {isCurrentlyClockedIn() ? "Clocked In" : "Not Clocked In"}
                   </p>
-                  {isClockedIn && clockInTime && (
+                  {isCurrentlyClockedIn() && (
                     <p className="text-xs text-muted-foreground">
-                      Since {clockInTime.toLocaleTimeString()}
+                      Currently working
                     </p>
                   )}
                 </div>
@@ -1428,9 +1504,9 @@ export default function MyWork() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button
                   onClick={() => clockInMutation.mutate()}
-                  disabled={!canClockIn() || clockInMutation.isPending}
+                  disabled={!canClockIn() || clockInMutation.isPending || isCurrentlyClockedIn()}
                   className="h-16 text-lg"
-                  variant={canClockIn() ? "default" : "secondary"}
+                  variant={canClockIn() && !isCurrentlyClockedIn() ? "default" : "secondary"}
                 >
                   {clockInMutation.isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -1442,9 +1518,9 @@ export default function MyWork() {
                 
                 <Button
                   onClick={() => clockOutMutation.mutate()}
-                  disabled={!isClockedIn || clockOutMutation.isPending}
+                  disabled={!isCurrentlyClockedIn() || clockOutMutation.isPending}
                   className="h-16 text-lg"
-                  variant={isClockedIn ? "destructive" : "secondary"}
+                  variant={isCurrentlyClockedIn() ? "destructive" : "secondary"}
                 >
                   {clockOutMutation.isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
