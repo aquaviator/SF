@@ -66,8 +66,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Fetch user data based on role
   const fetchUserDataForRole = async (userRole: UserRole) => {
     try {
-      // Owner: Business Owner (ID: 2), Staff: Use currentStaffId for demo staff user
-      const userId = userRole === "owner" ? 2 : currentStaffId;
+      // Owner: Business Owner (ID: 16), Staff: Use currentStaffId for demo staff user
+      const userId = userRole === "owner" ? 16 : currentStaffId;
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
         const userData = await response.json();
@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firstName: userData.firstName || "User",
           lastName: userData.lastName || "",
           email: userData.email || "user@example.com",
-          tenantId: userData.tenantId || "acme-corp"
+          tenantId: userData.tenantId || "template-business"
         });
       } else {
         // Fallback based on role
@@ -91,11 +91,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (userRole === "owner") {
           setUser({
-            id: 1,
-            firstName: "Sarah",
-            lastName: "Johnson",
-            email: "sarah@acme-corp.com",
-            tenantId: "acme-corp"
+            id: 16,
+            firstName: "Business",
+            lastName: "Owner",
+            email: "owner@template-business.com",
+            tenantId: "template-business"
           });
         } else {
           const staffData = staffNames.find(s => s.id === currentStaffId) || staffNames[0];
@@ -104,18 +104,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             firstName: staffData.firstName,
             lastName: staffData.lastName,
             email: staffData.email,
-            tenantId: "acme-corp"
+            tenantId: "template-business"
           });
         }
       }
     } catch (error) {
       console.log("User data fetch failed, using fallback for role:", userRole);
       setUser({
-        id: userRole === "owner" ? 1 : 2,
-        firstName: userRole === "owner" ? "Sarah" : "Mike",
-        lastName: userRole === "owner" ? "Johnson" : "Chen",
-        email: userRole === "owner" ? "sarah@acme-corp.com" : "mike@acme-corp.com",
-        tenantId: "acme-corp"
+        id: userRole === "owner" ? 16 : 17,
+        firstName: userRole === "owner" ? "Business" : "Alice",
+        lastName: userRole === "owner" ? "Owner" : "Johnson",
+        email: userRole === "owner" ? "owner@template-business.com" : "alice@template-business.com",
+        tenantId: "template-business"
       });
     }
   };
