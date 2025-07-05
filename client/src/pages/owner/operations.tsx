@@ -382,6 +382,27 @@ function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalPro
   
   console.log("⏰ TIME_ENTRY_MODAL_RENDER", { isOpen, userId, userName, timestamp: new Date() });
 
+  // Calculate how late a staff member was
+  const calculateLateDuration = (scheduledStart: string | Date | null, actualClockIn: string | Date | null) => {
+    if (!scheduledStart || !actualClockIn) return null;
+    
+    const scheduled = new Date(scheduledStart);
+    const actual = new Date(actualClockIn);
+    
+    if (actual <= scheduled) return null; // Not late
+    
+    const diffMs = actual.getTime() - scheduled.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  };
+
   // Fetch today's time entries for this user
   const { data: timeEntries, isLoading, refetch } = useQuery({
     queryKey: ["/api/time-entries", tenantId, userId, "today"],
@@ -460,6 +481,15 @@ function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalPro
                             <p className="text-muted-foreground">
                               {entry.clockInTime ? new Date(entry.clockInTime).toLocaleString() : 'Not clocked in'}
                             </p>
+                            {/* Show late duration if staff member was late */}
+                            {entry.clockInTime && entry.scheduledStartTime && (() => {
+                              const lateDuration = calculateLateDuration(entry.scheduledStartTime, entry.clockInTime);
+                              return lateDuration ? (
+                                <p className="text-red-600 text-xs font-medium mt-1">
+                                  Late by {lateDuration}
+                                </p>
+                              ) : null;
+                            })()}
                           </div>
                           <div>
                             <p className="font-medium">Clock Out</p>
