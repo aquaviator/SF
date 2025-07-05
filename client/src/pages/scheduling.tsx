@@ -503,9 +503,21 @@ export default function Scheduling() {
       const failedCreations = responses.filter(r => !r.ok);
       
       if (failedCreations.length > 0) {
+        // Check for detailed conflict information in failed responses
+        const errorDetails = await Promise.all(
+          failedCreations.map(async (response) => {
+            try {
+              const errorData = await response.json();
+              return errorData.suggestion || errorData.message || "Unknown error";
+            } catch {
+              return "Failed to create shift";
+            }
+          })
+        );
+        
         toast({
-          title: "Partial Success",
-          description: `Created ${responses.length - failedCreations.length} shifts, ${failedCreations.length} failed`,
+          title: "Some Shifts Failed",
+          description: errorDetails[0], // Show the first detailed error
           variant: "destructive"
         });
       } else {

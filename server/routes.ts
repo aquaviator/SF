@@ -128,15 +128,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (conflictingShifts.length > 0) {
+          const conflictDetails = conflictingShifts[0]; // Show details of first conflicting shift
+          const user = await storage.getUser(validatedData.assignedTo);
+          const staffName = user ? `${user.firstName} ${user.lastName}` : `User ${validatedData.assignedTo}`;
+          
           return res.status(400).json({ 
-            message: "Schedule conflict: User already has a shift assigned on this date",
-            conflictingShifts: conflictingShifts.map(s => ({
-              id: s.id,
-              role: s.role,
-              startTime: s.startTime,
-              endTime: s.endTime,
-              location: s.location
-            }))
+            message: `Schedule conflict: ${staffName} already has a shift on ${validatedData.date}`,
+            conflict: {
+              staffName,
+              existingShift: {
+                id: conflictDetails.id,
+                role: conflictDetails.role,
+                time: `${conflictDetails.startTime} - ${conflictDetails.endTime}`,
+                location: conflictDetails.location,
+                status: conflictDetails.status
+              }
+            },
+            suggestion: `${staffName} is scheduled as ${conflictDetails.role} from ${conflictDetails.startTime}-${conflictDetails.endTime} at ${conflictDetails.location}. Choose a different date or staff member.`
           });
         }
       }
