@@ -198,6 +198,7 @@ export default function Profile() {
                   type="avatar"
                   currentImage={currentPhotoUrl || userData?.photoUrl}
                   onImageChange={(imageUrl) => {
+                    console.log('🔄 AVATAR_UPLOAD_CALLBACK_TRIGGERED!!!');
                     console.log('🔄 AVATAR_UPLOAD_CALLBACK', { 
                       userId: user?.id,
                       hasUserData: !!userData,
