@@ -22,8 +22,14 @@ const registrationSchema = z.object({
       .max(20, "Subdomain must be less than 20 characters")
       .regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and hyphens"),
     businessType: z.string().min(1, "Please select a business type"),
-    phone: z.string().optional(),
-    website: z.string().optional(),
+    phone: z.string()
+      .min(1, "Phone number is required")
+      .regex(/^[\+]?[0-9\s\-\(\)]{10,15}$/, "Please enter a valid phone number"),
+    website: z.string()
+      .optional()
+      .refine((val) => !val || val === "" || /^https?:\/\/.+\..+/.test(val), {
+        message: "Please enter a valid website URL (e.g., https://example.com)"
+      }),
     staffCount: z.number().min(1, "Please enter number of staff members"),
   }),
   // Owner Information
@@ -194,7 +200,11 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Business Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="Acme Restaurant" {...field} />
+                              <Input 
+                                autoComplete="organization"
+                                placeholder="Acme Restaurant" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -209,7 +219,11 @@ export default function BusinessRegistration() {
                             <FormLabel>Subdomain *</FormLabel>
                             <FormControl>
                               <div className="flex">
-                                <Input placeholder="acme-restaurant" {...field} />
+                                <Input 
+                                  autoComplete="off"
+                                  placeholder="acme-restaurant" 
+                                  {...field} 
+                                />
                                 <span className="inline-flex items-center px-3 text-sm text-gray-500 bg-gray-50 border border-l-0 rounded-r-md">
                                   .shiftflo.com
                                 </span>
@@ -250,9 +264,15 @@ export default function BusinessRegistration() {
                         name="business.phone"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
+                            <FormLabel>Phone Number *</FormLabel>
                             <FormControl>
-                              <Input placeholder="+44 20 1234 5678" {...field} />
+                              <Input 
+                                type="tel" 
+                                inputMode="tel"
+                                autoComplete="tel"
+                                placeholder="+44 20 1234 5678" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -266,8 +286,22 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Website</FormLabel>
                             <FormControl>
-                              <Input placeholder="acmerestaurant.com" {...field} />
+                              <Input 
+                                type="url" 
+                                inputMode="url"
+                                autoComplete="url"
+                                list="website-domains"
+                                placeholder="https://acmerestaurant.com" 
+                                {...field} 
+                              />
                             </FormControl>
+                            <datalist id="website-domains">
+                              <option value="https://www." />
+                              <option value="https://" />
+                              <option value=".com" />
+                              <option value=".co.uk" />
+                              <option value=".org" />
+                            </datalist>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -309,7 +343,11 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>First Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="John" {...field} />
+                              <Input 
+                                autoComplete="given-name"
+                                placeholder="John" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -323,7 +361,11 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Last Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="Smith" {...field} />
+                              <Input 
+                                autoComplete="family-name"
+                                placeholder="Smith" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -338,8 +380,22 @@ export default function BusinessRegistration() {
                             <FormItem>
                               <FormLabel>Email Address *</FormLabel>
                               <FormControl>
-                                <Input placeholder="john@acmerestaurant.com" type="email" {...field} />
+                                <Input 
+                                  type="email" 
+                                  inputMode="email"
+                                  autoComplete="email"
+                                  list="email-domains"
+                                  placeholder="john@acmerestaurant.com" 
+                                  {...field} 
+                                />
                               </FormControl>
+                              <datalist id="email-domains">
+                                <option value="@gmail.com" />
+                                <option value="@yahoo.com" />
+                                <option value="@outlook.com" />
+                                <option value="@hotmail.com" />
+                                <option value="@icloud.com" />
+                              </datalist>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -353,7 +409,12 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Password *</FormLabel>
                             <FormControl>
-                              <Input placeholder="••••••••" type="password" {...field} />
+                              <Input 
+                                type="password" 
+                                autoComplete="new-password"
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -367,7 +428,12 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Confirm Password *</FormLabel>
                             <FormControl>
-                              <Input placeholder="••••••••" type="password" {...field} />
+                              <Input 
+                                type="password" 
+                                autoComplete="new-password"
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
