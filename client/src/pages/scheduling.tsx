@@ -1203,7 +1203,7 @@ export default function Scheduling() {
                                 <SelectContent>
                                   <SelectItem value="none">None</SelectItem>
                                   {Array.isArray(staff) && staff
-                                    .filter((member: any) => !slot.role || slot.role === "" || member.role === slot.role)
+                                    .filter((member: any) => member.role === "staff")
                                     .map((member: any) => (
                                     <SelectItem key={member.id} value={member.id.toString()}>
                                       {member.firstName} {member.lastName}
