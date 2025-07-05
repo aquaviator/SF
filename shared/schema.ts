@@ -347,16 +347,30 @@ export const activityLogs = pgTable("activity_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Subscription tables
+// Subscription tables - Seat-based billing
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull().unique(),
-  planId: text("plan_id").notNull().references(() => subscriptionPlans.id, { onDelete: 'cascade' }),
   status: text("status").notNull().$type<"active" | "trial" | "expired" | "cancelled" | "past_due">(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+  seatsIncluded: integer("seats_included").notNull().default(5), // Number of seats included
+  seatsUsed: integer("seats_used").notNull().default(0), // Currently used seats
+  pricePerSeat: integer("price_per_seat").notNull().default(300), // £3.00 in pence
+  monthlyTotal: integer("monthly_total").notNull().default(1500), // Total monthly cost in pence
   trialDaysRemaining: integer("trial_days_remaining"),
+  nextBillingDate: timestamp("next_billing_date").notNull(),
+  
+  // Stripe integration fields
+  stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID
+  stripeSubscriptionId: text("stripe_subscription_id"), // Stripe subscription ID
+  stripePriceId: text("stripe_price_id"), // Stripe price ID for the seat billing
+  stripeStatus: text("stripe_status"), // Stripe subscription status
+  
+  // Trial and lifecycle
+  trialStart: timestamp("trial_start"),
+  trialEnd: timestamp("trial_end"),
   cancelledAt: timestamp("cancelled_at"),
+  cancellationReason: text("cancellation_reason"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
