@@ -1051,10 +1051,10 @@ export default function Scheduling() {
                 />
               </div>
 
-              {/* Section 3: Template Lines */}
+              {/* Section 3: Position Requirements */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Template Lines</h3>
+                  <h3 className="text-lg font-semibold">Position Requirements</h3>
                   <Button
                     type="button"
                     variant="outline"
@@ -1073,342 +1073,169 @@ export default function Scheduling() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Line
+                    Add Position
                   </Button>
                 </div>
                 
-                {templateForm.watch("slots")?.map((slot, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {/* Role Badge - similar to DayShiftsModal */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${slot.role ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'}`}>
-                          {slot.role ? slot.role.charAt(0).toUpperCase() : '?'}
-                        </div>
-                        
-                        {/* Template Line Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="font-medium">
-                              {slot.role || 'Unassigned Role'}
-                            </h3>
-                            <Badge variant={slot.assignmentType === 'assigned' ? 'default' : 'secondary'} className="text-xs">
-                              {slot.assignmentType === 'assigned' ? 'Pre-assigned' : 'Open'}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
-                            <div className="flex items-center space-x-1">
-                              <Users className="w-4 h-4" />
-                              <span>{slot.quantity} position{slot.quantity > 1 ? 's' : ''}</span>
-                            </div>
-                            
-                            {slot.assignmentType === 'assigned' && slot.staffIds?.length > 0 && (
-                              <div className="flex items-center space-x-1">
-                                <User className="w-4 h-4" />
-                                <span>{slot.staffIds.length} assigned</span>
-                              </div>
+                {/* Simple position builder */}
+                {templateForm.watch("slots")?.length > 0 ? (
+                  <div className="space-y-3">
+                    {templateForm.watch("slots")?.map((slot, index) => (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="grid grid-cols-4 gap-4">
+                          <FormField
+                            control={templateForm.control}
+                            name={`slots.${index}.role`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Role</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
+                                      <SelectItem key={role.id} value={role.title}>
+                                        {role.title}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={templateForm.control}
+                            name={`slots.${index}.quantity`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Count</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    min="1" 
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={templateForm.control}
+                            name={`slots.${index}.assignmentType`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Type</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="open">Open</SelectItem>
+                                    <SelectItem value="assigned">Pre-assigned</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="flex items-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentSlots = templateForm.getValues("slots") || [];
+                                const slotToDuplicate = currentSlots[index];
+                                templateForm.setValue("slots", [
+                                  ...currentSlots.slice(0, index + 1),
+                                  { ...slotToDuplicate },
+                                  ...currentSlots.slice(index + 1)
+                                ]);
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            {templateForm.watch("slots")!.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const currentSlots = templateForm.getValues("slots") || [];
+                                  const newSlots = currentSlots.filter((_, i) => i !== index);
+                                  templateForm.setValue("slots", newSlots);
+                                }}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const currentSlots = templateForm.getValues("slots") || [];
-                            const slotToDuplicate = currentSlots[index];
-                            templateForm.setValue("slots", [
-                              ...currentSlots.slice(0, index + 1),
-                              { ...slotToDuplicate },
-                              ...currentSlots.slice(index + 1)
-                            ]);
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        {templateForm.watch("slots")!.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const currentSlots = templateForm.getValues("slots") || [];
-                              const newSlots = currentSlots.filter((_, i) => i !== index);
-                              templateForm.setValue("slots", newSlots);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <FormField
-                        control={templateForm.control}
-                        name={`slots.${index}.role`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Role</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select role" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
-                                  <SelectItem key={role.id} value={role.title}>
-                                    {role.title}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={templateForm.control}
-                        name={`slots.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Required Staff</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                min="1" 
-                                max={slot.assignmentType === "assigned" ? "1" : undefined}
-                                disabled={slot.assignmentType === "assigned"}
-                                value={slot.assignmentType === "assigned" ? "1" : field.value}
-                                onChange={(e) => {
-                                  if (slot.assignmentType === "assigned") {
-                                    field.onChange(1);
-                                  } else {
-                                    field.onChange(parseInt(e.target.value) || 1);
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              {slot.assignmentType === "assigned" ? "Pre-assigned lines can only have 1 staff member" : "Number of staff needed for this role"}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={templateForm.control}
-                        name={`slots.${index}.assignmentType`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Assignment Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="open">Open Opportunity</SelectItem>
-                                <SelectItem value="assigned">Pre-Assigned</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
-                      <div>
-                        <FormLabel>Pre-assign Staff (Optional)</FormLabel>
-                        <div className="mt-2 space-y-2">
-                          {Array.isArray(staff) && staff
-                            .filter((member: any) => !member.role || slot.role === "" || member.role === slot.role)
-                            .map((member: any) => (
-                            <div key={member.id} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`staff-${index}-${member.id}`}
-                                checked={slot.staffIds?.includes(member.id) || false}
-                                onChange={(e) => {
+                        {slot.assignmentType === "assigned" && (
+                          <div className="mt-4 pt-4 border-t">
+                            <FormLabel>Assign to Staff (Optional)</FormLabel>
+                            <div className="mt-2">
+                              <Select
+                                value={slot.staffIds?.[0]?.toString() || ""}
+                                onValueChange={(value) => {
                                   const currentSlots = templateForm.getValues("slots") || [];
                                   const updatedSlots = [...currentSlots];
-                                  if (!updatedSlots[index].staffIds) {
-                                    updatedSlots[index].staffIds = [];
-                                  }
-                                  
-                                  if (e.target.checked) {
-                                    // For pre-assigned slots, only allow one staff member
-                                    if (slot.assignmentType === "assigned") {
-                                      updatedSlots[index].staffIds = [member.id];
-                                    } else {
-                                      updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
-                                    }
-                                  } else {
-                                    updatedSlots[index].staffIds = updatedSlots[index].staffIds.filter(id => id !== member.id);
-                                  }
-                                  
+                                  updatedSlots[index].staffIds = value ? [parseInt(value)] : [];
                                   templateForm.setValue("slots", updatedSlots);
                                 }}
-                                className="rounded border-gray-300"
-                              />
-                              <label htmlFor={`staff-${index}-${member.id}`} className="text-sm">
-                                {member.firstName} {member.lastName}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  
-                    {/* Configuration Section */}
-                    <div className="mt-4 pt-4 border-t space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <FormField
-                          control={templateForm.control}
-                          name={`slots.${index}.role`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Role</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select role" />
-                                  </SelectTrigger>
-                                </FormControl>
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choose staff member" />
+                                </SelectTrigger>
                                 <SelectContent>
-                                  {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
-                                    <SelectItem key={role.id} value={role.title}>
-                                      {role.title}
+                                  <SelectItem value="">None</SelectItem>
+                                  {Array.isArray(staff) && staff
+                                    .filter((member: any) => !slot.role || slot.role === "" || member.role === slot.role)
+                                    .map((member: any) => (
+                                    <SelectItem key={member.id} value={member.id.toString()}>
+                                      {member.firstName} {member.lastName}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={templateForm.control}
-                          name={`slots.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Required Staff</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="1" 
-                                  max={slot.assignmentType === "assigned" ? "1" : undefined}
-                                  disabled={slot.assignmentType === "assigned"}
-                                  value={slot.assignmentType === "assigned" ? "1" : field.value}
-                                  onChange={(e) => {
-                                    if (slot.assignmentType === "assigned") {
-                                      field.onChange(1);
-                                    } else {
-                                      field.onChange(parseInt(e.target.value) || 1);
-                                    }
-                                  }}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {slot.assignmentType === "assigned" ? "Pre-assigned lines can only have 1 staff member" : "Number of staff needed for this role"}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={templateForm.control}
-                          name={`slots.${index}.assignmentType`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Assignment Type</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="open">Open Opportunity</SelectItem>
-                                  <SelectItem value="assigned">Pre-Assigned</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
-                        <div>
-                          <FormLabel>Pre-assign Staff (Optional)</FormLabel>
-                          <div className="mt-2 space-y-2">
-                            {Array.isArray(staff) && staff
-                              .filter((member: any) => !member.role || slot.role === "" || member.role === slot.role)
-                              .map((member: any) => (
-                              <div key={member.id} className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id={`staff-${index}-${member.id}`}
-                                  checked={slot.staffIds?.includes(member.id) || false}
-                                  onChange={(e) => {
-                                    const currentSlots = templateForm.getValues("slots") || [];
-                                    const updatedSlots = [...currentSlots];
-                                    if (!updatedSlots[index].staffIds) {
-                                      updatedSlots[index].staffIds = [];
-                                    }
-                                    
-                                    if (e.target.checked) {
-                                      // For pre-assigned slots, only allow one staff member
-                                      if (slot.assignmentType === "assigned") {
-                                        updatedSlots[index].staffIds = [member.id];
-                                      } else {
-                                        updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
-                                      }
-                                    } else {
-                                      updatedSlots[index].staffIds = updatedSlots[index].staffIds.filter(id => id !== member.id);
-                                    }
-                                    
-                                    templateForm.setValue("slots", updatedSlots);
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <label htmlFor={`staff-${index}-${member.id}`} className="text-sm">
-                                  {member.firstName} {member.lastName}
-                                </label>
-                              </div>
-                            ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const currentSlots = templateForm.getValues("slots") || [];
-                    templateForm.setValue("slots", [...currentSlots, { role: "", quantity: 1, assignmentType: "open", staffIds: [] }]);
-                  }}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Position
-                </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-40" />
+                    <h4 className="text-lg font-medium mb-2">No positions added yet</h4>
+                    <p className="text-sm mb-4">Add your first position to get started with this template</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        templateForm.setValue("slots", [
+                          { role: "", quantity: 1, assignmentType: "open", staffIds: [] }
+                        ]);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Position
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <DialogFooter>
@@ -1459,64 +1286,54 @@ export default function Scheduling() {
             <DialogTitle>Create Shifts from Template</DialogTitle>
             <DialogDescription>
               Select a date to create shifts from the template "{selectedTemplate?.name}".
-              Pre-assigned staff will be validated for holiday availability.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Select Date</label>
-              <input
+              <label className="text-sm font-medium">Date</label>
+              <Input
                 type="date"
-                value={templateDate.toISOString().split('T')[0]}
-                onChange={(e) => setTemplateDate(new Date(e.target.value))}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={createShiftsDate}
+                onChange={(e) => setCreateShiftsDate(e.target.value)}
+                className="mt-1"
               />
             </div>
             
             {selectedTemplate && (
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <h4 className="font-medium text-sm">Template Details:</h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  Time: {selectedTemplate.startTime || '08:00'} - {selectedTemplate.endTime || '17:00'}
-                </p>
-                <p className="text-xs text-gray-600">
-                  Roles: {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 
-                    ? selectedTemplate.slots.map((slot: any) => 
-                        `${slot.role} (${slot.quantity}${slot.assignmentType === 'assigned' ? ' pre-assigned' : ' open'})`
-                      ).join(', ')
-                    : selectedTemplate.positions?.join(', ') || 'No roles defined'}
-                </p>
+              <div className="rounded-lg border p-3 bg-muted/50">
+                <h4 className="font-medium mb-2">Template Preview</h4>
+                <div className="text-sm space-y-1">
+                  <div>Name: {selectedTemplate.name}</div>
+                  <div>Time: {selectedTemplate.startTime} - {selectedTemplate.endTime}</div>
+                  <div>Positions: {Array.isArray(selectedTemplate.slots) ? selectedTemplate.slots.length : 0}</div>
+                  {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 && (
+                    <div className="mt-2">
+                      {(selectedTemplate.slots as any[]).map((slot: any, index: number) => (
+                        <div key={index} className="text-xs text-muted-foreground">
+                          • {slot.role} ({slot.quantity} {slot.assignmentType === 'assigned' ? 'pre-assigned' : 'open'})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setCreateShiftsModalOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setCreateShiftsModalOpen(false)}>
               Cancel
             </Button>
             <Button 
-              type="button" 
-              onClick={async () => {
-                if (selectedTemplate) {
-                  await createShiftsFromTemplate(selectedTemplate, templateDate);
-                  setCreateShiftsModalOpen(false);
-                  setSelectedTemplate(null);
-                }
-              }}
+              onClick={() => createShiftsFromTemplate(selectedTemplate, new Date(createShiftsDate))}
+              disabled={!createShiftsDate || !selectedTemplate}
             >
-              <Plus className="h-4 w-4 mr-2" />
               Create Shifts
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
     </>
   );
 }
