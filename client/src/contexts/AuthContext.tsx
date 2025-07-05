@@ -35,9 +35,9 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<UserRole>("owner");
-  const [tenantId] = useState("clean-business"); // Clean testing tenant
+  const [tenantId] = useState("template-business"); // Clean template tenant
   const [currentStaffId, setCurrentStaffId] = useState<number>(() => {
-    return parseInt(localStorage.getItem("dev-staff-id") || "3");
+    return parseInt(localStorage.getItem("dev-staff-id") || "17");
   });
   const [user, setUser] = useState<{
     id: number;
