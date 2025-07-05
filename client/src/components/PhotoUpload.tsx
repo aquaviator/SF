@@ -74,6 +74,10 @@ export function PhotoUpload({
           base64Length: base64?.length,
           base64Preview: base64?.substring(0, 50) + '...'
         });
+        console.log('🔄 CALLING_ON_IMAGE_CHANGE', {
+          hasCallback: !!onImageChange,
+          base64Length: base64?.length
+        });
         onImageChange?.(base64);
         toast({ title: "Photo uploaded", description: `${type === 'logo' ? 'Business logo' : 'Profile photo'} updated successfully` });
       };
