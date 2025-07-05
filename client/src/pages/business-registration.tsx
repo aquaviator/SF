@@ -7,10 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Check, Building2, Users, Star, Zap } from "lucide-react";
+import { Check, Building2, Users, Zap } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,9 +22,9 @@ const registrationSchema = z.object({
       .max(20, "Subdomain must be less than 20 characters")
       .regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and hyphens"),
     businessType: z.string().min(1, "Please select a business type"),
-    address: z.string().optional(),
     phone: z.string().optional(),
     website: z.string().optional(),
+    staffCount: z.number().min(1, "Please enter number of staff members"),
   }),
   // Owner Information
   owner: z.object({
@@ -39,26 +37,15 @@ const registrationSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
   }),
-  // Plan selection
-  planId: z.number().min(1, "Please select a pricing plan"),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
 
-interface PricingPlan {
-  id: number;
-  tierName: string;
-  minSeats: number;
-  maxSeats: number | null;
-  pricePerSeat: number;
-  features: string[];
-  isActive: boolean;
-}
+
 
 export default function BusinessRegistration() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [plans, setPlans] = useState<PricingPlan[]>([]);
   const { toast } = useToast();
 
   const form = useForm<RegistrationData>({
@@ -68,9 +55,9 @@ export default function BusinessRegistration() {
         name: "",
         subdomain: "",
         businessType: "",
-        address: "",
         phone: "",
         website: "",
+        staffCount: 1,
       },
       owner: {
         firstName: "",
@@ -79,28 +66,14 @@ export default function BusinessRegistration() {
         password: "",
         confirmPassword: "",
       },
-      planId: 0,
     },
   });
 
-  // Load pricing plans
-  useState(() => {
-    const loadPlans = async () => {
-      try {
-        const response = await apiRequest("GET", "/api/seat-pricing");
-        const plansData = await response.json();
-        setPlans(plansData);
-      } catch (error) {
-        console.error("Failed to load pricing plans:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load pricing plans. Please refresh and try again.",
-          variant: "destructive",
-        });
-      }
-    };
-    loadPlans();
-  });
+  // Calculate pricing based on staff count
+  const calculateMonthlyPrice = (staffCount: number) => {
+    const pricePerSeat = 3.00; // £3.00 per seat per month
+    return staffCount * pricePerSeat;
+  };
 
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
@@ -147,15 +120,13 @@ export default function BusinessRegistration() {
     "Other",
   ];
 
-  const formatPrice = (priceInPence: number) => {
-    return `£${(priceInPence / 100).toFixed(2)}`;
-  };
+
 
   const getStepTitle = () => {
     switch (step) {
       case 1: return "Business Information";
       case 2: return "Owner Account";
-      case 3: return "Choose Your Plan";
+      case 3: return "Subscription Summary";
       default: return "Registration";
     }
   };
@@ -208,7 +179,7 @@ export default function BusinessRegistration() {
                   <CardDescription>
                     {step === 1 && "Tell us about your business"}
                     {step === 2 && "Create your admin account"}
-                    {step === 3 && "Select the right plan for your team"}
+                    {step === 3 && "Review your subscription details"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -302,21 +273,29 @@ export default function BusinessRegistration() {
                         )}
                       />
 
-                      <div className="md:col-span-2">
-                        <FormField
-                          control={form.control}
-                          name="business.address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Business Address</FormLabel>
-                              <FormControl>
-                                <Textarea placeholder="123 High Street, London, UK" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="business.staffCount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Number of Staff Members *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="1" 
+                                max="1000"
+                                placeholder="5" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                            <p className="text-sm text-gray-500">
+                              How many staff members will you be scheduling? £3.00 per staff member per month.
+                            </p>
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   )}
 
@@ -397,71 +376,79 @@ export default function BusinessRegistration() {
                     </div>
                   )}
 
-                  {/* Step 3: Plan Selection */}
+                  {/* Step 3: Pricing Summary */}
                   {step === 3 && (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {plans.map((plan) => (
-                          <div
-                            key={plan.id}
-                            className={`
-                              relative border-2 rounded-lg p-6 cursor-pointer transition-all
-                              ${form.watch("planId") === plan.id
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                              }
-                            `}
-                            onClick={() => form.setValue("planId", plan.id)}
-                          >
-                            {plan.tierName === "Professional" && (
-                              <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-blue-600">
-                                <Star className="w-3 h-3 mr-1" />
-                                Most Popular
-                              </Badge>
-                            )}
-                            
-                            <div className="text-center mb-4">
-                              <h3 className="text-xl font-semibold text-gray-900">{plan.tierName}</h3>
-                              <div className="mt-2">
-                                <span className="text-3xl font-bold text-gray-900">
-                                  {formatPrice(plan.pricePerSeat)}
-                                </span>
-                                <span className="text-gray-500">/seat/month</span>
-                              </div>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {plan.minSeats}-{plan.maxSeats || "∞"} seats
-                              </p>
-                            </div>
-
-                            <ul className="space-y-2 mb-4">
-                              {plan.features.map((feature, index) => (
-                                <li key={index} className="flex items-center text-sm">
-                                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-
-                            {form.watch("planId") === plan.id && (
-                              <div className="absolute top-4 right-4">
-                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                                  <Check className="w-4 h-4 text-white" />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                      <div className="text-center">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">Your Subscription Summary</h3>
+                        <p className="text-gray-600 mb-6">Review your pricing details below</p>
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="planId"
-                        render={() => (
-                          <FormItem>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center">
+                            <Users className="h-6 w-6 text-blue-600 mr-3" />
+                            <div>
+                              <h4 className="font-semibold text-gray-900">Staff Members</h4>
+                              <p className="text-sm text-gray-600">Number of users you'll be scheduling</p>
+                            </div>
+                          </div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {form.watch("business.staffCount") || 1}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-blue-200 pt-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-600">Price per staff member</span>
+                            <span className="font-medium">£3.00/month</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-gray-600">Staff members</span>
+                            <span className="font-medium">× {form.watch("business.staffCount") || 1}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-lg font-bold border-t border-blue-200 pt-2">
+                            <span>Monthly Total</span>
+                            <span className="text-blue-600">
+                              £{calculateMonthlyPrice(form.watch("business.staffCount") || 1).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">What's Included:</h4>
+                        <ul className="space-y-2">
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Complete shift scheduling system
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Staff time tracking and management
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Holiday and swap request management
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Live operations dashboard
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Mobile-friendly interface
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            Email support and onboarding
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="text-center text-sm text-gray-500">
+                        <p>Your first 30 days are free! No setup fees or hidden costs.</p>
+                      </div>
                     </div>
                   )}
 
