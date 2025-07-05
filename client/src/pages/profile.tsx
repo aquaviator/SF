@@ -126,12 +126,22 @@ export default function Profile() {
     mutationFn: async (file: File) => {
       if (!user?.id) throw new Error("User ID not available");
       
+      console.log('📤 PHOTO_UPLOAD_START', { 
+        fileName: file.name,
+        fileSize: file.size,
+        userId: user.id
+      });
+      
       const formData = new FormData();
       formData.append('photo', file);
       formData.append('userId', String(user.id));
       
       const response = await apiRequest('POST', `/api/users/${user.id}/photo`, formData);
       const result = await response.json();
+      
+      console.log('✅ PHOTO_UPLOAD_SUCCESS', { 
+        photoUrl: result.photoUrl?.substring(0, 50) + '...'
+      });
       
       return result.photoUrl;
     },
