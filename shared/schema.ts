@@ -70,6 +70,15 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
 
+// Update schema for partial user updates (for profiles)
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  username: true,
+  password: true,
+  role: true,
+  tenantId: true,
+}).partial();
+
 export const insertShiftSchema = createInsertSchema(shifts).omit({
   id: true,
 });
@@ -85,6 +94,7 @@ export const insertSwapRequestSchema = createInsertSchema(swapRequests).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type Shift = typeof shifts.$inferSelect;
 export type InsertShift = z.infer<typeof insertShiftSchema>;
 export type Opportunity = typeof opportunities.$inferSelect;
