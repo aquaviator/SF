@@ -24,6 +24,8 @@ import BusinessSettings from "@/pages/business-settings";
 import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
+import SeatBasedSubscription from "@/pages/seat-based-subscription";
+import Performance from "@/pages/performance";
 import StaffStrikes from "@/pages/staff/strikes";
 import StaffRequests from "@/pages/staff/requests";
 import OwnerStrikes from "@/pages/owner/strikes";
@@ -64,11 +66,11 @@ function Router() {
               <Route path="/owner/settings" component={BusinessSettings} />
               <Route path="/owner/policies" component={Policies} />
               <Route path="/owner/analytics" component={Analytics} />
-              <Route path="/owner/subscription" component={Subscription} />
+              <Route path="/owner/subscription" component={SeatBasedSubscription} />
               <Route path="/staff/strikes" component={StaffStrikes} />
               <Route path="/staff/requests" component={StaffRequests} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
-              <Route path="/staff/performance" component={MyWork} />
+              <Route path="/staff/performance" component={Performance} />
               <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
             </Switch>

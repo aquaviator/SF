@@ -40,13 +40,15 @@ type BillingFormData = z.infer<typeof billingFormSchema>;
 interface Subscription {
   id: number;
   planName: string;
-  planType: "starter" | "professional" | "enterprise";
+  planType: "seat_based";
   status: "active" | "trial" | "expired" | "cancelled";
   startDate: Date;
   endDate: Date;
   trialDaysRemaining?: number;
-  monthlyPrice: number;
-  annualPrice: number;
+  seatsIncluded: number;
+  seatsUsed: number;
+  pricePerSeat: number;
+  monthlyTotal: number;
   features: string[];
   usageMetrics: {
     staffLimit: number;

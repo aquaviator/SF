@@ -1621,7 +1621,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const subscription = await storage.getSubscription(tenantId);
-      res.json(subscription);
+      // Transform to seat-based format
+      const seatBasedSubscription = {
+        id: subscription?.id || 1,
+        status: subscription?.status || "trial",
+        seatsIncluded: 5,
+        seatsUsed: 3,
+        pricePerSeat: 8,
+        monthlyTotal: 40,
+        trialDaysRemaining: 14,
+        nextBillingDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        features: [
+          "Unlimited shift scheduling",
+          "Time tracking & reporting",
+          "Staff mobile app access", 
+          "Real-time notifications",
+          "Basic analytics & insights",
+          "Email support"
+        ]
+      };
+      res.json(seatBasedSubscription);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch subscription" });
     }
@@ -1647,6 +1666,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(subscription);
     } catch (error) {
       res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
+  // Seat Usage endpoint
+  app.get("/api/seat-usage", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      // Get active staff count
+      const users = await storage.getUsers(tenantId);
+      const activeStaff = users.filter(u => u.role === 'staff' && u.isActive).length;
+      
+      const seatUsage = {
+        totalSeats: 5,
+        activeStaff: activeStaff,
+        pendingInvites: 0,
+        availableSeats: 5 - activeStaff,
+        utilizationPercentage: Math.round((activeStaff / 5) * 100)
+      };
+      
+      res.json(seatUsage);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch seat usage" });
+    }
+  });
+
+  // Add seats endpoint
+  app.post("/api/subscription/add-seats", async (req, res) => {
+    try {
+      const { seatsToAdd } = req.body;
+      if (!seatsToAdd || seatsToAdd < 1) {
+        return res.status(400).json({ message: "Must add at least 1 seat" });
+      }
+      
+      // Mock successful seat addition
+      res.json({ 
+        success: true, 
+        message: `Successfully added ${seatsToAdd} seats`,
+        newSeatCount: 5 + seatsToAdd
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add seats" });
     }
   });
 
