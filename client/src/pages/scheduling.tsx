@@ -42,7 +42,9 @@ import {
   List,
   CalendarDays,
   Trash2,
-  Edit
+  Edit,
+  MapPin,
+  User
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
@@ -710,14 +712,12 @@ export default function Scheduling() {
 
           <TabsContent value="templates" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Schedule Templates</CardTitle>
-              </CardHeader>
               <CardContent>
                 <DataTable 
                   data={templates as any[]} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
+                  title="Schedule Templates"
                 />
               </CardContent>
             </Card>
@@ -1012,7 +1012,46 @@ export default function Scheduling() {
                 />
               </div>
 
-              {/* Section 2: Position Slots */}
+              {/* Section 2: Time Settings */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={templateForm.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || "08:00"}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={templateForm.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || "17:00"}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Section 3: Template Lines */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Template Lines</h3>
@@ -1039,10 +1078,43 @@ export default function Scheduling() {
                 </div>
                 
                 {templateForm.watch("slots")?.map((slot, index) => (
-                  <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <Card key={index} className="p-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Line {index + 1}</h4>
-                      <div className="flex gap-2">
+                      <div className="flex items-center space-x-3">
+                        {/* Role Badge - similar to DayShiftsModal */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${slot.role ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'}`}>
+                          {slot.role ? slot.role.charAt(0).toUpperCase() : '?'}
+                        </div>
+                        
+                        {/* Template Line Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-medium">
+                              {slot.role || 'Unassigned Role'}
+                            </h3>
+                            <Badge variant={slot.assignmentType === 'assigned' ? 'default' : 'secondary'} className="text-xs">
+                              {slot.assignmentType === 'assigned' ? 'Pre-assigned' : 'Open'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Users className="w-4 h-4" />
+                              <span>{slot.quantity} position{slot.quantity > 1 ? 's' : ''}</span>
+                            </div>
+                            
+                            {slot.assignmentType === 'assigned' && slot.staffIds?.length > 0 && (
+                              <div className="flex items-center space-x-1">
+                                <User className="w-4 h-4" />
+                                <span>{slot.staffIds.length} assigned</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -1197,7 +1269,132 @@ export default function Scheduling() {
                         </div>
                       </div>
                     )}
-                  </div>
+                  
+                    {/* Configuration Section */}
+                    <div className="mt-4 pt-4 border-t space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <FormField
+                          control={templateForm.control}
+                          name={`slots.${index}.role`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Role</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
+                                    <SelectItem key={role.id} value={role.title}>
+                                      {role.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={templateForm.control}
+                          name={`slots.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Required Staff</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min="1" 
+                                  max={slot.assignmentType === "assigned" ? "1" : undefined}
+                                  disabled={slot.assignmentType === "assigned"}
+                                  value={slot.assignmentType === "assigned" ? "1" : field.value}
+                                  onChange={(e) => {
+                                    if (slot.assignmentType === "assigned") {
+                                      field.onChange(1);
+                                    } else {
+                                      field.onChange(parseInt(e.target.value) || 1);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {slot.assignmentType === "assigned" ? "Pre-assigned lines can only have 1 staff member" : "Number of staff needed for this role"}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={templateForm.control}
+                          name={`slots.${index}.assignmentType`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Assignment Type</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="open">Open Opportunity</SelectItem>
+                                  <SelectItem value="assigned">Pre-Assigned</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {templateForm.watch(`slots.${index}.assignmentType`) === "assigned" && (
+                        <div>
+                          <FormLabel>Pre-assign Staff (Optional)</FormLabel>
+                          <div className="mt-2 space-y-2">
+                            {Array.isArray(staff) && staff
+                              .filter((member: any) => !member.role || slot.role === "" || member.role === slot.role)
+                              .map((member: any) => (
+                              <div key={member.id} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`staff-${index}-${member.id}`}
+                                  checked={slot.staffIds?.includes(member.id) || false}
+                                  onChange={(e) => {
+                                    const currentSlots = templateForm.getValues("slots") || [];
+                                    const updatedSlots = [...currentSlots];
+                                    if (!updatedSlots[index].staffIds) {
+                                      updatedSlots[index].staffIds = [];
+                                    }
+                                    
+                                    if (e.target.checked) {
+                                      // For pre-assigned slots, only allow one staff member
+                                      if (slot.assignmentType === "assigned") {
+                                        updatedSlots[index].staffIds = [member.id];
+                                      } else {
+                                        updatedSlots[index].staffIds = [...updatedSlots[index].staffIds, member.id];
+                                      }
+                                    } else {
+                                      updatedSlots[index].staffIds = updatedSlots[index].staffIds.filter(id => id !== member.id);
+                                    }
+                                    
+                                    templateForm.setValue("slots", updatedSlots);
+                                  }}
+                                  className="rounded border-gray-300"
+                                />
+                                <label htmlFor={`staff-${index}-${member.id}`} className="text-sm">
+                                  {member.firstName} {member.lastName}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
                 ))}
 
                 <Button
