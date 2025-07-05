@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,9 +8,48 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Check, Building2, Users, Zap } from "lucide-react";
+import { Check, Building2, Users, Zap, X, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Custom hook for real-time subdomain availability checking
+function useSubdomainCheck(subdomain: string) {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!subdomain || subdomain.length < 3) {
+      setStatus('idle');
+      setMessage('');
+      return;
+    }
+
+    setStatus('checking');
+    setMessage('Checking availability...');
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/check-subdomain/${subdomain}`);
+        const data = await response.json();
+        
+        if (data.available) {
+          setStatus('available');
+          setMessage('Available!');
+        } else {
+          setStatus('taken');
+          setMessage('Not Available');
+        }
+      } catch (error) {
+        setStatus('idle');
+        setMessage('Error checking availability');
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timer);
+  }, [subdomain]);
+
+  return { status, message };
+}
 
 // Registration form schema
 const registrationSchema = z.object({
@@ -74,6 +113,10 @@ export default function BusinessRegistration() {
       },
     },
   });
+
+  // Watch subdomain field for real-time availability checking
+  const subdomainValue = form.watch("business.subdomain");
+  const subdomainCheck = useSubdomainCheck(subdomainValue);
 
   // Calculate pricing based on staff count
   const calculateMonthlyPrice = (staffCount: number) => {
@@ -278,6 +321,29 @@ export default function BusinessRegistration() {
                                 </span>
                               </div>
                             </FormControl>
+                            {/* Real-time availability feedback */}
+                            {subdomainValue && subdomainValue.length >= 3 && (
+                              <div className="flex items-center gap-2 mt-2">
+                                {subdomainCheck.status === 'checking' && (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                    <span className="text-sm text-blue-600">{subdomainCheck.message}</span>
+                                  </>
+                                )}
+                                {subdomainCheck.status === 'available' && (
+                                  <>
+                                    <Check className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm text-green-600 font-medium">{subdomainCheck.message}</span>
+                                  </>
+                                )}
+                                {subdomainCheck.status === 'taken' && (
+                                  <>
+                                    <X className="h-4 w-4 text-red-500" />
+                                    <span className="text-sm text-red-600 font-medium">{subdomainCheck.message}</span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}

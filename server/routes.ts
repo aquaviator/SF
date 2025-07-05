@@ -3618,6 +3618,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subdomain availability check API
+  app.get("/api/check-subdomain/:subdomain", async (req, res) => {
+    try {
+      const { subdomain } = req.params;
+      
+      // Check if subdomain already exists
+      const [existingTenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.subdomain, subdomain))
+        .limit(1);
+      
+      const isAvailable = !existingTenant;
+      
+      res.json({ 
+        available: isAvailable,
+        subdomain,
+        message: isAvailable ? "Subdomain is available" : "Subdomain is already taken"
+      });
+      
+    } catch (error: any) {
+      console.error("Subdomain check error:", error);
+      res.status(500).json({ message: "Failed to check subdomain availability" });
+    }
+  });
+
   // Business Registration API
   app.post("/api/register-business", async (req, res) => {
     try {
