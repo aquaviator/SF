@@ -99,6 +99,31 @@ export default function Analytics() {
   // Fetch analytics reports from database
   const { data: analyticsReports = [] } = useQuery({
     queryKey: ["/api/analytics/reports", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/analytics/reports?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch analytics reports");
+      return response.json();
+    },
+  });
+
+  // Fetch analytics metrics from database
+  const { data: analyticsMetrics = [] } = useQuery({
+    queryKey: ["/api/analytics/metrics", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/analytics/metrics?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch analytics metrics");
+      return response.json();
+    },
+  });
+
+  // Fetch activity logs from database
+  const { data: activityLogs = [] } = useQuery({
+    queryKey: ["/api/activity-logs", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/activity-logs?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch activity logs");
+      return response.json();
+    },
   });
 
   // Calculate Labor Cost Data from real shifts and staff data
@@ -252,26 +277,7 @@ export default function Analytics() {
     ];
   }, []);
 
-  // Calculate Activity Log Data from real operations
-  const activityLogs: ActivityLog[] = React.useMemo(() => {
-    if (!Array.isArray(shiftsData) || !Array.isArray(staffData)) return [];
-    
-    const logs: ActivityLog[] = [];
-    
-    // Generate activity logs from shift data
-    shiftsData.forEach((shift: any) => {
-      logs.push({
-        id: shift.id,
-        timestamp: new Date(shift.date),
-        action: `Shift ${shift.status}`,
-        user: shift.assignedTo ? `Staff ID ${shift.assignedTo}` : "Unassigned",
-        details: `${shift.role} shift from ${shift.startTime} to ${shift.endTime}`,
-        impact: shift.status === "conflict" ? "high" : "medium",
-      });
-    });
-    
-    return logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 10);
-  }, [shiftsData, staffData]);
+
 
   const getImpactBadge = (impact: ActivityLog["impact"]) => {
     const variants = {
