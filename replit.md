@@ -485,6 +485,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Positioned next to notification bell in BrandedHeader for easy time reference
   - Updates every second with proper cleanup to prevent memory leaks
   - Helps clarify timezone context for shift scheduling and time entry management
+- July 05, 2025. Created clean template database setup for deployment:
+  - Database completely cleared and reset to minimal state
+  - Simple business template created: "Clean Business Ltd" (tenant: clean-business)
+  - Minimal user setup: 1 owner (Business Owner) + 2 staff (Alice Johnson, Bob Smith)
+  - Basic infrastructure: 1 location (Main Office), 1 job role (General Staff), basic shift policies
+  - Created simple-template-seed.ts script for future clean database initialization
+  - Template ready for deployment with minimal viable business structure
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
