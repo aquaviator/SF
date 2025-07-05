@@ -1189,11 +1189,11 @@ export default function Scheduling() {
                             <FormLabel>Assign to Staff (Optional)</FormLabel>
                             <div className="mt-2">
                               <Select
-                                value={slot.staffIds?.[0]?.toString() || ""}
+                                value={slot.staffIds?.[0]?.toString() || "none"}
                                 onValueChange={(value) => {
                                   const currentSlots = templateForm.getValues("slots") || [];
                                   const updatedSlots = [...currentSlots];
-                                  updatedSlots[index].staffIds = value ? [parseInt(value)] : [];
+                                  updatedSlots[index].staffIds = (value && value !== "none") ? [parseInt(value)] : [];
                                   templateForm.setValue("slots", updatedSlots);
                                 }}
                               >
@@ -1201,7 +1201,7 @@ export default function Scheduling() {
                                   <SelectValue placeholder="Choose staff member" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">None</SelectItem>
+                                  <SelectItem value="none">None</SelectItem>
                                   {Array.isArray(staff) && staff
                                     .filter((member: any) => !slot.role || slot.role === "" || member.role === slot.role)
                                     .map((member: any) => (
