@@ -1,83 +1,54 @@
+import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
-import { cn } from "@/lib/utils";
-import ShiftFloLogo from "@/components/ShiftFloLogo";
 
-export function BrandedHeader() {
+interface BrandedHeaderProps {
+  businessName?: string;
+  businessLogoUrl?: string;
+}
+
+export const BrandedHeader: React.FC<BrandedHeaderProps> = ({
+  businessName: propBusinessName,
+  businessLogoUrl: propBusinessLogoUrl,
+}) => {
   const { tenantId } = useAuth();
 
-  // Fetch business profile for logo and name
   const { data: businessProfile } = useQuery({
     queryKey: ["/api/business-profile", tenantId],
-    queryFn: () => fetch(`/api/business-profile?tenantId=${tenantId}`).then(res => res.json()),
-    enabled: !!tenantId,
+    enabled: !!tenantId && !propBusinessName, // Only fetch if props not provided
   });
 
-  const businessName = businessProfile?.name || tenantId?.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Your Business';
-  const logoUrl = businessProfile?.logoUrl;
+  // Use props if provided, otherwise fall back to context data
+  const businessName = propBusinessName || businessProfile?.name || "ShiftFlo";
+  const businessLogoUrl = propBusinessLogoUrl || businessProfile?.logoUrl;
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6">
-      <div className="flex items-center justify-between">
-        {/* Left: Business Branding */}
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Brand area */}
         <div className="flex items-center space-x-3">
-          {/* Business Logo */}
-          {logoUrl ? (
-            <div className="flex items-center space-x-3">
-              <img
-                src={logoUrl}
-                alt={`${businessName} logo`}
-                className="h-10 w-auto object-contain rounded-md"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-gray-900 leading-tight">
-                  {businessName}
-                </h1>
-                <p className="text-xs text-gray-500 leading-tight">
-                  powered by ShiftFlo
-                </p>
-              </div>
-            </div>
+          {businessLogoUrl ? (
+            <img
+              src={businessLogoUrl}
+              alt={`${businessName} logo`}
+              className="h-10 w-auto object-contain rounded-md"
+            />
           ) : (
-            <div className="flex items-center space-x-3">
-              {/* ShiftFlo logo fallback */}
-              <ShiftFloLogo 
-                width={40} 
-                height={40} 
-                className="rounded-lg"
-              />
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-gray-900 leading-tight">
-                  {businessName}
-                </h1>
-                <p className="text-xs text-gray-500 leading-tight">
-                  powered by ShiftFlo
-                </p>
-              </div>
-            </div>
+            <span className="text-xl font-semibold text-gray-900">
+              {businessName}
+            </span>
           )}
-        </div>
-
-        {/* Center: Mobile Business Name (when sidebar is hidden) */}
-        <div className="flex-1 text-center md:hidden">
-          <h1 className="text-lg font-semibold text-gray-900 truncate">
-            {businessName}
-          </h1>
-          <p className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500">
             powered by ShiftFlo
-          </p>
+          </span>
         </div>
 
-        {/* Right: Notifications */}
-        <div className="flex items-center space-x-2">
+        {/* Notification bell */}
+        <div className="flex items-center">
           <NotificationBell />
         </div>
       </div>
     </header>
   );
-}
+};
