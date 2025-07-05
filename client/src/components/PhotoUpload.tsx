@@ -80,6 +80,12 @@ export function PhotoUpload({
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
+        console.log('📷 PHOTO_UPLOAD_COMPLETE', { 
+          type, 
+          base64Length: base64?.length,
+          base64Preview: base64?.substring(0, 50) + '...'
+        });
+        
         onImageChange(base64);
         setUploading(false);
         
