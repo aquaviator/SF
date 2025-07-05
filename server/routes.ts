@@ -530,13 +530,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Update shift status to cancelled using existing imports
-      await db.update(shifts).set({ status: "cancelled" }).where(eq(shifts.id, parseInt(shiftId)));
+      // Step 1: Update shift status to cancelled and remove assignment
+      const updatedShift = await storage.updateShift(parseInt(shiftId), {
+        ...shift,
+        status: "cancelled",
+        assignedTo: null,
+        assignmentType: "opportunity"
+      });
+
+      // Step 2: Create an opportunity for other staff to claim this shift
+      await storage.createOpportunity({
+        tenantId: shift.tenantId,
+        shiftId: parseInt(shiftId),
+        description: `${shift.role} shift available - was cancelled by staff`,
+        requirements: `${shift.role} position needed for ${shift.date} ${shift.startTime}-${shift.endTime}`,
+        isActive: true
+      });
+
+      // Step 3: Log activity for owner visibility
+      await storage.createActivityLog({
+        tenantId: shift.tenantId,
+        userId: parseInt(requestedBy),
+        action: "shift_cancelled",
+        resourceType: "shift",
+        resourceId: shiftId.toString(),
+        details: `Staff cancelled ${shift.role} shift on ${shift.date}. Reason: ${reason || "No reason provided"}`,
+        ipAddress: "127.0.0.1",
+        userAgent: "ShiftFlo App"
+      });
 
       res.status(200).json({
         success: true,
         action: "approved",
-        message: "Shift cancelled successfully"
+        message: "Shift cancelled successfully and made available for other staff to claim"
       });
     } catch (error) {
       console.error("Error processing cancel request:", error);
@@ -1888,12 +1914,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await strikeService.assignLateCancellationStrike(tenantId, userId, shiftId);
       }
       
-      // Cancel the shift
+      // Cancel the shift and convert to opportunity
       const updatedShift = await storage.updateShift(shiftId, {
         ...shift,
         status: "cancelled",
+        assignedTo: null,
+        assignmentType: "opportunity",
         notes: reason ? `Cancelled: ${reason}` : "Cancelled by staff member"
       });
+
+      // Create an opportunity for other staff to claim this shift
+      try {
+        const opportunity = await storage.createOpportunity({
+          tenantId: shift.tenantId,
+          shiftId: shiftId,
+          description: `${shift.role} shift available - was cancelled by staff`,
+          requirements: `${shift.role} position needed for ${shift.date} ${shift.startTime}-${shift.endTime}`,
+          isActive: true
+        });
+        console.log("✅ Opportunity created for cancelled shift:", opportunity.id);
+      } catch (opError) {
+        console.error("❌ Failed to create opportunity:", opError);
+      }
+
+      // Log activity for owner visibility
+      try {
+        const activityLog = await storage.createActivityLog({
+          tenantId: shift.tenantId,
+          userId: userId,
+          action: "shift_cancelled",
+          resourceType: "shift",
+          resourceId: shiftId.toString(),
+          details: `Staff cancelled ${shift.role} shift on ${shift.date}. Reason: ${reason || "No reason provided"}`,
+          ipAddress: "127.0.0.1",
+          userAgent: "ShiftFlo App"
+        });
+        console.log("✅ Activity log created for cancellation:", activityLog.id);
+      } catch (logError) {
+        console.error("❌ Failed to create activity log:", logError);
+      }
       
       res.json(updatedShift);
     } catch (error) {
