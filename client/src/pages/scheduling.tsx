@@ -1294,8 +1294,8 @@ export default function Scheduling() {
               <label className="text-sm font-medium">Date</label>
               <Input
                 type="date"
-                value={createShiftsDate}
-                onChange={(e) => setCreateShiftsDate(e.target.value)}
+                value={templateDate.toISOString().split('T')[0]}
+                onChange={(e) => setTemplateDate(new Date(e.target.value))}
                 className="mt-1"
               />
             </div>
@@ -1326,8 +1326,8 @@ export default function Scheduling() {
               Cancel
             </Button>
             <Button 
-              onClick={() => createShiftsFromTemplate(selectedTemplate, new Date(createShiftsDate))}
-              disabled={!createShiftsDate || !selectedTemplate}
+              onClick={() => createShiftsFromTemplate(selectedTemplate, templateDate)}
+              disabled={!selectedTemplate}
             >
               Create Shifts
             </Button>
