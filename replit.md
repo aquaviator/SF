@@ -507,6 +507,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added StripeCheckout component with Elements integration for secure payment processing
   - Connected seat addition to payment completion with proper state management and cache invalidation
   - System now ready for live payment processing with authenticated Stripe API integration
+- July 05, 2025. Fixed user authentication system and template business user data integrity:
+  - Fixed AuthContext user ID mapping to use correct template business users (16=owner, 17=Alice, 18=Bob)
+  - Updated fallback staff array to use template business user IDs instead of legacy acme-corp IDs
+  - Resolved "User not found" errors by aligning authentication system with seeded database users
+  - Business Profile functionality now working correctly with proper user data loading and form population
+  - Profile updates and photo uploads now work correctly for both owner and staff users
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

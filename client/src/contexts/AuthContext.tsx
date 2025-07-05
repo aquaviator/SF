@@ -82,11 +82,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         // Fallback based on role
         const staffNames = [
-          { id: 2, firstName: "Mike", lastName: "Chen", email: "mike.chen@acme-corp.com" },
-          { id: 3, firstName: "Emma", lastName: "Davis", email: "emma.davis@acme-corp.com" },
-          { id: 4, firstName: "Alex", lastName: "Martinez", email: "alex.martinez@acme-corp.com" },
-          { id: 5, firstName: "Jamie", lastName: "Wilson", email: "jamie.wilson@acme-corp.com" },
-          { id: 6, firstName: "Taylor", lastName: "Brown", email: "taylor.brown@acme-corp.com" },
+          { id: 17, firstName: "Alice", lastName: "Johnson", email: "alice@template-business.com" },
+          { id: 18, firstName: "Bob", lastName: "Smith", email: "bob@template-business.com" },
         ];
         
         if (userRole === "owner") {
