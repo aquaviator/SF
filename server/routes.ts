@@ -2644,7 +2644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const timeEntries = await storage.getTimeEntriesByUserAndDate(tenantId, member.id, today);
           const activeEntry = timeEntries.find(entry => 
-            entry.status === "clocked_in" || entry.status === "on_break"
+            entry.clockInTime && !entry.clockOutTime && 
+            (entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late" || entry.status === "on_time")
           );
           
           if (activeEntry) {
