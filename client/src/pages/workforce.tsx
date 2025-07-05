@@ -23,10 +23,13 @@ import {
   TrendingUp,
   Star,
   Clock,
-  Target
+  Target,
+  UserX,
+  Edit
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { User } from "@shared/schema";
+import { OffboardUserModal } from "@/components/OffboardUserModal";
 
 const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -88,6 +91,25 @@ export default function Workforce() {
       role: "staff",
     },
   });
+
+  // Off-boarding modal state
+  const [offboardingUser, setOffboardingUser] = React.useState<User | null>(null);
+  const [isOffboardModalOpen, setIsOffboardModalOpen] = React.useState(false);
+
+  const openOffboardModal = (user: User) => {
+    setOffboardingUser(user);
+    setIsOffboardModalOpen(true);
+  };
+
+  const closeOffboardModal = () => {
+    setIsOffboardModalOpen(false);
+    setOffboardingUser(null);
+  };
+
+  const handleOffboardComplete = (response: { shiftsUpdated: number; userDeactivated: boolean }) => {
+    // Refresh the staff list after successful off-boarding
+    window.location.reload();
+  };
 
   // Custom submit handler for invitations
   const handleInvitationSubmit = async (data: StaffFormData) => {
@@ -375,6 +397,32 @@ export default function Workforce() {
         </Badge>
       ),
     },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (staff) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openEditModal(staff)}
+            className="min-h-[44px] min-w-[44px]"
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          {staff.role === "staff" && staff.isActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openOffboardModal(staff)}
+              className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <UserX className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
   ];
 
   const performanceColumns: Column<PerformanceMetric>[] = [
@@ -550,8 +598,6 @@ export default function Workforce() {
             columns={staffColumns}
             title="Staff Members"
             onAdd={openCreateModal}
-            onEdit={openEditModal}
-            onDelete={handleDelete}
             addLabel="Add Staff Member"
             isLoading={isLoading}
             emptyState={
@@ -672,6 +718,16 @@ export default function Workforce() {
         entitlement={selectedEntitlement}
         onSave={handleEntitlementSave}
       />
+
+      {/* Off-boarding Modal */}
+      {offboardingUser && (
+        <OffboardUserModal
+          user={offboardingUser}
+          isOpen={isOffboardModalOpen}
+          onClose={closeOffboardModal}
+          onOffboarded={handleOffboardComplete}
+        />
+      )}
     </div>
   );
 }

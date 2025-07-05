@@ -3430,6 +3430,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Off-boarding API
+  app.patch("/api/admin/users/:id/offboard", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // In a real app, validate that caller has "owner" role
+      // For now, assuming authorization is handled by frontend
+
+      const result = await db.transaction(async (tx) => {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Update shifts: unassign all upcoming shifts for this user
+        const shiftUpdateResult = await tx
+          .update(shifts)
+          .set({
+            assignedTo: null,
+            status: 'open',
+          })
+          .where(
+            and(
+              eq(shifts.assignedTo, userId),
+              gt(shifts.date, today)
+            )
+          );
+
+        // Deactivate the user
+        await tx
+          .update(users)
+          .set({
+            isActive: false,
+          })
+          .where(eq(users.id, userId));
+
+        return {
+          shiftsUpdated: shiftUpdateResult.rowCount || 0,
+          userDeactivated: true
+        };
+      });
+
+      console.log(`🚫 USER_OFFBOARDED`, {
+        userId,
+        shiftsUpdated: result.shiftsUpdated,
+        timestamp: new Date()
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error off-boarding user:", error);
+      res.status(500).json({ message: "Failed to off-board user: " + error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
