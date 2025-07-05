@@ -116,7 +116,8 @@ export default function Scheduling() {
   // Create shifts from template modal state
   const [createShiftsModalOpen, setCreateShiftsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
-  const [templateDate, setTemplateDate] = useState<Date>(new Date());
+  const [scheduleStartDate, setScheduleStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [scheduleEndDate, setScheduleEndDate] = useState<string>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
   // Calendar functionality
   const [calendarView, setCalendarView] = useState('month');
@@ -393,7 +394,42 @@ export default function Scheduling() {
     }
   };
 
-  // Function to create shifts from template
+  // Function to generate shifts from template using date range
+  const generateShiftsFromTemplate = async (template: any) => {
+    if (!template || !scheduleStartDate || !scheduleEndDate) return;
+    
+    try {
+      const response = await fetch(`/api/schedule-templates/${template.id}/use`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          startDate: scheduleStartDate, 
+          endDate: scheduleEndDate 
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to generate shifts");
+      
+      const result = await response.json();
+      
+      toast({
+        title: "Shifts Generated Successfully",
+        description: `Created ${result.totalShifts || 0} shifts based on ${template.recurrence} schedule`
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/shifts?tenantId=${tenantId}`] });
+      setCreateShiftsModalOpen(false);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate shifts from template",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Legacy function for single-day shift creation (keeping for compatibility)
   const createShiftsFromTemplate = async (template: any, date: Date) => {
     try {
       const dateStr = date.toISOString().split('T')[0];
@@ -1278,41 +1314,62 @@ export default function Scheduling() {
 
       {/* Create Shifts from Template Modal */}
       <Dialog open={createShiftsModalOpen} onOpenChange={setCreateShiftsModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Shifts from Template</DialogTitle>
+            <DialogTitle>Generate Shifts from Template</DialogTitle>
             <DialogDescription>
-              Select a date to create shifts from the template "{selectedTemplate?.name}".
+              Schedule shifts using template "{selectedTemplate?.name}" across a date range.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Date</label>
-              <Input
-                type="date"
-                value={templateDate.toISOString().split('T')[0]}
-                onChange={(e) => setTemplateDate(new Date(e.target.value))}
-                className="mt-1"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Start Date</label>
+                <Input
+                  type="date"
+                  value={scheduleStartDate}
+                  onChange={(e) => setScheduleStartDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">End Date</label>
+                <Input
+                  type="date"
+                  value={scheduleEndDate}
+                  onChange={(e) => setScheduleEndDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
             </div>
             
             {selectedTemplate && (
-              <div className="rounded-lg border p-3 bg-muted/50">
-                <h4 className="font-medium mb-2">Template Preview</h4>
-                <div className="text-sm space-y-1">
-                  <div>Name: {selectedTemplate.name}</div>
-                  <div>Time: {selectedTemplate.startTime} - {selectedTemplate.endTime}</div>
-                  <div>Positions: {Array.isArray(selectedTemplate.slots) ? selectedTemplate.slots.length : 0}</div>
-                  {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 && (
-                    <div className="mt-2">
-                      {(selectedTemplate.slots as any[]).map((slot: any, index: number) => (
-                        <div key={index} className="text-xs text-muted-foreground">
-                          • {slot.role} ({slot.quantity} {slot.assignmentType === 'assigned' ? 'pre-assigned' : 'open'})
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <div className="space-y-3">
+                <div className="rounded-lg border p-3 bg-muted/50">
+                  <h4 className="font-medium mb-2">Template Details</h4>
+                  <div className="text-sm space-y-1">
+                    <div><strong>Name:</strong> {selectedTemplate.name}</div>
+                    <div><strong>Schedule:</strong> {selectedTemplate.recurrence}</div>
+                    <div><strong>Time:</strong> {selectedTemplate.startTime} - {selectedTemplate.endTime}</div>
+                    <div><strong>Positions:</strong> {Array.isArray(selectedTemplate.slots) ? selectedTemplate.slots.length : 0}</div>
+                    {Array.isArray(selectedTemplate.slots) && selectedTemplate.slots.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Position Details:</div>
+                        {(selectedTemplate.slots as any[]).map((slot: any, index: number) => (
+                          <div key={index} className="text-xs text-muted-foreground">
+                            • {slot.role} ({slot.quantity} {slot.assignmentType === 'assigned' ? 'pre-assigned' : 'opportunity'})
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground p-3 bg-blue-50 rounded-lg border-blue-200 border">
+                  <strong>How it works:</strong> This will generate shifts based on the template's {selectedTemplate.recurrence} schedule. 
+                  Pre-assigned positions create confirmed shifts for specific staff. 
+                  Open positions become opportunities for staff to claim.
                 </div>
               </div>
             )}
@@ -1323,10 +1380,10 @@ export default function Scheduling() {
               Cancel
             </Button>
             <Button 
-              onClick={() => createShiftsFromTemplate(selectedTemplate, templateDate)}
-              disabled={!selectedTemplate}
+              onClick={() => generateShiftsFromTemplate(selectedTemplate)}
+              disabled={!selectedTemplate || !scheduleStartDate || !scheduleEndDate}
             >
-              Create Shifts
+              Generate Shifts
             </Button>
           </DialogFooter>
         </DialogContent>
