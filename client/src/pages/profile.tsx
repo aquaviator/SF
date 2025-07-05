@@ -109,9 +109,8 @@ export default function Profile() {
         description: "Profile updated successfully!",
       });
       setIsModalOpen(false);
-      // Invalidate both profile and users queries to update sidebar
+      // Invalidate sidebar cache to show updated data
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profile", user?.id] });
     },
     onError: (error: Error) => {
       toast({
@@ -127,23 +126,12 @@ export default function Profile() {
     mutationFn: async (file: File) => {
       if (!user?.id) throw new Error("User ID not available");
       
-      console.log('📤 FILE_UPLOAD_START', { 
-        fileName: file.name,
-        fileSize: file.size,
-        userId: user.id
-      });
-      
       const formData = new FormData();
       formData.append('photo', file);
       formData.append('userId', String(user.id));
       
       const response = await apiRequest('POST', `/api/users/${user.id}/photo`, formData);
-      if (!response.ok) throw new Error("Failed to upload photo");
-      
       const result = await response.json();
-      console.log('✅ FILE_UPLOAD_SUCCESS', { 
-        photoUrl: result.photoUrl?.substring(0, 50) + '...'
-      });
       
       return result.photoUrl;
     },
@@ -151,20 +139,16 @@ export default function Profile() {
       setIsUploadingPhoto(true);
     },
     onSuccess: (photoUrl: string) => {
-      console.log('🔄 UPDATING_PROFILE_WITH_URL', { 
-        photoUrl: photoUrl?.substring(0, 50) + '...'
-      });
-      
       setIsUploadingPhoto(false);
       toast({
         title: "Success",
         description: "Profile photo updated successfully!",
       });
       
-      // Immediately invalidate sidebar query to show new photo
+      // Invalidate sidebar cache to show new photo immediately
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
       
-      // Now update the profile with the permanent URL
+      // Update the profile with the permanent URL
       if (userData && user?.id) {
         const updateData = {
           firstName: userData.firstName || "",
@@ -248,17 +232,7 @@ export default function Profile() {
                 <PhotoUpload
                   type="avatar"
                   currentImage={userData?.photoUrl}
-                  onFileSelect={(file) => {
-                    console.log('🎯 FILE_SELECT_CALLBACK_TRIGGERED', { 
-                      fileName: file.name,
-                      fileSize: file.size,
-                      hasUserData: !!userData,
-                      hasUserId: !!user?.id
-                    });
-                    
-                    // Trigger the file upload mutation
-                    photoUploadMutation.mutate(file);
-                  }}
+                  onFileSelect={(file) => photoUploadMutation.mutate(file)}
                   isLoading={photoUploadMutation.isPending}
                   size="md"
                 />

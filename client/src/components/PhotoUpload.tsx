@@ -47,21 +47,19 @@ export function PhotoUpload({
       toast({ title: "File too large", description: "Please select an image smaller than 5MB", variant: "destructive" });
       return;
     }
-    // Raw file flow
+    
+    // Raw file flow - if onFileSelect is provided, use it instead of Base64
     if (onFileSelect) {
-      console.log('📞 CALLING_ON_FILE_SELECT', { fileName: file.name, fileSize: file.size });
       onFileSelect(file);
-      console.log('✅ ON_FILE_SELECT_CALLED');
       return;
     }
-    // Fallback: base64 preview + inline change
+    
+    // Fallback: Base64 preview for legacy usage
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
-        console.log('📞 CALLING_ON_IMAGE_CHANGE', { base64Length: base64?.length });
         onImageChange?.(base64);
-        console.log('✅ ON_IMAGE_CHANGE_CALLED');
         toast({ title: "Photo uploaded", description: `${type === 'logo' ? 'Business logo' : 'Profile photo'} updated successfully` });
       };
       reader.onerror = () => {
