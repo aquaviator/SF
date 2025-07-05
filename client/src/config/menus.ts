@@ -116,6 +116,12 @@ export const ownerMoreMenu: MenuItem[] = [
     route: "/owner/subscription",
     icon: CreditCard,
     description: "Billing and plan management"
+  },
+  {
+    label: "Profile",
+    route: "/profile",
+    icon: User,
+    description: "Personal account settings and profile"
   }
 ];
 
