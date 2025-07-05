@@ -37,6 +37,15 @@ export function PhotoUpload({
   const config = sizeConfig[size];
 
   const handleFileSelect = async (file: File) => {
+    console.log('📁 PHOTO_UPLOAD_FILE_SELECT', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      componentType: type,
+      hasOnImageChange: !!onImageChange,
+      hasOnFileSelect: !!onFileSelect
+    });
+    
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({ title: "Invalid file type", description: "Please select an image file (JPG, PNG, GIF, etc.)", variant: "destructive" });
@@ -50,23 +59,31 @@ export function PhotoUpload({
     
     // Raw file flow - if onFileSelect is provided, use it instead of Base64
     if (onFileSelect) {
+      console.log('🔄 USING_ON_FILE_SELECT_CALLBACK');
       onFileSelect(file);
       return;
     }
     
     // Fallback: Base64 preview for legacy usage
+    console.log('🔄 USING_BASE64_CALLBACK');
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
+        console.log('📤 BASE64_GENERATED', {
+          base64Length: base64?.length,
+          base64Preview: base64?.substring(0, 50) + '...'
+        });
         onImageChange?.(base64);
         toast({ title: "Photo uploaded", description: `${type === 'logo' ? 'Business logo' : 'Profile photo'} updated successfully` });
       };
       reader.onerror = () => {
+        console.log('❌ FILE_READER_ERROR');
         toast({ title: "Upload failed", description: "Failed to read the image file", variant: "destructive" });
       };
       reader.readAsDataURL(file);
-    } catch {
+    } catch (error) {
+      console.log('❌ FILE_READER_EXCEPTION', error);
       toast({ title: "Upload failed", description: "An error occurred while uploading the image", variant: "destructive" });
     }
   };
