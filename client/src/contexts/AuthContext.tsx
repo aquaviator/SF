@@ -16,6 +16,7 @@ interface AuthContextType {
   switchStaff: (staffId: number) => void;
   currentStaffId: number;
   isAuthenticated: boolean;
+  refreshUserData: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -127,6 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     fetchUserDataForRole(initialRole);
   }, [currentStaffId]);
 
+  // Function to refresh current user data
+  const refreshUserData = () => {
+    fetchUserDataForRole(role);
+  };
+
   const value: AuthContextType = {
     role,
     tenantId,
@@ -135,6 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     switchStaff,
     currentStaffId,
     isAuthenticated: true, // Always authenticated in stub mode
+    refreshUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -69,7 +69,7 @@ interface BusinessProfileType {
 }
 
 export default function Profile() {
-  const { user, role } = useAuth();
+  const { user, role, refreshUserData } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
@@ -181,6 +181,7 @@ export default function Profile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
+      refreshUserData(); // Refresh AuthContext user data
       toast({ title: "Success", description: "Personal details updated successfully" });
     },
     onError: () => {
