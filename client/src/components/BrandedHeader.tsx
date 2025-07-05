@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
-import { ShiftFloLogo } from "@/components/ShiftFloLogo";
+import ShiftFloLogo from "@/components/ShiftFloLogo";
 
 export function BrandedHeader() {
   const { tenantId } = useAuth();
@@ -47,7 +47,6 @@ export function BrandedHeader() {
             <div className="flex items-center space-x-3">
               {/* ShiftFlo logo fallback */}
               <ShiftFloLogo 
-                variant="icon" 
                 width={40} 
                 height={40} 
                 className="rounded-lg"

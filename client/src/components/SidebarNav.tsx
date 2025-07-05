@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 import { useState, useEffect } from "react";
-import { ShiftFloLogo } from "@/components/ShiftFloLogo";
+import ShiftFloLogo from "@/components/ShiftFloLogo";
 
 export function SidebarNav() {
   const { role, user, tenantId, switchRole, switchStaff, currentStaffId } = useAuth();
@@ -106,7 +106,6 @@ export function SidebarNav() {
       <div className="p-6">
         <div className="flex justify-center">
           <ShiftFloLogo 
-            variant="icon" 
             width={40} 
             height={40} 
             className="rounded-lg"
