@@ -1692,6 +1692,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invoice routes
+  app.get("/api/subscription/invoices", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      const invoices = await storage.getInvoices(tenantId);
+      res.json(invoices);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
   app.get("/api/invoices", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
