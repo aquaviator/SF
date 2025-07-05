@@ -375,6 +375,48 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Seat-based billing tables
+export const seatPricing = pgTable("seat_pricing", {
+  id: serial("id").primaryKey(),
+  tierName: text("tier_name").notNull(), // "Starter", "Professional", "Enterprise"
+  minSeats: integer("min_seats").notNull().default(1),
+  maxSeats: integer("max_seats"), // null for unlimited
+  pricePerSeat: integer("price_per_seat").notNull(), // in pence (300 = £3.00)
+  features: text("features").array().notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const seatAllocation = pgTable("seat_allocation", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  seatType: text("seat_type").notNull().$type<"active" | "invited" | "suspended">(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  suspendedAt: timestamp("suspended_at"),
+  suspensionReason: text("suspension_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const billingHistory = pgTable("billing_history", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  subscriptionId: integer("subscription_id").notNull().references(() => subscriptions.id, { onDelete: 'cascade' }),
+  billingPeriodStart: timestamp("billing_period_start").notNull(),
+  billingPeriodEnd: timestamp("billing_period_end").notNull(),
+  seatsCharged: integer("seats_charged").notNull(),
+  amountCharged: integer("amount_charged").notNull(), // in pence
+  stripeInvoiceId: text("stripe_invoice_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  status: text("status").notNull().$type<"pending" | "paid" | "failed" | "refunded">(),
+  paidAt: timestamp("paid_at"),
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -547,6 +589,24 @@ export const insertBillingInfoSchema = createInsertSchema(billingInfo).omit({
   updatedAt: true,
 });
 
+export const insertSeatPricingSchema = createInsertSchema(seatPricing).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSeatAllocationSchema = createInsertSchema(seatAllocation).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBillingHistorySchema = createInsertSchema(billingHistory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({
   id: true,
   recordedAt: true,
@@ -613,3 +673,9 @@ export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
 export type HolidayEntitlement = typeof holidayEntitlements.$inferSelect;
 export type InsertHolidayEntitlement = z.infer<typeof insertHolidayEntitlementSchema>;
+export type SeatPricing = typeof seatPricing.$inferSelect;
+export type InsertSeatPricing = z.infer<typeof insertSeatPricingSchema>;
+export type SeatAllocation = typeof seatAllocation.$inferSelect;
+export type InsertSeatAllocation = z.infer<typeof insertSeatAllocationSchema>;
+export type BillingHistory = typeof billingHistory.$inferSelect;
+export type InsertBillingHistory = z.infer<typeof insertBillingHistorySchema>;

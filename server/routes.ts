@@ -1618,25 +1618,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subscription routes
+  // Subscription routes - Database-driven seat-based billing
   app.get("/api/subscription", async (req, res) => {
     try {
-      const tenantId = req.query.tenantId as string;
-      if (!tenantId) {
-        return res.status(400).json({ message: "Tenant ID is required" });
-      }
+      const tenantId = "template-business"; // Use template business for now
       
       const subscription = await storage.getSubscription(tenantId);
-      // Transform to seat-based format
-      const seatBasedSubscription = {
-        id: subscription?.id || 1,
-        status: subscription?.status || "trial",
-        seatsIncluded: 5,
-        seatsUsed: 3,
-        pricePerSeat: 8,
-        monthlyTotal: 40,
-        trialDaysRemaining: 14,
-        nextBillingDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      if (!subscription) {
+        // Return default trial subscription if none exists
+        const defaultSubscription = {
+          id: 1,
+          status: "trial",
+          seatsIncluded: 5,
+          seatsUsed: 2,
+          pricePerSeat: 300, // £3.00 in pence
+          monthlyTotal: 1500, // 5 seats × £3.00 = £15.00
+          trialDaysRemaining: 14,
+          nextBillingDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          features: [
+            "Unlimited shift scheduling",
+            "Time tracking & reporting",
+            "Staff mobile app access", 
+            "Real-time notifications",
+            "Basic analytics & insights",
+            "Email support"
+          ]
+        };
+        return res.json(defaultSubscription);
+      }
+      
+      // Format response for frontend compatibility
+      const formattedSubscription = {
+        id: subscription.id,
+        status: subscription.status,
+        seatsIncluded: subscription.seatsIncluded,
+        seatsUsed: subscription.seatsUsed,
+        pricePerSeat: subscription.pricePerSeat / 100, // Convert pence to pounds for display
+        monthlyTotal: subscription.monthlyTotal / 100, // Convert pence to pounds for display
+        trialDaysRemaining: subscription.trialDaysRemaining,
+        nextBillingDate: subscription.nextBillingDate,
         features: [
           "Unlimited shift scheduling",
           "Time tracking & reporting",
@@ -1646,8 +1666,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Email support"
         ]
       };
-      res.json(seatBasedSubscription);
+      
+      res.json(formattedSubscription);
     } catch (error) {
+      console.error("Subscription fetch error:", error);
       res.status(500).json({ message: "Failed to fetch subscription" });
     }
   });
