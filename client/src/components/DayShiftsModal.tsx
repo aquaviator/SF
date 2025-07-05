@@ -157,7 +157,16 @@ export function DayShiftsModal({
       };
 
       // Create the duplicate shift via API
-      await apiRequest("POST", `/api/shifts?tenantId=${tenantId}`, duplicateShiftData);
+      const response = await fetch(`/api/shifts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(duplicateShiftData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.suggestion || errorData.message || "Failed to duplicate shift");
+      }
       
       // Refresh the shifts list to show the new copy
       setTimeout(refreshShifts, 500);
@@ -166,10 +175,10 @@ export function DayShiftsModal({
         title: "Shift Duplicated",
         description: "A copy of the shift has been created successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to duplicate shift",
+        title: "Cannot Duplicate Shift",
+        description: error.message || "Failed to duplicate shift",
         variant: "destructive"
       });
     }

@@ -33,7 +33,17 @@ export function useCrud<T extends { id: string | number }>({
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (newItem: Omit<T, "id">) => {
-      const response = await apiRequest("POST", endpoint, newItem);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.suggestion || errorData.message || "Failed to create item");
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
@@ -47,7 +57,7 @@ export function useCrud<T extends { id: string | number }>({
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Cannot Create Item",
         description: error.message || "Failed to create item",
         variant: "destructive",
       });
@@ -61,7 +71,17 @@ export function useCrud<T extends { id: string | number }>({
       // Extract base endpoint and query params to construct proper update URL
       const [baseEndpoint, queryParams] = endpoint.split('?');
       const updateUrl = queryParams ? `${baseEndpoint}/${updatedItem.id}?${queryParams}` : `${baseEndpoint}/${updatedItem.id}`;
-      const response = await apiRequest("PUT", updateUrl, updatedItem);
+      const response = await fetch(updateUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedItem)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.suggestion || errorData.message || "Failed to update item");
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
@@ -76,7 +96,7 @@ export function useCrud<T extends { id: string | number }>({
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Cannot Update Item",
         description: error.message || "Failed to update item",
         variant: "destructive",
       });
