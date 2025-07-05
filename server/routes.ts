@@ -1722,7 +1722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Must add at least 1 seat" });
       }
       
-      const pricePerSeat = 800; // £8.00 in pence
+      const pricePerSeat = 300; // £3.00 in pence
       const totalAmount = seatsToAdd * pricePerSeat;
       
       const paymentIntent = await stripe.paymentIntents.create({

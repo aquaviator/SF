@@ -154,7 +154,7 @@ export default function SeatBasedSubscription() {
 
   const calculateNewTotal = (additionalSeats: number) => {
     const baseSeats = subscription?.seatsIncluded || 5;
-    const pricePerSeat = subscription?.pricePerSeat || 8;
+    const pricePerSeat = subscription?.pricePerSeat || 3;
     return (baseSeats + additionalSeats) * pricePerSeat;
   };
 
@@ -345,7 +345,7 @@ export default function SeatBasedSubscription() {
                   <div className="flex justify-between items-center">
                     <span>Additional Monthly Cost:</span>
                     <span className="font-bold">
-                      £{((subscription?.pricePerSeat || 8) * seatForm.watch("seatsToAdd")).toFixed(2)}
+                      £{((subscription?.pricePerSeat || 3) * seatForm.watch("seatsToAdd")).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
@@ -429,16 +429,16 @@ export default function SeatBasedSubscription() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-6 border rounded-lg">
                     <h3 className="font-semibold mb-2">Monthly Billing</h3>
-                    <div className="text-3xl font-bold">£{(selectedSeats * 8).toFixed(2)}</div>
-                    <p className="text-sm text-muted-foreground">£8 per seat/month</p>
+                    <div className="text-3xl font-bold">£{(selectedSeats * 3).toFixed(2)}</div>
+                    <p className="text-sm text-muted-foreground">£3 per seat/month</p>
                   </div>
                   
                   <div className="p-6 border rounded-lg bg-blue-50 border-blue-200">
                     <h3 className="font-semibold mb-2">Annual Billing</h3>
                     <div className="text-3xl font-bold text-blue-600">
-                      £{(selectedSeats * 8 * 12 * 0.85).toFixed(2)}
+                      £{(selectedSeats * 3 * 12 * 0.85).toFixed(2)}
                     </div>
-                    <p className="text-sm text-blue-600">£{(8 * 0.85).toFixed(2)} per seat/month (15% savings)</p>
+                    <p className="text-sm text-blue-600">£{(3 * 0.85).toFixed(2)} per seat/month (15% savings)</p>
                   </div>
                 </div>
 
