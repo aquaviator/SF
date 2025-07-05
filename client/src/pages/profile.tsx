@@ -90,9 +90,10 @@ export default function Profile() {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
+        photoUrl: data.photoUrl,
       };
       
-      return apiRequest("PUT", `/api/staff/${user?.id}`, fullUpdateData);
+      return apiRequest("PUT", `/api/users/${user?.id}`, fullUpdateData);
     },
     onSuccess: () => {
       toast({
