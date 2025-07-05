@@ -380,7 +380,7 @@ export default function Scheduling() {
         toast({ title: "Template created successfully" });
       }
 
-      queryClient.invalidateQueries({ queryKey: ["/api/schedule-templates"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/schedule-templates?tenantId=${tenantId}`] });
       closeTemplateModal();
     } catch (error) {
       toast({ 
