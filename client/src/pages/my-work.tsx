@@ -133,19 +133,25 @@ export default function MyWork() {
     shifts.forEach((shift) => {
       const shiftDate = new Date(shift.date);
       
-      // Today shifts
+      // Only include confirmed shifts in counts - exclude pending assignments
+      if (shift.status === 'assigned') {
+        // This is a pending assignment, skip for counts but will show in assignments tab
+        return;
+      }
+      
+      // Today shifts (only confirmed)
       if (shiftDate.toDateString() === today.toDateString()) {
         todayShifts.push(shift);
       }
       
-      // Week shifts (includes today)
+      // Week shifts (includes today, only confirmed)
       if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
         weekShifts.push(shift);
       } else if (shiftDate < today) {
         // Completed shifts (past shifts)
         completedShifts.push(shift);
       } else {
-        // Upcoming shifts (beyond this week)
+        // Upcoming shifts (beyond this week, only confirmed)
         upcomingShifts.push(shift);
       }
     });
