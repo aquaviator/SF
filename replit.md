@@ -458,6 +458,15 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added storage methods (getShiftsByUserAndStatus, getAssignmentTrackingData) for assignment queries
   - Implemented proper role-based workflow: Owner assigns → Staff confirms → Only confirmed shifts appear in schedule
   - Replaced hardcoded performance statistics with real database calculations for authentic metrics
+- July 05, 2025. Fixed critical data accuracy and terminology issues in Live Operations dashboard:
+  - Corrected shift coverage calculation logic to properly categorize shifts by status (confirmed vs assigned vs declined)
+  - Fixed "Active Shifts" count from incorrect 2 to accurate 1 (only confirmed shifts)
+  - Fixed "Unfilled Shifts" count from incorrect 0 to accurate 1 (declined assignments now properly counted)
+  - Fixed escalation detection for declined assignments with proper alert generation
+  - Updated terminology: "Active Shifts" → "Confirmed Shifts" for better semantic accuracy
+  - Changed "Currently working shifts" → "Staff assigned and confirmed" since all shifts are scheduled for future dates
+  - Updated Time Tracking section: "No active time entries" → "No staff currently working" for clarity
+  - System now accurately reflects real-time data: 1 confirmed shift, 1 unfilled shift, 1 escalation alert
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

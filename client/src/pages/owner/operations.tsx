@@ -127,7 +127,7 @@ function CoverageDetailsModal({ isOpen, onClose, coverageData }: CoverageDetails
             <Card className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{coverageData?.active || 0}</div>
-                <div className="text-sm text-muted-foreground">Active Shifts</div>
+                <div className="text-sm text-muted-foreground">Confirmed Shifts</div>
               </div>
             </Card>
             <Card className="p-4">
@@ -730,8 +730,8 @@ export default function OwnerOperationsPage() {
                     <div className="text-2xl font-bold text-green-600">
                       {coverageData?.active || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">Active</div>
-                    <div className="text-xs text-gray-500 mt-1">Currently working shifts</div>
+                    <div className="text-xs text-muted-foreground">Confirmed</div>
+                    <div className="text-xs text-gray-500 mt-1">Staff assigned and confirmed</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-blue-600">
@@ -855,7 +855,7 @@ export default function OwnerOperationsPage() {
                 </div>
                 {timeEntriesData && timeEntriesData.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    No active time entries
+                    No staff currently working
                   </p>
                 )}
               </div>
