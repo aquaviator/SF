@@ -461,14 +461,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
       if (!tenantId) {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Fetch shifts with assignmentType="opportunity"
-      const opportunityShifts = await storage.getShiftsByTenantAndType(tenantId, "opportunity");
-      res.json(opportunityShifts);
+      // Fetch all shifts with assignmentType="opportunity"
+      const allOpportunityShifts = await storage.getShiftsByTenantAndType(tenantId, "opportunity");
+      
+      // If userId provided, filter out opportunities on dates when user already has shifts
+      if (userId) {
+        const userShifts = await storage.getShiftsByUser(parseInt(userId), tenantId);
+        const userShiftDates = new Set(
+          userShifts
+            .filter(shift => shift.status === "assigned" || shift.status === "confirmed")
+            .map(shift => shift.date)
+        );
+        
+        // Filter out opportunities on dates where user already has shifts
+        const availableOpportunities = allOpportunityShifts.filter(opportunity => {
+          const hasConflict = userShiftDates.has(opportunity.date);
+          if (hasConflict) {
+            console.log("🚫 OPPORTUNITY_FILTERED", {
+              opportunityId: opportunity.id,
+              date: opportunity.date,
+              userId: parseInt(userId),
+              reason: "user_has_shift_on_date",
+              timestamp: new Date()
+            });
+          }
+          return !hasConflict;
+        });
+        
+        console.log("✅ OPPORTUNITIES_FILTERED", {
+          userId: parseInt(userId),
+          totalOpportunities: allOpportunityShifts.length,
+          availableOpportunities: availableOpportunities.length,
+          filteredOut: allOpportunityShifts.length - availableOpportunities.length,
+          timestamp: new Date()
+        });
+        
+        res.json(availableOpportunities);
+      } else {
+        // Return all opportunities if no userId specified
+        res.json(allOpportunityShifts);
+      }
     } catch (error) {
+      console.error("Opportunities API error:", error);
       res.status(500).json({ message: "Failed to fetch opportunities" });
     }
   });
