@@ -127,7 +127,13 @@ export default function BusinessRegistration() {
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/register-business", data);
+      // Add planId for the Starter plan (ID 1 from seat_pricing table)
+      const requestData = {
+        ...data,
+        planId: 1 // Starter plan ID
+      };
+      
+      const response = await apiRequest("POST", "/api/register-business", requestData);
       
       if (!response.ok) {
         const errorData = await response.json();
