@@ -434,6 +434,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Implemented CSS custom properties (--icon-bg, --icon-border, --icon-accent) for flexible theming
   - Added unique gradient ID (ShiftFloLogoGradient) to prevent SVG conflicts across multiple instances
   - Centered logo in sidebar with proper rounded styling and sizing (40x40px)
+- July 05, 2025. Refactored BrandedHeader with improved prop-based architecture:
+  - Implemented clean prop-based interface accepting optional businessName and businessLogoUrl parameters
+  - Eliminated complex mobile/desktop layout duplication with unified single flex container design
+  - Added smart data fetching that only queries business profile when props aren't provided
+  - Simplified branding logic with logo/text fallback based on businessLogoUrl availability
+  - Enhanced responsive design keeping brand area and "powered by" text aligned on single line
+  - Fixed export naming issues ensuring proper named export compatibility with existing imports
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

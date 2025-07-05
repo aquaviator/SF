@@ -8,10 +8,10 @@ interface BrandedHeaderProps {
   businessLogoUrl?: string;
 }
 
-export const BrandedHeader: React.FC<BrandedHeaderProps> = ({
+export function BrandedHeader({
   businessName: propBusinessName,
   businessLogoUrl: propBusinessLogoUrl,
-}) => {
+}: BrandedHeaderProps = {}) {
   const { tenantId } = useAuth();
 
   const { data: businessProfile } = useQuery({
@@ -51,4 +51,4 @@ export const BrandedHeader: React.FC<BrandedHeaderProps> = ({
       </div>
     </header>
   );
-};
+}
