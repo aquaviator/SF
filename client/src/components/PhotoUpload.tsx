@@ -86,7 +86,9 @@ export function PhotoUpload({
           base64Preview: base64?.substring(0, 50) + '...'
         });
         
+        console.log('📞 CALLING_ON_IMAGE_CHANGE', { base64Length: base64?.length });
         onImageChange(base64);
+        console.log('✅ ON_IMAGE_CHANGE_CALLED');
         setUploading(false);
         
         toast({
