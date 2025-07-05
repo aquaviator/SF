@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,6 +35,8 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null);
+  
+
 
   useEffect(() => {
     if (user?.id) {
@@ -119,6 +121,37 @@ export default function Profile() {
       });
     },
   });
+
+  // Direct photo handler with immediate processing
+  const handleDirectPhotoChange = useCallback((photoUrl: string) => {
+    console.log('🎯 PHOTO_RECEIVED_DIRECT', { 
+      photoUrl: photoUrl ? photoUrl.substring(0, 50) + '...' : 'DELETED',
+      hasUserData: !!userData,
+      userId: user?.id
+    });
+    
+    if (userData && user?.id) {
+      const updateData = {
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email,
+        photoUrl: photoUrl === '' ? '' : photoUrl
+      };
+      
+      console.log('📤 DIRECT_PHOTO_MUTATION', { 
+        photoLength: photoUrl?.length || 0,
+        isDelete: photoUrl === ''
+      });
+      
+      updateMutation.mutate(updateData);
+    } else {
+      console.log('❌ DIRECT_PHOTO_BLOCKED', {
+        hasUserData: !!userData,
+        hasUserId: !!user?.id
+      });
+      setPendingPhotoUrl(photoUrl || null);
+    }
+  }, [userData, user?.id, updateMutation]);
 
   // Handle pending photo upload/deletion when user data is available
   useEffect(() => {
@@ -310,12 +343,7 @@ export default function Profile() {
                 <PhotoUpload
                   type="avatar"
                   currentImage={userData?.photoUrl}
-                  onImageChange={(photoUrl) => {
-                    console.log('🎯 PHOTO_RECEIVED_IN_PROFILE', { 
-                      photoUrl: photoUrl ? photoUrl.substring(0, 50) + '...' : 'DELETED' 
-                    });
-                    setPendingPhotoUrl(photoUrl || null);
-                  }}
+                  onImageChange={handleDirectPhotoChange}
                   size="md"
                 />
               </div>
