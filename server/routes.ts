@@ -338,6 +338,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pending assignments (shifts with "assigned" status requiring staff confirmation)
+  app.get("/api/pending-assignments", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      const shifts = await storage.getShiftsByUser(tenantId, parseInt(userId));
+      const pendingAssignments = shifts.filter(shift => shift.status === "assigned");
+      res.json(pendingAssignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending assignments" });
+    }
+  });
+
+  // Staff assignment response (accept/decline assigned shifts)
+  app.post("/api/assignments/:shiftId/respond", async (req, res) => {
+    try {
+      const shiftId = parseInt(req.params.shiftId);
+      const { response, userId, tenantId } = req.body; // response: "accept" | "decline"
+      
+      if (!response || !userId || !tenantId) {
+        return res.status(400).json({ message: "Response, user ID, and tenant ID are required" });
+      }
+      
+      if (!["accept", "decline"].includes(response)) {
+        return res.status(400).json({ message: "Response must be 'accept' or 'decline'" });
+      }
+      
+      // Get the shift to verify it's assigned to this user
+      const shift = await storage.getShift(shiftId);
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      if (shift.assignedTo !== userId) {
+        return res.status(403).json({ message: "You can only respond to shifts assigned to you" });
+      }
+      
+      if (shift.status !== "assigned") {
+        return res.status(400).json({ message: "This shift assignment has already been responded to" });
+      }
+      
+      // Update shift status based on response
+      const newStatus = response === "accept" ? "confirmed" : "declined";
+      const updatedShift = await storage.updateShift(shiftId, { status: newStatus });
+      
+      // Log the assignment response
+      await storage.createActivityLog({
+        tenantId,
+        userId,
+        action: response === "accept" ? "assignment_accepted" : "assignment_declined",
+        resourceType: "shift",
+        resourceId: shiftId.toString(),
+        details: `${response === "accept" ? "Accepted" : "Declined"} assigned ${shift.role} shift on ${shift.date}`,
+        ipAddress: req.ip || "127.0.0.1",
+        userAgent: "ShiftFlo App"
+      });
+      
+      res.json({ 
+        message: `Assignment ${response}ed successfully`,
+        shift: updatedShift,
+        status: newStatus
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to respond to assignment" });
+    }
+  });
+
   // Opportunities routes
   app.get("/api/opportunities", async (req, res) => {
     try {
@@ -723,6 +795,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete assignment" });
+    }
+  });
+
+  // Get pending assignments for staff (shifts with "assigned" status)
+  app.get("/api/pending-assignments", async (req, res) => {
+    try {
+      const { tenantId, userId } = req.query;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      console.log("📋 PENDING_ASSIGNMENTS_REQUEST", { tenantId, userId });
+      
+      // Get shifts assigned to this user with "assigned" status
+      const pendingShifts = await storage.getShiftsByUserAndStatus(tenantId as string, parseInt(userId as string), "assigned");
+      console.log("📋 PENDING_ASSIGNMENTS_FOUND", { count: pendingShifts.length, shifts: pendingShifts });
+      
+      res.json(pendingShifts || []);
+    } catch (error) {
+      console.error("Get pending assignments error:", error);
+      res.status(500).json({ message: "Failed to fetch pending assignments" });
+    }
+  });
+
+  // Get assignment tracking for owners (all shifts with assignment status)
+  app.get("/api/assignment-tracking", async (req, res) => {
+    try {
+      const { tenantId } = req.query;
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+      
+      console.log("📊 ASSIGNMENT_TRACKING_REQUEST", { tenantId });
+      
+      // Get all shifts with assignment-related statuses
+      const trackingData = await storage.getAssignmentTrackingData(tenantId as string);
+      console.log("📊 ASSIGNMENT_TRACKING_DATA", { count: trackingData.length });
+      
+      res.json(trackingData || []);
+    } catch (error) {
+      console.error("Get assignment tracking error:", error);
+      res.status(500).json({ message: "Failed to fetch assignment tracking data" });
     }
   });
 

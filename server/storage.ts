@@ -218,6 +218,10 @@ export interface IStorage {
   
   // Helper method to get shifts by tenant and assignment type (for opportunities)
   getShiftsByTenantAndType(tenantId: string, assignmentType: string): Promise<Shift[]>;
+  
+  // Assignment tracking methods
+  getShiftsByUserAndStatus(tenantId: string, userId: number, status: string): Promise<Shift[]>;
+  getAssignmentTrackingData(tenantId: string): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2180,6 +2184,45 @@ export class DatabaseStorage implements IStorage {
         eq(shifts.assignmentType, assignmentType as any)
       )
     );
+  }
+
+  // Get shifts by user and status (for pending assignments)
+  async getShiftsByUserAndStatus(tenantId: string, userId: number, status: string): Promise<Shift[]> {
+    return await database.select().from(shifts).where(
+      and(
+        eq(shifts.tenantId, tenantId),
+        eq(shifts.assignedTo, userId),
+        eq(shifts.status, status as any)
+      )
+    );
+  }
+
+  // Get assignment tracking data for owners
+  async getAssignmentTrackingData(tenantId: string): Promise<any[]> {
+    const result = await database
+      .select({
+        shift: shifts,
+        staffFirstName: users.firstName,
+        staffLastName: users.lastName,
+        staffEmail: users.email,
+      })
+      .from(shifts)
+      .leftJoin(users, eq(shifts.assignedTo, users.id))
+      .where(
+        and(
+          eq(shifts.tenantId, tenantId),
+          // Only assigned shifts that need tracking
+          database.sql`${shifts.status} IN ('assigned', 'confirmed', 'declined')`
+        )
+      );
+
+    return result.map(row => ({
+      ...row.shift,
+      staffName: row.staffFirstName && row.staffLastName 
+        ? `${row.staffFirstName} ${row.staffLastName}` 
+        : 'Unassigned',
+      staffEmail: row.staffEmail,
+    }));
   }
 }
 

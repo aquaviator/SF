@@ -28,6 +28,8 @@ import {
   Play, 
   Pause,
   TrendingUp,
+  Check,
+  X,
   Users,
   Briefcase,
   RefreshCw,
@@ -36,7 +38,6 @@ import {
   Timer,
   Eye,
   RotateCcw,
-  X,
   Shield,
   Copy,
   Trash2,
@@ -755,12 +756,12 @@ export default function MyWork() {
     );
   };
 
-  // Fetch my assignments
-  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
-    queryKey: ["/api/assignments", tenantId, user?.id],
+  // Fetch pending shift assignments (shifts with "assigned" status requiring confirmation)
+  const { data: pendingAssignments = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["/api/pending-assignments", tenantId, user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/assignments?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
-      if (!response.ok) throw new Error("Failed to fetch assignments");
+      const response = await fetch(`/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch pending assignments");
       return response.json();
     },
   });
@@ -857,6 +858,40 @@ export default function MyWork() {
     },
     onError: () => {
       toast({ title: "Failed to submit holiday request", variant: "destructive" });
+    },
+  });
+
+  // Assignment response mutation (accept/decline)
+  const assignmentResponseMutation = useMutation({
+    mutationFn: async ({ shiftId, response }: { shiftId: number; response: "accept" | "decline" }) => {
+      console.log("📋 ASSIGNMENT_RESPONSE", {
+        shiftId,
+        response,
+        userId: user?.id,
+        timestamp: new Date()
+      });
+
+      const submitData = {
+        response,
+        userId: user?.id,
+        tenantId,
+      };
+      return apiRequest("POST", `/api/assignments/${shiftId}/respond`, submitData);
+    },
+    onSuccess: (result: any, variables) => {
+      const action = variables.response === "accept" ? "accepted" : "declined";
+      toast({ 
+        title: `Assignment ${action} successfully!`,
+        description: result.message
+      });
+      
+      // Refresh both pending assignments and my shifts
+      queryClient.invalidateQueries({ queryKey: ["/api/pending-assignments", tenantId, user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-shifts", tenantId, user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activity-logs", tenantId] });
+    },
+    onError: () => {
+      toast({ title: "Failed to respond to assignment", variant: "destructive" });
     },
   });
 
@@ -1399,7 +1434,7 @@ export default function MyWork() {
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{assignments.length}</div>
+                <div className="text-2xl font-bold">{pendingAssignments.length}</div>
                 <p className="text-xs text-muted-foreground">
                   Requires your response
                 </p>
@@ -1956,9 +1991,9 @@ export default function MyWork() {
         <TabsContent value="assignments" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>My Assignments</CardTitle>
+              <CardTitle>Pending Assignments</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Pending assignments requiring your response
+                Shifts assigned to you that require confirmation
               </p>
             </CardHeader>
             <CardContent>
@@ -1966,10 +2001,85 @@ export default function MyWork() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
+              ) : pendingAssignments.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingAssignments.map((shift) => (
+                    <div 
+                      key={shift.id} 
+                      className="border rounded-lg p-4 space-y-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <h3 className="font-semibold">{shift.role}</h3>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                              Assignment Pending
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{new Date(shift.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{shift.startTime} - {shift.endTime}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="h-3 w-3" />
+                              <span>{shift.location}</span>
+                            </div>
+                          </div>
+                          {shift.description && (
+                            <p className="text-sm text-muted-foreground">{shift.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-3 pt-2 border-t">
+                        <Button 
+                          size="sm" 
+                          onClick={() => assignmentResponseMutation.mutate({ 
+                            shiftId: shift.id, 
+                            response: "accept" 
+                          })}
+                          disabled={assignmentResponseMutation.isPending}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          {assignmentResponseMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <Check className="h-3 w-3 mr-1" />
+                          )}
+                          Accept Assignment
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => assignmentResponseMutation.mutate({ 
+                            shiftId: shift.id, 
+                            response: "decline" 
+                          })}
+                          disabled={assignmentResponseMutation.isPending}
+                          className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          {assignmentResponseMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <X className="h-3 w-3 mr-1" />
+                          )}
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Briefcase className="h-8 w-8 mx-auto mb-2" />
                   <p>No pending assignments</p>
+                  <p className="text-xs mt-1">New shift assignments will appear here</p>
                 </div>
               )}
             </CardContent>
