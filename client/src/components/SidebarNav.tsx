@@ -42,31 +42,42 @@ export function SidebarNav() {
     setImgErrored(false);
   }, [userProfile?.photoUrl]);
 
-  // Fetch pending requests count for owners
+  // Fetch pending requests count for owners and staff
   const { data: pendingRequestsCount = 0 } = useQuery({
-    queryKey: ["/api/pending-requests-count", tenantId],
+    queryKey: ["/api/pending-requests-count", tenantId, user?.id, role],
     queryFn: async () => {
-      if (role !== "owner") return 0;
+      if (role === "owner") {
+        const [holidayRequests, swapRequests] = await Promise.all([
+          fetch(`/api/holiday-requests?tenantId=${tenantId}`)
+            .then((res) => res.json())
+            .catch(() => []),
+          fetch(`/api/swap-requests?tenantId=${tenantId}`)
+            .then((res) => res.json())
+            .catch(() => []),
+        ]);
 
-      const [holidayRequests, swapRequests] = await Promise.all([
-        fetch(`/api/holiday-requests?tenantId=${tenantId}`)
+        const pendingHoliday = holidayRequests.filter(
+          (req: any) => req.status === "pending"
+        ).length;
+        const pendingSwap = swapRequests.filter(
+          (req: any) => req.status === "pending"
+        ).length;
+
+        return pendingHoliday + pendingSwap;
+      } else if (role === "staff") {
+        // For staff, count pending assignments (work requests)
+        const pendingAssignments = await fetch(
+          `/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`
+        )
           .then((res) => res.json())
-          .catch(() => []),
-        fetch(`/api/swap-requests?tenantId=${tenantId}`)
-          .then((res) => res.json())
-          .catch(() => []),
-      ]);
-
-      const pendingHoliday = holidayRequests.filter(
-        (req: any) => req.status === "pending"
-      ).length;
-      const pendingSwap = swapRequests.filter(
-        (req: any) => req.status === "pending"
-      ).length;
-
-      return pendingHoliday + pendingSwap;
+          .catch(() => []);
+        
+        return pendingAssignments.length;
+      }
+      
+      return 0;
     },
-    enabled: !!tenantId && role === "owner",
+    enabled: !!tenantId && !!user?.id,
     refetchInterval: 30000, // every 30s
   });
 
@@ -222,7 +233,6 @@ export function SidebarNav() {
               <Icon className="w-5 h-5" />
               <span>{item.label}</span>
               {item.label === "Requests" &&
-                role === "owner" &&
                 pendingRequestsCount > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
                     {pendingRequestsCount}
