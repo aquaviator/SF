@@ -40,13 +40,13 @@ export function SidebarNav() {
   }, [userProfile?.photoUrl]);
 
   // Debug logging for avatar troubleshooting
-  console.log("SidebarNav Debug:", {
-    user,
-    userProfile,
-    photoUrl: userProfile?.photoUrl,
-    imgErrored,
-    enabled: !!user?.id
-  });
+  // console.log("SidebarNav Debug:", {
+  //   user,
+  //   userProfile,
+  //   photoUrl: userProfile?.photoUrl,
+  //   imgErrored,
+  //   enabled: !!user?.id
+  // });
 
   // Fetch pending requests count for owners
   const { data: pendingRequestsCount = 0 } = useQuery({

@@ -109,6 +109,8 @@ export default function Profile() {
         description: "Profile updated successfully!",
       });
       setIsModalOpen(false);
+      // Invalidate both profile and users queries to update sidebar
+      queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/profile", user?.id] });
     },
     onError: (error: Error) => {
@@ -158,6 +160,9 @@ export default function Profile() {
         title: "Success",
         description: "Profile photo updated successfully!",
       });
+      
+      // Immediately invalidate sidebar query to show new photo
+      queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
       
       // Now update the profile with the permanent URL
       if (userData && user?.id) {
