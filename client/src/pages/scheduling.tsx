@@ -576,30 +576,22 @@ export default function Scheduling() {
     { 
       key: "name",
       header: "Name", 
-      cell: (template) => template.name 
-    },
-    { 
-      key: "recurrence",
-      header: "Recurrence", 
-      cell: (template) => template.recurrence 
-    },
-    { 
-      key: "roles",
-      header: "Roles", 
-      cell: (template) => {
-        if (template.slots && Array.isArray(template.slots)) {
-          return template.slots.map((slot: any) => slot.role).join(", ");
-        }
-        return template.positions?.join(", ") || "";
-      }
+      cell: (template) => (
+        <div className="min-w-0">
+          <div className="font-medium truncate">{template.name}</div>
+          <div className="text-sm text-muted-foreground truncate md:hidden">
+            {template.recurrence} • {(template.slots as any[])?.length || template.positions?.length || 0} positions
+          </div>
+        </div>
+      )
     },
     { 
       key: "status",
       header: "Status", 
       cell: (template) => 
         template.isActive ? 
-          <Badge variant="default">Active</Badge> : 
-          <Badge variant="secondary">Inactive</Badge>
+          <Badge variant="default" className="text-xs">Active</Badge> : 
+          <Badge variant="secondary" className="text-xs">Inactive</Badge>
     },
     {
       key: "actions",
@@ -611,8 +603,9 @@ export default function Scheduling() {
             variant="outline"
             onClick={() => openEditTemplateModal(template)}
             className="h-8 w-8 p-0"
+            title="Edit template"
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-3 w-3" />
           </Button>
           <Button
             size="sm"
@@ -620,18 +613,19 @@ export default function Scheduling() {
               setSelectedTemplate(template);
               setCreateShiftsModalOpen(true);
             }}
-            className="h-8 px-2 text-xs"
+            className="h-8 w-8 p-0"
+            title="Generate shifts from template"
           >
-            <Plus className="h-3 w-3 mr-1" />
-            Create Shifts
+            <Play className="h-3 w-3" />
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={() => openDeleteTemplateDialog(template)}
             className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+            title="Delete template"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       )
@@ -644,13 +638,10 @@ export default function Scheduling() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Scheduling</h1>
           <div className="flex items-center space-x-2">
-            <Button onClick={openCreateShiftModal} className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>Create Shift</span>
-            </Button>
-            <Button onClick={openTemplateModal} variant="outline" className="flex items-center space-x-2">
+            <Button onClick={openTemplateModal} className="flex items-center space-x-2">
               <Copy className="h-4 w-4" />
-              <span>Create Template</span>
+              <span className="hidden sm:inline">Create Template</span>
+              <span className="sm:hidden">Template</span>
             </Button>
           </div>
         </div>
