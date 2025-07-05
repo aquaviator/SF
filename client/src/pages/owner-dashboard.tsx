@@ -56,14 +56,11 @@ const createShiftSchema = z.object({
 });
 
 const addStaffSchema = z.object({
-  tenantId: z.string(),
-  username: z.string().min(1, "Username is required"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  username: z.string().min(1, "Username is required"),
   role: z.literal("staff"),
-  isActive: z.boolean().default(true),
 });
 
 type CreateShiftFormData = z.infer<typeof createShiftSchema>;
@@ -296,14 +293,11 @@ export default function OwnerDashboard() {
   const addStaffForm = useForm<AddStaffFormData>({
     resolver: zodResolver(addStaffSchema),
     defaultValues: {
-      tenantId: tenantId || "",
       username: "",
       firstName: "",
       lastName: "",
       email: "",
-      password: "",
       role: "staff",
-      isActive: true,
     },
   });
 
@@ -336,16 +330,23 @@ export default function OwnerDashboard() {
 
   const addStaffMutation = useMutation({
     mutationFn: async (data: AddStaffFormData) => {
-      return await apiRequest("POST", "/api/staff", data);
+      return await apiRequest("POST", "/api/admin/staff", {
+        ...data,
+        tenantId
+      });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
-      toast({ title: "Success", description: "Staff member added successfully" });
+      toast({ 
+        title: "Invitation Sent", 
+        description: `Invitation email sent to ${addStaffForm.getValues("email")}. They will receive an activation link to complete their registration.`
+      });
       setIsAddStaffOpen(false);
       addStaffForm.reset();
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to add staff member", variant: "destructive" });
+    onError: (error: any) => {
+      const message = error?.message || "Failed to send staff invitation";
+      toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
 
@@ -820,9 +821,9 @@ export default function OwnerDashboard() {
       <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add New Staff Member</DialogTitle>
+            <DialogTitle>Invite New Staff Member</DialogTitle>
             <DialogDescription>
-              Add a new team member to your workforce.
+              Send an invitation email to a new team member. They will receive an activation link to complete their registration.
             </DialogDescription>
           </DialogHeader>
           <Form {...addStaffForm}>
@@ -870,41 +871,26 @@ export default function OwnerDashboard() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addStaffForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="john.smith" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={addStaffForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="password" placeholder="••••••••" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={addStaffForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="john.smith" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsAddStaffOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={addStaffMutation.isPending}>
-                  {addStaffMutation.isPending ? "Adding..." : "Add Staff Member"}
+                  {addStaffMutation.isPending ? "Sending..." : "Send Invitation"}
                 </Button>
               </div>
             </form>

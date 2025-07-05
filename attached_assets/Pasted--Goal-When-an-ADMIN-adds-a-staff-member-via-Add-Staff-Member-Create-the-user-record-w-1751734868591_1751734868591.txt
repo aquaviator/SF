@@ -1,0 +1,72 @@
+
+**Goal:**  
+When an ADMIN adds a staff member via “Add Staff Member”:
+- Create the user record with `is_active = false`
+- Generate a secure `activation_token` valid 7 days
+- Email activation link using Gmail SMTP
+- Staff follows link to set password, phone, address, bio and activate their account
+
+**Instructions:**
+
+1. **Schema Migration:**  
+   - Alter `users` table to add:
+     ```sql
+     ALTER TABLE users
+       ADD COLUMN activation_token VARCHAR(64),
+       ADD COLUMN token_expires_at TIMESTAMP WITH TIME ZONE;
+     ```
+   - Do not change existing `is_active` default, but ensure new invites set `is_active=false`.
+
+2. **Email Setup:**  
+   - In `.env`:
+     ```
+     GOOGLE_DELEGATED_EMAIL=admin@shiftflo.com
+     GOOGLE_APP_PASSWORD=<app-password>
+     ```
+   - Create `src/utils/mailer.ts` using Nodemailer with:
+     ```js
+     import nodemailer from 'nodemailer';
+     export const transporter = nodemailer.createTransport({
+       host: 'smtp.gmail.com',
+       port: 587,
+       secure: false,
+       auth: {
+         user: process.env.GOOGLE_DELEGATED_EMAIL,
+         pass: process.env.GOOGLE_APP_PASSWORD,
+       },
+     });
+     ```
+
+3. **Backend Routes:**  
+   - **POST `/api/admin/staff`**:
+     - Validate `firstName`, `lastName`, `email`, `username`, `role`, `tenant_id`.
+     - Generate `activationToken` (`crypto.randomBytes(32).toString('hex')`), `tokenExpiresAt = now + 7 days`.
+     - Insert into `users` with those fields, `is_active = false`.
+     - Send email with subject “Activate your Shiftflo account” and body linking to `https://app.shiftflo.com/activate?token=<activationToken>`.
+   - **GET `/api/activate`**:
+     - Query param `token`. Lookup user where `activation_token=token` and `token_expires_at > now`.
+     - If found, return `{ firstName, lastName, email, role }`. Else 400.
+   - **POST `/api/activate`**:
+     - Body: `{ token, password, phone, address, bio }`.
+     - Verify token & expiry, hash `password`, update user: set `password`, `phone`, `address`, `bio`, `is_active=true`, clear `activation_token` and `token_expires_at`.
+     - Return 200.
+
+4. **Front-End Components:**  
+   - **`AddStaffModal.jsx`**:  
+     - On submit, call `POST /api/admin/staff` with `{ firstName, lastName, email, username, role, tenant_id }`.  
+     - Show success toast: “Invitation sent to {email}”.
+   - **`ActivatePage.jsx`**:  
+     - On mount, extract `token` from URL, fetch `GET /api/activate?token=…`, prefill readonly fields: firstName, lastName, email, role.  
+     - Render inputs for Password, Phone, Address, Bio.  
+     - On submit, `POST /api/activate` with `{ token, password, phone, address, bio }`, then redirect to `/login`.
+
+**Output:**  
+Reply **only** with the precise code diffs or new file contents your agent would apply for:  
+- The SQL migration  
+- `shared/schema.ts` (if using Drizzle migrations)  
+- `src/utils/mailer.ts`  
+- `src/routes/admin/staff.ts`  
+- `src/routes/activate.ts`  
+- Updates to `AddStaffModal.jsx`  
+- New `ActivatePage.jsx`  
+No extra explanation.```

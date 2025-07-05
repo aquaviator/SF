@@ -1,12 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import Stripe from "stripe";
+import crypto from "crypto";
+import { sendActivationEmail } from "./utils/mailer";
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
@@ -3184,6 +3186,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ PHOTO_UPLOAD_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: "Failed to upload photo" });
+    }
+  });
+
+  // Token verification endpoint for activation page
+  app.get('/api/auth/verify-token', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'Token is required' });
+      }
+
+      const user = await storage.getUserByActivationToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid or expired token' });
+      }
+
+      if (user.activatedAt) {
+        return res.status(400).json({ message: 'Account already activated' });
+      }
+
+      if (user.tokenExpiresAt && new Date() > user.tokenExpiresAt) {
+        return res.status(400).json({ message: 'Token has expired' });
+      }
+
+      res.json({
+        success: true,
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }
+      });
+    } catch (error) {
+      console.error('Token verification error:', error);
+      res.status(500).json({ message: 'Server error during token verification' });
+    }
+  });
+
+  // Account activation endpoint
+  app.post('/api/auth/activate', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: 'Token and password are required' });
+      }
+
+      const user = await storage.getUserByActivationToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid or expired token' });
+      }
+
+      if (user.activatedAt) {
+        return res.status(400).json({ message: 'Account already activated' });
+      }
+
+      if (user.tokenExpiresAt && new Date() > user.tokenExpiresAt) {
+        return res.status(400).json({ message: 'Token has expired' });
+      }
+
+      // Activate the user
+      const activatedUser = await storage.activateUser(user.id, password);
+      
+      if (!activatedUser) {
+        return res.status(500).json({ message: 'Failed to activate account' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Account activated successfully',
+        user: {
+          id: activatedUser.id,
+          firstName: activatedUser.firstName,
+          lastName: activatedUser.lastName,
+          email: activatedUser.email
+        }
+      });
+    } catch (error) {
+      console.error('Account activation error:', error);
+      res.status(500).json({ message: 'Server error during account activation' });
+    }
+  });
+
+  // Admin Staff Invitation API
+  app.post("/api/admin/staff", async (req, res) => {
+    try {
+      const { firstName, lastName, email, username, role, tenantId } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !username || !role || !tenantId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Generate activation token and expiry (7 days from now)
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      const tokenExpiresAt = new Date();
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 7);
+
+      // Create user with is_active = false
+      const [newUser] = await db.insert(users).values({
+        tenantId,
+        username,
+        password: '', // Temporary empty password
+        role,
+        firstName,
+        lastName,
+        email,
+        isActive: false,
+        activationToken,
+        tokenExpiresAt,
+        phone: null,
+        address: null,
+        dateOfBirth: null,
+        hireDate: new Date().toISOString().split('T')[0],
+        employeeId: null,
+        emergencyContactName: null,
+        emergencyContactPhone: null,
+        photoUrl: null,
+        bio: null,
+      }).returning();
+
+      console.log(`📧 STAFF_INVITATION_CREATED`, {
+        userId: newUser.id,
+        email,
+        activationToken: activationToken.substring(0, 8) + '...',
+        expiresAt: tokenExpiresAt,
+        timestamp: new Date()
+      });
+
+      // Send activation email
+      try {
+        await sendActivationEmail(email, firstName, activationToken);
+        console.log(`✅ ACTIVATION_EMAIL_SENT`, { email, timestamp: new Date() });
+      } catch (emailError) {
+        console.error(`❌ EMAIL_SEND_FAILED`, { error: emailError.message, email, timestamp: new Date() });
+        // Continue without failing the request - user creation was successful
+      }
+
+      res.json({ 
+        message: `Invitation sent to ${email}`,
+        userId: newUser.id 
+      });
+    } catch (error) {
+      console.error('❌ STAFF_INVITATION_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to create staff invitation" });
+    }
+  });
+
+  // Get Activation Token Info API
+  app.get("/api/activate", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({ message: "Activation token is required" });
+      }
+
+      // Find user with valid token
+      const [user] = await db
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          role: users.role,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.activationToken, token as string),
+            gt(users.tokenExpiresAt, new Date())
+          )
+        );
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired activation token" });
+      }
+
+      console.log(`🔍 ACTIVATION_TOKEN_VALIDATED`, { 
+        email: user.email, 
+        token: (token as string).substring(0, 8) + '...',
+        timestamp: new Date() 
+      });
+
+      res.json(user);
+    } catch (error) {
+      console.error('❌ ACTIVATION_LOOKUP_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to validate activation token" });
+    }
+  });
+
+  // Activate Account API
+  app.post("/api/activate", async (req, res) => {
+    try {
+      const { token, password, phone, address, bio } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      // Find user with valid token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.activationToken, token),
+            gt(users.tokenExpiresAt, new Date())
+          )
+        );
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired activation token" });
+      }
+
+      // Update user with password and additional info
+      await db
+        .update(users)
+        .set({
+          password,
+          phone: phone || null,
+          address: address || null,
+          bio: bio || null,
+          isActive: true,
+          activationToken: null,
+          tokenExpiresAt: null,
+        })
+        .where(eq(users.id, user.id));
+
+      console.log(`✅ ACCOUNT_ACTIVATED`, { 
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date() 
+      });
+
+      res.json({ message: "Account activated successfully" });
+    } catch (error) {
+      console.error('❌ ACCOUNT_ACTIVATION_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to activate account" });
     }
   });
 

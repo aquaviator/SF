@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
   photoUrl: text("photo_url"),
   bio: text("bio"),
+  activationToken: varchar("activation_token", { length: 64 }),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
 });
 
 // Shifts table

@@ -24,6 +24,8 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByActivationToken(token: string): Promise<User | undefined>;
+  activateUser(id: number, password: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: InsertUser): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
@@ -1240,6 +1242,22 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await database.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+
+  async getUserByActivationToken(token: string): Promise<User | undefined> {
+    const result = await database.select().from(users).where(eq(users.activationToken, token)).limit(1);
+    return result[0];
+  }
+
+  async activateUser(id: number, password: string): Promise<User | undefined> {
+    const result = await database.update(users).set({
+      password,
+      activatedAt: new Date(),
+      activationToken: null,
+      tokenExpiresAt: null,
+      isActive: true
+    }).where(eq(users.id, id)).returning();
     return result[0];
   }
 
