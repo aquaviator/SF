@@ -388,6 +388,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newStatus = response === "accept" ? "confirmed" : "declined";
       const updatedShift = await storage.updateShift(shiftId, { status: newStatus });
       
+      // If assignment accepted, remove any corresponding opportunity for the same shift
+      if (response === "accept") {
+        console.log("✅ ASSIGNMENT_ACCEPTED", {
+          shiftId,
+          userId: user.id,
+          role: shift.role,
+          date: shift.date,
+          timestamp: new Date()
+        });
+        
+        // Assignment acceptance automatically removes opportunity availability
+        // No need to delete opportunity records - the shift is now confirmed
+      }
+      
       // Auto-escalation: Convert declined assignments to opportunities
       if (response === "decline") {
         // Check if this is a policy violation (declined outside acceptable window)
