@@ -23,6 +23,8 @@ export interface MenuItem {
   route: string;
   icon: ComponentType<{ className?: string }>;
   description?: string;
+  submenu?: MenuItem[];
+  notificationKey?: string;
 }
 
 export const ownerMenu: MenuItem[] = [
@@ -67,9 +69,24 @@ export const staffMenu: MenuItem[] = [
   },
   {
     label: "Requests",
-    route: "/holiday-requests",
+    route: "/staff/requests",
     icon: FileText,
-    description: "Holiday and time-off requests"
+    description: "Holiday requests and work assignments",
+    submenu: [
+      {
+        label: "Holiday",
+        route: "/staff/requests?tab=holiday",
+        icon: Calendar,
+        description: "Time off requests and approval status"
+      },
+      {
+        label: "Work",
+        route: "/staff/requests?tab=work",
+        icon: Briefcase,
+        description: "Incoming work assignment requests",
+        notificationKey: "pending-assignments"
+      }
+    ]
   },
   {
     label: "Account",

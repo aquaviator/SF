@@ -25,6 +25,7 @@ import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
 import StaffStrikes from "@/pages/staff/strikes";
+import StaffRequests from "@/pages/staff/requests";
 import OwnerStrikes from "@/pages/owner/strikes";
 import OwnerOperations from "@/pages/owner/operations";
 import NotFound from "@/pages/not-found";
@@ -65,6 +66,7 @@ function Router() {
               <Route path="/owner/analytics" component={Analytics} />
               <Route path="/owner/subscription" component={Subscription} />
               <Route path="/staff/strikes" component={StaffStrikes} />
+              <Route path="/staff/requests" component={StaffRequests} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={MyWork} />
               <Route path="/help" component={NotFound} />

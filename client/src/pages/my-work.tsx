@@ -1197,8 +1197,10 @@ export default function MyWork() {
   const currentWeek = getWeekDates(today);
   const lastWeek = getWeekDates(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000));
   
-  // Calculate upcoming shifts
-  const upcomingShifts = shifts.filter(shift => new Date(shift.date) >= today);
+  // Calculate upcoming shifts (only confirmed, exclude pending assignments)
+  const upcomingShifts = shifts.filter(shift => 
+    new Date(shift.date) >= today && shift.status !== 'assigned'
+  );
   const nextShift = upcomingShifts.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
   const daysUntilNext = nextShift ? Math.ceil((new Date(nextShift.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
   
