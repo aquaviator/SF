@@ -394,13 +394,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update shift status based on response
       const newStatus = response === "accept" ? "confirmed" : "declined";
-      const updatedShift = await storage.updateShift(shiftId, { status: newStatus });
+      const updatedShift = await storage.updateShift(shiftId, {
+        date: shift.date,
+        tenantId: shift.tenantId,
+        role: shift.role,
+        status: newStatus,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        description: shift.description,
+        location: shift.location,
+        createdBy: shift.createdBy,
+        assignedTo: shift.assignedTo,
+        assignmentType: shift.assignmentType,
+        requiredStaff: shift.requiredStaff,
+        claimedBy: shift.claimedBy,
+        templateId: shift.templateId,
+        notes: shift.notes
+      });
       
       // If assignment accepted, remove any corresponding opportunity for the same shift
       if (response === "accept") {
         console.log("✅ ASSIGNMENT_ACCEPTED", {
           shiftId,
-          userId: user.id,
+          userId: userId,
           role: shift.role,
           date: shift.date,
           timestamp: new Date()
@@ -428,10 +444,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Convert to opportunity automatically
           await storage.updateShift(shiftId, {
+            date: shift.date,
+            tenantId: shift.tenantId,
+            role: shift.role,
             status: "open",
-            assignmentType: "opportunity",
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            description: `Available opportunity - ${shift.role} position`,
+            location: shift.location,
+            createdBy: shift.createdBy,
             assignedTo: null,
-            description: `Available opportunity - ${shift.role} position`
+            assignmentType: "opportunity",
+            requiredStaff: shift.requiredStaff,
+            claimedBy: shift.claimedBy,
+            templateId: shift.templateId,
+            notes: shift.notes
           });
           
           console.log("✅ AUTO_OPPORTUNITY_CREATED", {
