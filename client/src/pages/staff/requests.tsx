@@ -34,9 +34,13 @@ export default function StaffRequests() {
   // Opportunities query - shifts available for claiming
   const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery({
     queryKey: ["/api/opportunities", tenantId, user?.id],
-    queryFn: () => 
-      fetch(`/api/opportunities?tenantId=${tenantId}&userId=${user?.id}`)
-        .then(res => res.json())
+    queryFn: async () => {
+      console.log("🔍 FETCHING_OPPORTUNITIES", { tenantId, userId: user?.id, timestamp: new Date() });
+      const response = await fetch(`/api/opportunities?tenantId=${tenantId}&userId=${user?.id}`);
+      const data = await response.json();
+      console.log("✅ OPPORTUNITIES_RECEIVED", { count: data.length, opportunities: data, timestamp: new Date() });
+      return data;
+    }
   });
 
   // Swap requests query
@@ -354,6 +358,15 @@ export default function StaffRequests() {
                 </p>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log("🔍 OPPORTUNITIES_RENDERING", { 
+                    loading: opportunitiesLoading, 
+                    count: opportunities.length, 
+                    opportunities: opportunities,
+                    timestamp: new Date() 
+                  });
+                  return null;
+                })()}
                 {opportunitiesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin" />
