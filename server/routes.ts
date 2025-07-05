@@ -9,6 +9,14 @@ import { eq, and, gt } from "drizzle-orm";
 import Stripe from "stripe";
 import crypto from "crypto";
 import { sendActivationEmail } from "./utils/mailer";
+import session from "express-session";
+
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+    tenantId: string;
+  }
+}
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
@@ -85,6 +93,82 @@ async function updateHolidayEntitlements(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Authentication endpoints
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Check password (in real app, this would be hashed)
+      if (user.password !== password) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Store user in session
+      req.session.userId = user.id;
+      req.session.tenantId = user.tenantId;
+
+      // Return user data (without password)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/auth/me', async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      // Return user data (without password)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Could not log out' });
+      }
+      res.json({ message: 'Logged out successfully' });
+    });
+  });
+
   // Shifts routes
   app.get("/api/shifts", async (req, res) => {
     try {

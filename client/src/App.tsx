@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Menu } from "@/components/Menu";
 import { BrandedHeader } from "@/components/BrandedHeader";
 import { BottomTabBar } from "@/components/BottomTabBar";
@@ -32,10 +32,14 @@ import OwnerStrikes from "@/pages/owner/strikes";
 import OwnerOperations from "@/pages/owner/operations";
 import StaffActivation from "@/pages/staff-activation";
 import BusinessRegistration from "@/pages/business-registration";
+import Landing from "@/pages/landing";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-function Router() {
+// Protected routes component that wraps the main app layout
+function ProtectedRoutes() {
   const [isMoreDrawerOpen, setIsMoreDrawerOpen] = useState(false);
 
   return (
@@ -50,7 +54,6 @@ function Router() {
           <BrandedHeader />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <Switch>
-              <Route path="/" component={Dashboard} />
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/shifts" component={Shifts} />
               <Route path="/staff" component={Staff} />
@@ -73,9 +76,6 @@ function Router() {
               <Route path="/staff/requests" component={StaffRequests} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
-              <Route path="/activate" component={StaffActivation} />
-              <Route path="/register" component={BusinessRegistration} />
-              <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
             </Switch>
           </div>
@@ -90,6 +90,52 @@ function Router() {
       />
     </div>
   );
+}
+
+// Public routes component for unauthenticated users
+function PublicRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/login" component={Login} />
+      <Route path="/business-registration" component={BusinessRegistration} />
+      <Route path="/activate" component={StaffActivation} />
+      <Route component={Landing} />
+    </Switch>
+  );
+}
+
+// Main router that handles authentication state
+function Router() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && user) {
+    // Authenticated users get the full app with appropriate dashboard
+    return (
+      <Switch>
+        <Route path="/">
+          {user.role === 'owner' ? <OwnerDashboard /> : <Dashboard />}
+        </Route>
+        <Route>
+          <ProtectedRoutes />
+        </Route>
+      </Switch>
+    );
+  }
+
+  // Unauthenticated users get public routes
+  return <PublicRoutes />;
 }
 
 function App() {

@@ -1,145 +1,106 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 
-export type UserRole = "owner" | "staff";
+interface User {
+  id: number;
+  username: string;
+  role: 'owner' | 'staff';
+  tenantId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isActive: boolean;
+  photoUrl?: string;
+}
 
 interface AuthContextType {
-  role: UserRole;
-  tenantId: string;
-  user: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    tenantId: string;
-  } | null;
-  switchRole: (role: UserRole) => void;
-  switchStaff: (staffId: number) => void;
-  currentStaffId: number;
+  user: User | null;
+  isLoading: boolean;
   isAuthenticated: boolean;
-  refreshUserData: () => void;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
+  // Check if user is already authenticated on app load
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [role, setRole] = useState<UserRole>("owner");
-  const [tenantId] = useState("template-business"); // Clean template tenant
-  const [currentStaffId, setCurrentStaffId] = useState<number>(() => {
-    return parseInt(localStorage.getItem("dev-staff-id") || "17");
-  });
-  const [user, setUser] = useState<{
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    tenantId: string;
-  } | null>(null);
-
-  const switchRole = (newRole: UserRole) => {
-    setRole(newRole);
-    localStorage.setItem("dev-role", newRole);
-    // Fetch user data for the new role
-    fetchUserDataForRole(newRole);
-  };
-
-  const switchStaff = (staffId: number) => {
-    setCurrentStaffId(staffId);
-    localStorage.setItem("dev-staff-id", staffId.toString());
-    // If currently in staff mode, fetch new staff data
-    if (role === "staff") {
-      fetchUserDataForRole(role);
-    }
-  };
-
-  // Fetch user data based on role
-  const fetchUserDataForRole = async (userRole: UserRole) => {
+  const checkAuthStatus = async () => {
     try {
-      // Owner: Business Owner (ID: 16), Staff: Use currentStaffId for demo staff user
-      const userId = userRole === "owner" ? 16 : currentStaffId;
-      const response = await fetch(`/api/users/${userId}`);
+      const response = await apiRequest('GET', '/api/auth/me');
       if (response.ok) {
         const userData = await response.json();
-        console.log("Profile data loaded:", userData);
-        setUser({
-          id: userData.id,
-          firstName: userData.firstName || "User",
-          lastName: userData.lastName || "",
-          email: userData.email || "user@example.com",
-          tenantId: userData.tenantId || "template-business"
-        });
-      } else {
-        // Fallback based on role
-        const staffNames = [
-          { id: 17, firstName: "Alice", lastName: "Johnson", email: "alice@template-business.com" },
-          { id: 18, firstName: "Bob", lastName: "Smith", email: "bob@template-business.com" },
-        ];
-        
-        if (userRole === "owner") {
-          setUser({
-            id: 16,
-            firstName: "Business",
-            lastName: "Owner",
-            email: "owner@template-business.com",
-            tenantId: "template-business"
-          });
-        } else {
-          const staffData = staffNames.find(s => s.id === currentStaffId) || staffNames[0];
-          setUser({
-            id: staffData.id,
-            firstName: staffData.firstName,
-            lastName: staffData.lastName,
-            email: staffData.email,
-            tenantId: "template-business"
-          });
-        }
+        setUser(userData);
       }
     } catch (error) {
-      console.log("User data fetch failed, using fallback for role:", userRole);
-      setUser({
-        id: userRole === "owner" ? 16 : 17,
-        firstName: userRole === "owner" ? "Business" : "Alice",
-        lastName: userRole === "owner" ? "Owner" : "Johnson",
-        email: userRole === "owner" ? "owner@template-business.com" : "alice@template-business.com",
-        tenantId: "template-business"
-      });
+      // User not authenticated, which is fine
+      console.log('User not authenticated');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Initialize role and user data
-  useEffect(() => {
-    const savedRole = localStorage.getItem("dev-role") as UserRole;
-    const initialRole = (savedRole && (savedRole === "owner" || savedRole === "staff")) ? savedRole : "owner";
-    setRole(initialRole);
-    fetchUserDataForRole(initialRole);
-  }, [currentStaffId]);
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest('POST', '/api/auth/login', {
+        username,
+        password
+      });
 
-  // Function to refresh current user data
-  const refreshUserData = () => {
-    fetchUserDataForRole(role);
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.message || 'Login failed' };
+      }
+    } catch (error) {
+      return { success: false, error: 'Network error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const value: AuthContextType = {
-    role,
-    tenantId,
+  const logout = async () => {
+    try {
+      await apiRequest('POST', '/api/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const value = {
     user,
-    switchRole,
-    switchStaff,
-    currentStaffId,
-    isAuthenticated: true, // Always authenticated in stub mode
-    refreshUserData,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    setUser
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
