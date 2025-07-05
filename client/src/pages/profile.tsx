@@ -32,6 +32,59 @@ export default function Profile() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
+
+  // Stable callback for avatar upload
+  const handleAvatarUpload = useCallback((imageUrl: string) => {
+    console.log('🔄 AVATAR_UPLOAD_CALLBACK_TRIGGERED!!!');
+    console.log('🔄 AVATAR_UPLOAD_CALLBACK', { 
+      userId: user?.id,
+      hasUserData: !!userData,
+      imageUrlLength: imageUrl?.length,
+      imageUrlPreview: imageUrl?.substring(0, 50) + '...'
+    });
+    
+    setCurrentPhotoUrl(imageUrl);
+    
+    // Update profile immediately with Base64 image
+    if (userData && user?.id) {
+      const updateData = {
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email,
+        photoUrl: imageUrl
+      };
+      
+      console.log('🚀 API_REQUEST_PAYLOAD', {
+        endpoint: `/api/users/${user.id}`,
+        hasPhotoUrl: !!updateData.photoUrl,
+        photoUrlLength: updateData.photoUrl?.length,
+        photoUrlPreview: updateData.photoUrl?.substring(0, 50) + '...',
+        fullPayload: updateData
+      });
+      
+      updateMutation.mutate(updateData);
+    } else {
+      console.log('❌ AVATAR_UPLOAD_BLOCKED', {
+        hasUserData: !!userData,
+        hasUserId: !!user?.id
+      });
+    }
+  }, [userData, user?.id]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('PUT', `/api/users/${user?.id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["/api/users", user?.id]);
+      toast({ title: "Success", description: "Profile updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update profile", variant: "destructive" });
+    }
+  });
 
   
 
