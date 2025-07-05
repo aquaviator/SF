@@ -126,9 +126,9 @@ export default function StaffRequests() {
     },
   });
 
-  const pendingWorkCount = workAssignments.length + opportunities.length;
-  const pendingHolidayCount = holidayRequests.filter((req: any) => req.status === 'pending').length;
-  const pendingSwapCount = swapRequests.filter((req: any) => req.status === 'pending').length;
+  const pendingWorkCount = (Array.isArray(workAssignments) ? workAssignments.length : 0) + (Array.isArray(opportunities) ? opportunities.length : 0);
+  const pendingHolidayCount = Array.isArray(holidayRequests) ? holidayRequests.filter((req: any) => req.status === 'pending').length : 0;
+  const pendingSwapCount = Array.isArray(swapRequests) ? swapRequests.filter((req: any) => req.status === 'pending').length : 0;
 
   return (
     <div className="min-h-screen bg-background">
