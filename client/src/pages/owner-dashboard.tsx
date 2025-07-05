@@ -86,7 +86,7 @@ interface StaffStatus {
 
 interface RecentActivity {
   id: number;
-  type: "shift_created" | "assignment_made" | "swap_approved" | "holiday_requested";
+  type: "shift_created" | "assignment_made" | "swap_approved" | "holiday_requested" | "shift_cancelled";
   description: string;
   timestamp: Date;
   user: string;
@@ -259,7 +259,9 @@ export default function OwnerDashboard() {
     id: log.id,
     type: log.action === 'created' ? 'shift_created' : 
           log.action === 'assigned' ? 'assignment_made' :
-          log.action === 'approved' ? 'swap_approved' : 'holiday_requested',
+          log.action === 'approved' ? 'swap_approved' : 
+          log.action === 'shift_cancelled' ? 'shift_cancelled' :
+          'holiday_requested',
     description: log.details || `${log.action} ${log.resourceType}`,
     timestamp: new Date(log.createdAt),
     user: `User ${log.userId}`,

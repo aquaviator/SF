@@ -1894,10 +1894,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "userId and tenantId are required" });
       }
       
-      // Get the shift to check timing
+      // Get the shift to check timing and status
       const shift = await storage.getShift(shiftId);
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
+      }
+
+      // Check if shift is already cancelled
+      console.log("🔍 Shift cancellation check:", { shiftId, currentStatus: shift.status });
+      if (shift.status === "cancelled") {
+        console.log("❌ Attempt to cancel already cancelled shift blocked");
+        return res.status(400).json({ message: "Shift is already cancelled" });
       }
       
       // Check if this is a late cancellation
