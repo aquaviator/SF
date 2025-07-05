@@ -77,6 +77,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
   });
 
   const reasonOptions = [
+    "Staff was on time",
     "Late arrival",
     "Early departure", 
     "Forgot to clock out",
@@ -88,7 +89,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
     
     // For completed entries, require clock-out. For active entries, clock-out is optional
-    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break";
+    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
     const hasValidClockOut = isActiveEntry || (formData.outDate && formData.outTime);
     
     return hasRequiredFields && hasValidReason && hasValidClockOut;
@@ -242,7 +243,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           <div className="space-y-2">
             <Label>
               Clock Out
-              {(entry.status === "clocked_in" || entry.status === "on_break") && (
+              {(entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late") && (
                 <span className="text-sm text-muted-foreground ml-2">(optional for active shifts)</span>
               )}
             </Label>

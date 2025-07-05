@@ -473,6 +473,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Resolved Alice Johnson showing as "Absent" when actually working (just late) by updating status mapping logic
   - Time Entry Details modal now calculates and displays precise late duration between scheduled and actual clock-in times
   - Staff Status section in dashboard now correctly shows late staff as "Clocked In" rather than "Absent"
+- July 05, 2025. Fixed Override Clock Times modal for active staff with enhanced reason options:
+  - Added "Staff was on time" as first option in reason dropdown for time corrections
+  - Fixed form validation to allow override submissions for staff with "late" status
+  - Updated Clock Out label to show "(optional for active shifts)" for late staff
+  - Override modal now properly handles all active staff statuses: clocked_in, on_break, and late
+  - Enhanced user experience for time adjustments with better reason categorization
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
