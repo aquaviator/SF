@@ -32,9 +32,7 @@ const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  username: z.string().min(1, "Username is required"),
   role: z.literal("staff"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 type StaffFormData = z.infer<typeof staffFormSchema>;
@@ -87,11 +85,53 @@ export default function Workforce() {
       firstName: "",
       lastName: "",
       email: "",
-      username: "",
       role: "staff",
-      password: "",
     },
   });
+
+  // Custom submit handler for invitations
+  const handleInvitationSubmit = async (data: StaffFormData) => {
+    try {
+      const payload = {
+        ...data,
+        tenantId: tenantId
+      };
+      
+      // For new staff, use invitation endpoint
+      if (!editingItem) {
+        const response = await fetch("/api/admin/staff", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to send invitation");
+        }
+        
+        const result = await response.json();
+        toast({
+          title: "Invitation sent",
+          description: result.message,
+        });
+        
+        closeModal();
+        // Refresh the staff list
+        window.location.reload();
+      } else {
+        // For existing staff, use regular update
+        await handleSubmit(data);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send invitation",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Reset form when modal opens/closes
   React.useEffect(() => {
@@ -571,10 +611,10 @@ export default function Workforce() {
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
-        title={editingItem ? "Edit Staff Member" : "Add Staff Member"}
+        title={editingItem ? "Edit Staff Member" : "Send Staff Invitation"}
         form={form}
-        onSubmit={onSubmit}
-        submitLabel={editingItem ? "Update Staff Member" : "Add Staff Member"}
+        onSubmit={handleInvitationSubmit}
+        submitLabel={editingItem ? "Update Staff Member" : "Send Invitation"}
         isLoading={isSubmitting}
       >
         <div className="space-y-4">
@@ -613,44 +653,15 @@ export default function Workforce() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Email Address</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="Enter email address" {...field} />
+                  <Input type="email" placeholder="john.smith@company.com" {...field} />
                 </FormControl>
                 <FormMessage />
+                <p className="text-sm text-muted-foreground">This will be used as their login username</p>
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter username" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {!editingItem && (
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </div>
       </ModalForm>
 

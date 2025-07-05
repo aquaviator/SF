@@ -59,7 +59,6 @@ const addStaffSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  username: z.string().min(1, "Username is required"),
   role: z.literal("staff"),
 });
 
@@ -293,7 +292,6 @@ export default function OwnerDashboard() {
   const addStaffForm = useForm<AddStaffFormData>({
     resolver: zodResolver(addStaffSchema),
     defaultValues: {
-      username: "",
       firstName: "",
       lastName: "",
       email: "",
@@ -862,25 +860,12 @@ export default function OwnerDashboard() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input {...field} type="email" placeholder="john.smith@company.com" />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={addStaffForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="john.smith" />
-                    </FormControl>
-                    <FormMessage />
+                    <p className="text-sm text-muted-foreground">This will be used as their login username</p>
                   </FormItem>
                 )}
               />

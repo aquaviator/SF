@@ -3275,10 +3275,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin Staff Invitation API
   app.post("/api/admin/staff", async (req, res) => {
     try {
-      const { firstName, lastName, email, username, role, tenantId } = req.body;
+      const { firstName, lastName, email, role, tenantId } = req.body;
 
       // Validate required fields
-      if (!firstName || !lastName || !email || !username || !role || !tenantId) {
+      if (!firstName || !lastName || !email || !role || !tenantId) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -3287,10 +3287,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenExpiresAt = new Date();
       tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 7);
 
-      // Create user with is_active = false
+      // Create user with is_active = false, using email as username
       const [newUser] = await db.insert(users).values({
         tenantId,
-        username,
+        username: email, // Use email as username
         password: '', // Temporary empty password
         role,
         firstName,
