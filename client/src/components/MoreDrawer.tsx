@@ -45,6 +45,13 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
     enabled: !!tenantId,
   });
 
+  // Fetch complete user profile with photo
+  const { data: userProfile } = useQuery({
+    queryKey: ["/api/users", user?.id],
+    queryFn: () => fetch(`/api/users/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
+  });
+
   // Generate user initials for avatar
   const getUserInitials = () => {
     if (!user) return "U";
@@ -133,10 +140,24 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
         {/* User Profile Section */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">
-                {getUserInitials()}
-              </span>
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+              {userProfile?.photoUrl ? (
+                <img
+                  src={userProfile.photoUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = `<span class="text-white text-sm font-medium">${getUserInitials()}</span>`;
+                  }}
+                />
+              ) : (
+                <span className="text-white text-sm font-medium">
+                  {getUserInitials()}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
