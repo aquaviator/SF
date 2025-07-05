@@ -1223,10 +1223,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/time-entries", async (req, res) => {
     try {
       const validatedData = req.body; // Using any for now until we fix schema
+      console.log("🕒 TIME_ENTRY_CREATE_REQUEST", {
+        data: validatedData,
+        timestamp: new Date()
+      });
+      
       const entry = await storage.createTimeEntry(validatedData);
+      
+      console.log("✅ TIME_ENTRY_CREATED", {
+        entryId: entry.id,
+        userId: entry.userId,
+        action: entry.clockIn ? "clock_in" : "clock_out",
+        timestamp: new Date()
+      });
+      
       res.status(201).json(entry);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create time entry" });
+      console.error("❌ TIME_ENTRY_CREATE_ERROR", {
+        error: error.message,
+        data: req.body,
+        timestamp: new Date()
+      });
+      res.status(500).json({ message: "Failed to create time entry", error: error.message });
     }
   });
 
