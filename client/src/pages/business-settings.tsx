@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, Column } from "@/components/DataTable";
 import { ModalForm } from "@/components/ModalForm";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -942,6 +943,25 @@ export default function BusinessSettingsPage() {
                       </FormItem>
                     )}
                   />
+                  {/* Photo Upload Section */}
+                  <div className="space-y-6 border-t pt-6">
+                    <h3 className="text-lg font-medium">Business Branding</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <PhotoUpload
+                        type="logo"
+                        currentImage={profileForm.watch("logoUrl")}
+                        onImageChange={(imageUrl) => profileForm.setValue("logoUrl", imageUrl)}
+                        size="lg"
+                      />
+                      <PhotoUpload
+                        type="avatar"
+                        currentImage={profileForm.watch("ownerProfilePicture")}
+                        onImageChange={(imageUrl) => profileForm.setValue("ownerProfilePicture", imageUrl)}
+                        size="lg"
+                      />
+                    </div>
+                  </div>
+                  
                   <FormField
                     control={profileForm.control}
                     name="description"

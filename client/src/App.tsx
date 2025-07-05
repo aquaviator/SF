@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Menu } from "@/components/Menu";
+import { BrandedHeader } from "@/components/BrandedHeader";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { MoreDrawer } from "@/components/MoreDrawer";
 import Dashboard from "@/pages/dashboard";
@@ -41,6 +42,7 @@ function Router() {
         
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto lg:ml-0 pb-20 lg:pb-0">
+          <BrandedHeader />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <Switch>
               <Route path="/" component={Dashboard} />

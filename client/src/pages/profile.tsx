@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModalForm } from "@/components/ModalForm";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
+  photoUrl: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -69,6 +71,7 @@ export default function Profile() {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
         email: userData.email,
+        photoUrl: userData.photoUrl || "",
       });
     }
   }, [userData, form]);
@@ -133,6 +136,22 @@ export default function Profile() {
       }
       
       setPhotoFile(file);
+    }
+  };
+
+  const handlePhotoUrlChange = (photoUrl: string) => {
+    if (userData && user?.id) {
+      // Update user data with new photo URL
+      const updatedData = { ...userData, photoUrl };
+      setUserData(updatedData);
+      
+      // Also update the backend immediately
+      updateMutation.mutate({
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email,
+        photoUrl: photoUrl
+      });
     }
   };
 
@@ -225,62 +244,13 @@ export default function Profile() {
             {/* Profile Photo Section */}
             <div>
               <label className="text-sm font-medium text-gray-500">Profile Photo</label>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                  {userData?.photoUrl ? (
-                    <img src={userData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <Camera className="w-8 h-8 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                      id="photo-upload"
-                    />
-                    <label htmlFor="photo-upload">
-                      <Button variant="outline" size="sm" asChild>
-                        <span className="cursor-pointer">
-                          <Upload className="w-4 h-4 mr-2" />
-                          Select Photo
-                        </span>
-                      </Button>
-                    </label>
-                    {photoFile && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          onClick={uploadPhoto}
-                          disabled={uploadingPhoto}
-                        >
-                          {uploadingPhoto ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          ) : (
-                            <Upload className="w-4 h-4 mr-2" />
-                          )}
-                          Upload
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setPhotoFile(null)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  {photoFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)}KB)
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">Max 5MB. JPG, PNG supported.</p>
-                </div>
+              <div className="mt-2">
+                <PhotoUpload
+                  type="avatar"
+                  currentImage={userData?.photoUrl}
+                  onImageChange={handlePhotoUrlChange}
+                  size="md"
+                />
               </div>
             </div>
             
@@ -463,6 +433,17 @@ export default function Profile() {
             )}
           />
 
+          <div>
+            <FormLabel>Profile Photo</FormLabel>
+            <div className="mt-2">
+              <PhotoUpload
+                type="avatar"
+                currentImage={form.watch("photoUrl")}
+                onImageChange={(imageUrl) => form.setValue("photoUrl", imageUrl)}
+                size="md"
+              />
+            </div>
+          </div>
 
         </div>
       </ModalForm>
