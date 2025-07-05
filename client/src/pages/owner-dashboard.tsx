@@ -104,10 +104,7 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
   
   const { data: shifts = [], isLoading } = useQuery({
     queryKey: ['/api/shifts', tenantId],
-    queryFn: async () => {
-      const response = await apiRequest(`/api/shifts?tenantId=${tenantId}`);
-      return response;
-    },
+    enabled: !!tenantId,
   });
 
   // Get the next 4 weeks starting from today
@@ -159,6 +156,27 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
 
   return (
     <div className="space-y-4">
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 rounded-lg border">
+        <span className="text-sm font-medium text-gray-700">Status Legend:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <span className="text-xs text-gray-600">Confirmed</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          <span className="text-xs text-gray-600">Assigned</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span className="text-xs text-gray-600">Declined</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+          <span className="text-xs text-gray-600">Open</span>
+        </div>
+      </div>
+
       {/* Week tabs */}
       <div className="flex flex-wrap gap-2">
         {weeksData.map((week, index) => (
@@ -217,21 +235,18 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
                       <div className="font-medium text-xs text-gray-600">
                         {dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}
                       </div>
-                      <div className="text-xs mt-1">
+                      <div className="text-xs mt-1 space-y-1">
                         {dayShifts.length > 0 ? (
                           dayShifts.map((shift: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between">
-                              <span className="truncate">{shift.role}</span>
-                              <Badge 
-                                variant={
-                                  shift.status === 'confirmed' ? 'default' :
-                                  shift.status === 'assigned' ? 'secondary' :
-                                  shift.status === 'declined' ? 'destructive' : 'outline'
-                                }
-                                className="text-xs"
-                              >
-                                {shift.status}
-                              </Badge>
+                            <div key={idx} className="flex items-center gap-1">
+                              <div 
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                  shift.status === 'confirmed' ? 'bg-green-500' :
+                                  shift.status === 'assigned' ? 'bg-yellow-500' :
+                                  shift.status === 'declined' ? 'bg-red-500' : 'bg-gray-400'
+                                }`}
+                              ></div>
+                              <span className="truncate text-xs">{shift.role}</span>
                             </div>
                           ))
                         ) : (
