@@ -92,7 +92,15 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
     const hasValidClockOut = isActiveEntry || (formData.outDate && formData.outTime);
     
-    return hasRequiredFields && hasValidReason && hasValidClockOut;
+    // If both clock-in and clock-out are provided, validate that clock-out is after clock-in
+    let hasValidTimeOrder = true;
+    if (formData.outDate && formData.outTime && formData.inDate && formData.inTime) {
+      const clockInDateTime = new Date(`${formData.inDate}T${formData.inTime}:00`);
+      const clockOutDateTime = new Date(`${formData.outDate}T${formData.outTime}:00`);
+      hasValidTimeOrder = clockOutDateTime > clockInDateTime;
+    }
+    
+    return hasRequiredFields && hasValidReason && hasValidClockOut && hasValidTimeOrder;
   };
 
   const handleFieldEdit = (field: keyof typeof editing) => {
@@ -107,9 +115,20 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     e.preventDefault();
     
     if (!isFormValid()) {
+      // Check for specific validation errors
+      let errorMessage = "Please fill in all required fields";
+      
+      if (formData.outDate && formData.outTime && formData.inDate && formData.inTime) {
+        const clockInDateTime = new Date(`${formData.inDate}T${formData.inTime}:00`);
+        const clockOutDateTime = new Date(`${formData.outDate}T${formData.outTime}:00`);
+        if (clockOutDateTime <= clockInDateTime) {
+          errorMessage = "Clock out time must be after clock in time";
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: errorMessage,
         variant: "destructive"
       });
       return;
