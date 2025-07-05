@@ -33,7 +33,7 @@ export const ownerMenu: MenuItem[] = [
     description: "Overview of business metrics and alerts"
   },
   {
-    label: "Live Operations",
+    label: "Operations",
     route: "/owner/operations",
     icon: MonitorSpeaker,
     description: "Real-time mission control for business operations"
@@ -49,24 +49,6 @@ export const ownerMenu: MenuItem[] = [
     route: "/owner/workforce",
     icon: Users,
     description: "Staff management and assignments"
-  },
-  {
-    label: "Requests",
-    route: "/owner/requests",
-    icon: Bell,
-    description: "Review and action staff requests"
-  },
-  {
-    label: "Analytics",
-    route: "/owner/analytics",
-    icon: BarChart3,
-    description: "Reports and business insights"
-  },
-  {
-    label: "Compliance",
-    route: "/owner/strikes",
-    icon: AlertTriangle,
-    description: "Staff strikes and compliance monitoring"
   }
 ];
 
@@ -99,6 +81,24 @@ export const staffMenu: MenuItem[] = [
 
 // Extended menu items for More drawer (owner)
 export const ownerMoreMenu: MenuItem[] = [
+  {
+    label: "Requests",
+    route: "/owner/requests",
+    icon: Bell,
+    description: "Review and action staff requests"
+  },
+  {
+    label: "Analytics",
+    route: "/owner/analytics",
+    icon: BarChart3,
+    description: "Reports and business insights"
+  },
+  {
+    label: "Compliance",
+    route: "/owner/strikes",
+    icon: AlertTriangle,
+    description: "Staff strikes and compliance monitoring"
+  },
   {
     label: "Business Settings",
     route: "/owner/settings",

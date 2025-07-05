@@ -409,6 +409,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Ensured consistent status mapping between Staff Status (dashboard) and Time Tracking (Live Operations)
   - All dashboard sections now display synchronized data: Active Shifts (3), matching staff statuses, real activity logs
   - Verified data consistency across Owner Dashboard, Live Operations, and My Work sections using same API endpoints
+- July 05, 2025. Reorganized owner mobile navigation for better usability and clarity:
+  - Streamlined primary navigation to 4 core items: Dashboard, Operations, Scheduling, Workforce
+  - Moved secondary items to More drawer: Requests, Analytics, Compliance, Business Settings, Policies, Subscription
+  - Maintained pending requests notification badge on Requests item in More drawer with live count updates
+  - Enhanced template scheduling with comprehensive Play button modal featuring start/end date range selection
+  - Added template details preview showing recurrence pattern, positions, and helpful workflow explanations
+  - Mobile navigation now prioritizes daily operational needs while keeping management features accessible
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
