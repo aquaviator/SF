@@ -2515,6 +2515,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Photo upload endpoint
+  app.post("/api/users/:id/photo", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      console.log('📤 PHOTO_UPLOAD_REQUEST', { 
+        userId,
+        hasFile: !!(req as any).file,
+        bodyKeys: Object.keys(req.body),
+        timestamp: new Date()
+      });
+      
+      // For now, simulate a successful upload and return a placeholder URL
+      // In production, this would handle FormData, validate the file, 
+      // upload to cloud storage (S3, Cloudinary, etc.), and return the permanent URL
+      
+      const photoUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${userId}&backgroundColor=3b82f6`;
+      
+      console.log('✅ PHOTO_UPLOAD_SUCCESS', { 
+        userId,
+        photoUrl: photoUrl.substring(0, 50) + '...',
+        timestamp: new Date()
+      });
+      
+      res.json({ photoUrl });
+    } catch (error) {
+      console.error('❌ PHOTO_UPLOAD_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to upload photo" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -120,51 +120,62 @@ export default function Profile() {
     },
   });
 
-  // Photo upload mutation with proper error handling
-  const photoUploadMutation = useMutation({
-    mutationFn: async (photoUrl: string) => {
-      if (!userData || !user?.id) throw new Error("User data not available");
+  // Photo upload mutation - uploads file to server and gets permanent URL
+  const photoUploadMutation = useMutation<string, Error, File>({
+    mutationFn: async (file: File) => {
+      if (!user?.id) throw new Error("User ID not available");
       
-      const updateData = {
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email,
-        photoUrl: photoUrl === '' ? '' : photoUrl
-      };
-      
-      console.log('📤 PHOTO_MUTATION_START', { 
-        photoLength: photoUrl?.length || 0,
-        isDelete: photoUrl === ''
+      console.log('📤 FILE_UPLOAD_START', { 
+        fileName: file.name,
+        fileSize: file.size,
+        userId: user.id
       });
       
-      const response = await apiRequest('PUT', `/api/users/${user.id}`, updateData);
-      if (!response.ok) throw new Error("Failed to update profile photo");
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('userId', String(user.id));
       
-      return response.json();
+      const response = await apiRequest('POST', `/api/users/${user.id}/photo`, formData);
+      if (!response.ok) throw new Error("Failed to upload photo");
+      
+      const result = await response.json();
+      console.log('✅ FILE_UPLOAD_SUCCESS', { 
+        photoUrl: result.photoUrl?.substring(0, 50) + '...'
+      });
+      
+      return result.photoUrl;
     },
     onMutate: () => {
       setIsUploadingPhoto(true);
     },
-    onSuccess: () => {
+    onSuccess: (photoUrl: string) => {
+      console.log('🔄 UPDATING_PROFILE_WITH_URL', { 
+        photoUrl: photoUrl?.substring(0, 50) + '...'
+      });
+      
       setIsUploadingPhoto(false);
       toast({
         title: "Success",
         description: "Profile photo updated successfully!",
       });
       
-      // Refresh user data
-      if (user?.id) {
-        apiRequest('GET', `/api/users/${user.id}`)
-          .then(res => res.json())
-          .then(data => setUserData(data))
-          .catch(console.error);
+      // Now update the profile with the permanent URL
+      if (userData && user?.id) {
+        const updateData = {
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          email: userData.email,
+          photoUrl: photoUrl
+        };
+        
+        updateMutation.mutate(updateData);
       }
     },
     onError: (error: Error) => {
       setIsUploadingPhoto(false);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile photo",
+        description: error.message || "Failed to upload photo",
         variant: "destructive",
       });
     },
@@ -232,16 +243,18 @@ export default function Profile() {
                 <PhotoUpload
                   type="avatar"
                   currentImage={userData?.photoUrl}
-                  onImageChange={(photoUrl) => {
-                    console.log('🎯 PHOTO_UPLOAD_CALLBACK_TRIGGERED', { 
-                      photoUrl: photoUrl?.substring(0, 50),
+                  onFileSelect={(file) => {
+                    console.log('🎯 FILE_SELECT_CALLBACK_TRIGGERED', { 
+                      fileName: file.name,
+                      fileSize: file.size,
                       hasUserData: !!userData,
                       hasUserId: !!user?.id
                     });
                     
-                    // Trigger the photo upload mutation
-                    photoUploadMutation.mutate(photoUrl);
+                    // Trigger the file upload mutation
+                    photoUploadMutation.mutate(file);
                   }}
+                  isLoading={photoUploadMutation.isPending}
                   size="md"
                 />
               </div>
