@@ -816,11 +816,8 @@ export default function BusinessSettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 h-auto">
-          <TabsTrigger value="profile" className="text-xs md:text-sm p-2 min-h-[44px]">
-            <span className="truncate">Profile</span>
-          </TabsTrigger>
+      <Tabs defaultValue="roles" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1 h-auto">
           <TabsTrigger value="roles" className="text-xs md:text-sm p-2 min-h-[44px]">
             <span className="truncate">Roles</span>
           </TabsTrigger>
@@ -830,159 +827,12 @@ export default function BusinessSettingsPage() {
           <TabsTrigger value="departments" className="text-xs md:text-sm p-2 min-h-[44px]">
             <span className="truncate">Departments</span>
           </TabsTrigger>
-          <TabsTrigger value="hours" className="text-xs md:text-sm p-2 min-h-[44px] col-span-2 md:col-span-1">
+          <TabsTrigger value="hours" className="text-xs md:text-sm p-2 min-h-[44px]">
             <span className="truncate">Operating Hours</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Business Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {profileLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading business profile...</div>
-                </div>
-              ) : (
-                <form onSubmit={profileForm.handleSubmit((data) => profileMutation.mutate(data))} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={profileForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter business name" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="ownerName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Owner Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter owner name" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" placeholder="Enter email address" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter phone number" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="website"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Website</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter website URL" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="businessType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Type</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter business type" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={profileForm.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Enter business address" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {/* Photo Upload Section */}
-                  <div className="space-y-6 border-t pt-6">
-                    <h3 className="text-lg font-medium">Business Branding</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <PhotoUpload
-                        type="logo"
-                        currentImage={profileForm.watch("logoUrl")}
-                        onImageChange={(imageUrl) => profileForm.setValue("logoUrl", imageUrl)}
-                        size="lg"
-                      />
-                      <PhotoUpload
-                        type="avatar"
-                        currentImage={profileForm.watch("ownerProfilePicture")}
-                        onImageChange={(imageUrl) => profileForm.setValue("ownerProfilePicture", imageUrl)}
-                        size="lg"
-                      />
-                    </div>
-                  </div>
-                  
-                  <FormField
-                    control={profileForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Enter business description" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={profileMutation.isPending}>
-                    {profileMutation.isPending ? "Saving..." : "Save Profile"}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+
 
         <TabsContent value="roles" className="space-y-6">
           <Card>

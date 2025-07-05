@@ -15,7 +15,7 @@ import MyWork from "@/pages/my-work";
 import Opportunities from "@/pages/opportunities";
 import SwapRequests from "@/pages/swap-requests";
 import HolidayRequests from "@/pages/holiday-requests";
-import PersonalProfile from "@/pages/profile-personal";
+import Profile from "@/pages/profile";
 import OwnerDashboard from "@/pages/owner-dashboard";
 import Scheduling from "@/pages/scheduling";
 import Workforce from "@/pages/workforce";
@@ -54,7 +54,7 @@ function Router() {
               <Route path="/swap-requests" component={SwapRequests} />
               <Route path="/holiday-requests" component={HolidayRequests} />
               <Route path="/staff/holiday-requests" component={HolidayRequests} />
-              <Route path="/profile" component={PersonalProfile} />
+              <Route path="/profile" component={Profile} />
               <Route path="/owner/dashboard" component={OwnerDashboard} />
               <Route path="/owner/operations" component={OwnerOperations} />
               <Route path="/owner/scheduling" component={Scheduling} />
