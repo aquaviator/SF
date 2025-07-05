@@ -461,6 +461,18 @@ export default function MyWork() {
     // Helper functions defined locally with enhanced logging
     const checkSwapPolicyStatus = (shift: any) => {
       try {
+        // Can't swap already cancelled shifts
+        if (shift.status === 'cancelled') {
+          console.log('POLICY_CHECK_SWAP', { 
+            shiftId: shift.id, 
+            status: shift.status,
+            allowed: false,
+            reason: 'already_cancelled',
+            timestamp: new Date().toISOString() 
+          });
+          return false;
+        }
+        
         const shiftDateTime = new Date(`${shift.date}T${shift.startTime}`);
         const hoursUntilShift = (shiftDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
         const allowed = hoursUntilShift >= 24;
@@ -481,6 +493,18 @@ export default function MyWork() {
 
     const checkCancelPolicyStatus = (shift: any) => {
       try {
+        // Can't cancel already cancelled shifts
+        if (shift.status === 'cancelled') {
+          console.log('POLICY_CHECK_CANCEL', { 
+            shiftId: shift.id, 
+            status: shift.status,
+            allowed: false,
+            reason: 'already_cancelled',
+            timestamp: new Date().toISOString() 
+          });
+          return false;
+        }
+        
         const shiftDateTime = new Date(`${shift.date}T${shift.startTime}`);
         const hoursUntilShift = (shiftDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
         const allowed = hoursUntilShift >= 4;
