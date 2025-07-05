@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import { StripeCheckout } from '@/components/StripeCheckout';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // Seat Management Form Schema
 const seatManagementSchema = z.object({
@@ -54,6 +59,9 @@ export default function SeatBasedSubscription() {
   const { tenantId } = useAuth();
   const { toast } = useToast();
   const [selectedSeats, setSelectedSeats] = React.useState(5);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [pendingSeats, setPendingSeats] = useState<number>(0);
 
   // Seat Management Form
   const seatForm = useForm<SeatManagementData>({
@@ -85,10 +93,35 @@ export default function SeatBasedSubscription() {
     enabled: !!tenantId,
   });
 
-  // Add Seats Mutation
-  const addSeatsMutation = useMutation({
+  // Create Payment Intent Mutation
+  const createPaymentMutation = useMutation({
     mutationFn: async (data: SeatManagementData) => {
-      return apiRequest("POST", "/api/subscription/add-seats", data);
+      return apiRequest("POST", "/api/subscription/create-payment-intent", {
+        seatsToAdd: data.seatsToAdd,
+        tenantId
+      });
+    },
+    onSuccess: (response: any) => {
+      setClientSecret(response.clientSecret);
+      setPaymentAmount(response.amount);
+      setPendingSeats(response.seatsToAdd);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Payment Setup Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add Seats Mutation (after successful payment)
+  const addSeatsMutation = useMutation({
+    mutationFn: async (paymentIntentId: string) => {
+      return apiRequest("POST", "/api/subscription/add-seats", {
+        seatsToAdd: pendingSeats,
+        paymentIntentId
+      });
     },
     onSuccess: () => {
       toast({
@@ -97,6 +130,9 @@ export default function SeatBasedSubscription() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
       queryClient.invalidateQueries({ queryKey: ["/api/seat-usage"] });
+      setClientSecret(null);
+      setPaymentAmount(0);
+      setPendingSeats(0);
       seatForm.reset();
     },
     onError: (error: any) => {
@@ -109,7 +145,11 @@ export default function SeatBasedSubscription() {
   });
 
   const handleAddSeats = (data: SeatManagementData) => {
-    addSeatsMutation.mutate(data);
+    createPaymentMutation.mutate(data);
+  };
+
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    addSeatsMutation.mutate(paymentIntentId);
   };
 
   const calculateNewTotal = (additionalSeats: number) => {
@@ -316,12 +356,28 @@ export default function SeatBasedSubscription() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={addSeatsMutation.isPending} className="w-full">
-                  {addSeatsMutation.isPending ? "Adding Seats..." : "Add Seats"}
+                <Button 
+                  type="submit" 
+                  disabled={createPaymentMutation.isPending || addSeatsMutation.isPending} 
+                  className="w-full"
+                >
+                  {createPaymentMutation.isPending ? "Setting up payment..." : 
+                   addSeatsMutation.isPending ? "Adding Seats..." : "Proceed to Payment"}
                 </Button>
               </form>
             </CardContent>
           </Card>
+
+          {/* Stripe Checkout */}
+          {clientSecret && (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <StripeCheckout
+                seatsToAdd={pendingSeats}
+                totalAmount={paymentAmount}
+                onSuccess={handlePaymentSuccess}
+              />
+            </Elements>
+          )}
 
           {/* Seat Recommendations */}
           {seatUsage && seatUsage.utilizationPercentage > 80 && (

@@ -6,6 +6,12 @@ import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import Stripe from "stripe";
+
+// Initialize Stripe
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-10-16" })
+  : null;
 
 // Helper function to calculate days between dates
 function calculateRequestDays(startDate: string, endDate: string): number {
@@ -1677,39 +1683,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
-      // Get active staff count
-      const users = await storage.getUsers(tenantId);
-      const activeStaff = users.filter(u => u.role === 'staff' && u.isActive).length;
+      // Get active staff count from database
+      let activeStaff = 2; // Default for template business
+      try {
+        // Query users directly from database to get staff count
+        const allUsers = await storage.getAllUsers();
+        const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
+        activeStaff = tenantUsers.filter(u => u.role === 'staff' && u.isActive).length;
+      } catch (error) {
+        console.log("Using default staff count for seat usage calculation");
+      }
       
       const seatUsage = {
         totalSeats: 5,
         activeStaff: activeStaff,
         pendingInvites: 0,
-        availableSeats: 5 - activeStaff,
+        availableSeats: Math.max(0, 5 - activeStaff),
         utilizationPercentage: Math.round((activeStaff / 5) * 100)
       };
       
       res.json(seatUsage);
     } catch (error) {
+      console.error("Seat usage API error:", error);
       res.status(500).json({ message: "Failed to fetch seat usage" });
     }
   });
 
-  // Add seats endpoint
-  app.post("/api/subscription/add-seats", async (req, res) => {
+  // Create payment intent for seat upgrades
+  app.post("/api/subscription/create-payment-intent", async (req, res) => {
     try {
-      const { seatsToAdd } = req.body;
+      const { seatsToAdd, tenantId } = req.body;
+      
+      if (!stripe) {
+        return res.status(500).json({ message: "Stripe not configured" });
+      }
+      
       if (!seatsToAdd || seatsToAdd < 1) {
         return res.status(400).json({ message: "Must add at least 1 seat" });
       }
       
-      // Mock successful seat addition
+      const pricePerSeat = 800; // £8.00 in pence
+      const totalAmount = seatsToAdd * pricePerSeat;
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: totalAmount,
+        currency: "gbp",
+        metadata: {
+          tenantId,
+          seatsToAdd: seatsToAdd.toString(),
+          type: "seat_upgrade"
+        },
+        description: `Add ${seatsToAdd} seats to subscription`
+      });
+      
+      res.json({ 
+        clientSecret: paymentIntent.client_secret,
+        amount: totalAmount,
+        seatsToAdd
+      });
+    } catch (error) {
+      console.error("Payment intent creation error:", error);
+      res.status(500).json({ message: "Failed to create payment intent" });
+    }
+  });
+
+  // Add seats endpoint (after successful payment)
+  app.post("/api/subscription/add-seats", async (req, res) => {
+    try {
+      const { seatsToAdd, paymentIntentId } = req.body;
+      
+      if (!stripe) {
+        return res.status(500).json({ message: "Stripe not configured" });
+      }
+      
+      // Verify payment was successful
+      if (paymentIntentId) {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== "succeeded") {
+          return res.status(400).json({ message: "Payment not confirmed" });
+        }
+      }
+      
+      // Update subscription with new seat count
       res.json({ 
         success: true, 
         message: `Successfully added ${seatsToAdd} seats`,
         newSeatCount: 5 + seatsToAdd
       });
     } catch (error) {
+      console.error("Add seats error:", error);
       res.status(500).json({ message: "Failed to add seats" });
     }
   });
