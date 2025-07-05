@@ -1,4 +1,5 @@
 import { db } from "../server/db";
+import { eq } from "drizzle-orm";
 import { 
   subscriptions, 
   seatPricing, 
@@ -74,7 +75,10 @@ async function seatSubscriptionSeed() {
 
     await db.insert(subscriptions).values({
       tenantId: "template-business",
+      planId: "starter", // Use starter plan for template
       status: "trial",
+      startDate: new Date(),
+      endDate: trialEnd,
       seatsIncluded: 5,
       seatsUsed: 2, // Owner + 2 staff
       pricePerSeat: 300, // £3.00 in pence
@@ -91,7 +95,10 @@ async function seatSubscriptionSeed() {
     }).onConflictDoUpdate({
       target: subscriptions.tenantId,
       set: {
+        planId: "starter",
         status: "trial",
+        startDate: new Date(),
+        endDate: trialEnd,
         seatsIncluded: 5,
         seatsUsed: 2,
         pricePerSeat: 300,
@@ -106,8 +113,7 @@ async function seatSubscriptionSeed() {
     // Step 3: Create seat allocations for existing users
     console.log("🪑 Creating seat allocations...");
     const templateUsers = await db.select().from(users).where(
-      // @ts-ignore - using SQL like operator
-      db.eq(users.tenantId, "template-business")
+      eq(users.tenantId, "template-business")
     );
 
     for (const user of templateUsers) {
@@ -122,8 +128,7 @@ async function seatSubscriptionSeed() {
     // Step 4: Create sample billing history
     console.log("💳 Creating sample billing history...");
     const subscription = await db.select().from(subscriptions).where(
-      // @ts-ignore - using SQL like operator  
-      db.eq(subscriptions.tenantId, "template-business")
+      eq(subscriptions.tenantId, "template-business")
     ).then(rows => rows[0]);
 
     if (subscription) {

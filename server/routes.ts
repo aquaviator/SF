@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -3531,6 +3531,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Delete user error:", error);
       res.status(500).json({ message: "Failed to delete user: " + error.message });
+    }
+  });
+
+  // Business Registration API
+  app.post("/api/register-business", async (req, res) => {
+    try {
+      const { business, owner, planId } = req.body;
+
+      // Validate required fields
+      if (!business?.name || !business?.subdomain || !owner?.firstName || !owner?.lastName || !owner?.email || !owner?.username || !owner?.password || !planId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Create tenant
+      const [newTenant] = await db.insert(tenants).values({
+        name: business.name,
+        subdomain: business.subdomain,
+      }).returning();
+
+      // Create business profile
+      await db.insert(businessProfiles).values({
+        tenantId: newTenant.subdomain,
+        name: business.name,
+        businessType: business.businessType,
+        address: business.address,
+        phone: business.phone,
+        email: business.email,
+        website: business.website,
+        logoUrl: business.logoUrl,
+        description: business.description,
+      });
+
+      // Hash password and create owner user
+      const bcrypt = await import('bcrypt');
+      const hashedPassword = await bcrypt.hash(owner.password, 10);
+      const [newUser] = await db.insert(users).values({
+        tenantId: newTenant.subdomain,
+        username: owner.username,
+        password: hashedPassword,
+        role: 'owner',
+        firstName: owner.firstName,
+        lastName: owner.lastName,
+        email: owner.email,
+        isActive: true,
+      }).returning();
+
+      // Get seat pricing details
+      const [planDetails] = await db.select().from(seatPricing).where(eq(seatPricing.id, planId));
+      if (!planDetails) {
+        return res.status(400).json({ message: "Invalid plan ID" });
+      }
+
+      // Create subscription
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30); // 30-day trial
+
+      await db.insert(subscriptions).values({
+        tenantId: newTenant.subdomain,
+        status: 'trial',
+        seatsIncluded: planDetails.minSeats,
+        pricePerSeat: planDetails.pricePerSeat,
+        monthlyTotal: planDetails.minSeats * planDetails.pricePerSeat,
+        nextBillingDate: endDate,
+        trialStart: startDate,
+        trialEnd: endDate,
+      });
+
+      // Sign JWT (you'll need to implement JWT signing)
+      // const token = jwt.sign({ userId: newUser.id, tenantId: newTenant.subdomain, role: 'owner' }, JWT_SECRET);
+      // res.cookie('auth-token', token, { httpOnly: true });
+
+      res.json({
+        user: {
+          id: newUser.id,
+          firstName: newUser.firstName,
+          role: newUser.role,
+        },
+        tenant: {
+          id: newTenant.id,
+          name: newTenant.name,
+          subdomain: newTenant.subdomain,
+        }
+      });
+
+    } catch (error: any) {
+      console.error("Business registration error:", error);
+      if (error.code === '23505') { // Unique constraint violation
+        return res.status(400).json({ message: "Subdomain already exists" });
+      }
+      res.status(500).json({ message: "Failed to register business: " + error.message });
+    }
+  });
+
+  // Get seat pricing endpoint
+  app.get("/api/seat-pricing", async (req, res) => {
+    try {
+      const pricing = await db.select().from(seatPricing);
+      res.json(pricing);
+    } catch (error: any) {
+      console.error("Get seat pricing error:", error);
+      res.status(500).json({ message: "Failed to get pricing: " + error.message });
     }
   });
 

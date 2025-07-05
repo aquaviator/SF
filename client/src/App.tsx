@@ -31,6 +31,7 @@ import StaffRequests from "@/pages/staff/requests";
 import OwnerStrikes from "@/pages/owner/strikes";
 import OwnerOperations from "@/pages/owner/operations";
 import StaffActivation from "@/pages/staff-activation";
+import BusinessRegistration from "@/pages/business-registration";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 
@@ -73,6 +74,7 @@ function Router() {
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
               <Route path="/activate" component={StaffActivation} />
+              <Route path="/register" component={BusinessRegistration} />
               <Route path="/help" component={NotFound} />
               <Route component={NotFound} />
             </Switch>

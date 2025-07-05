@@ -2,6 +2,14 @@ import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb, ind
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Tenants table
+export const tenants = pgTable('tenants', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  subdomain: varchar('subdomain').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -80,6 +88,12 @@ export const updateUserSchema = createInsertSchema(users).omit({
   role: true,
   tenantId: true,
 }).partial();
+
+// Tenants schema
+export const insertTenantSchema = createInsertSchema(tenants).omit({
+  id: true,
+  createdAt: true,
+});
 
 export const insertShiftSchema = createInsertSchema(shifts).omit({
   id: true,
@@ -353,13 +367,16 @@ export const activityLogs = pgTable("activity_logs", {
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull().unique(),
+  planId: text("plan_id").notNull(), // Reference to subscription plan or "custom"
   status: text("status").notNull().$type<"active" | "trial" | "expired" | "cancelled" | "past_due">(),
+  startDate: timestamp("start_date").notNull(), // Subscription start date
+  endDate: timestamp("end_date").notNull(), // Subscription end date
   seatsIncluded: integer("seats_included").notNull().default(5), // Number of seats included
   seatsUsed: integer("seats_used").notNull().default(0), // Currently used seats
   pricePerSeat: integer("price_per_seat").notNull().default(300), // £3.00 in pence
   monthlyTotal: integer("monthly_total").notNull().default(1500), // Total monthly cost in pence
   trialDaysRemaining: integer("trial_days_remaining"),
-  nextBillingDate: timestamp("next_billing_date").notNull(),
+  nextBillingDate: timestamp("next_billing_date"),
   
   // Stripe integration fields
   stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID
@@ -395,11 +412,10 @@ export const seatAllocation = pgTable("seat_allocation", {
   tenantId: text("tenant_id").notNull(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   seatType: text("seat_type").notNull().$type<"active" | "invited" | "suspended">(),
-  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-  suspendedAt: timestamp("suspended_at"),
-  suspensionReason: text("suspension_reason"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  releasedAt: timestamp("released_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const billingHistory = pgTable("billing_history", {
@@ -414,9 +430,8 @@ export const billingHistory = pgTable("billing_history", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   status: text("status").notNull().$type<"pending" | "paid" | "failed" | "refunded">(),
   paidAt: timestamp("paid_at"),
-  failureReason: text("failure_reason"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const subscriptionPlans = pgTable("subscription_plans", {
@@ -681,3 +696,5 @@ export type SeatAllocation = typeof seatAllocation.$inferSelect;
 export type InsertSeatAllocation = z.infer<typeof insertSeatAllocationSchema>;
 export type BillingHistory = typeof billingHistory.$inferSelect;
 export type InsertBillingHistory = z.infer<typeof insertBillingHistorySchema>;
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
