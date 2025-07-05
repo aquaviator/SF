@@ -81,6 +81,49 @@ export default function BusinessRegistration() {
     return staffCount * pricePerSeat;
   };
 
+  // Step validation function
+  const validateStep = async (stepNumber: number) => {
+    const values = form.getValues();
+    
+    if (stepNumber === 1) {
+      // Validate business information
+      const businessValidation = await form.trigger([
+        "business.name", 
+        "business.subdomain", 
+        "business.businessType", 
+        "business.phone", 
+        "business.website", 
+        "business.staffCount"
+      ]);
+      return businessValidation;
+    } else if (stepNumber === 2) {
+      // Validate owner information
+      const ownerValidation = await form.trigger([
+        "owner.firstName", 
+        "owner.lastName", 
+        "owner.email", 
+        "owner.password", 
+        "owner.confirmPassword"
+      ]);
+      return ownerValidation;
+    }
+    return true;
+  };
+
+  // Handle next step with validation
+  const handleNextStep = async () => {
+    const isValid = await validateStep(step);
+    if (isValid) {
+      setStep(Math.min(3, step + 1));
+    } else {
+      toast({
+        title: "Please fix the errors",
+        description: "Complete all required fields before proceeding.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
@@ -534,7 +577,7 @@ export default function BusinessRegistration() {
                     {step < 3 ? (
                       <Button
                         type="button"
-                        onClick={() => setStep(Math.min(3, step + 1))}
+                        onClick={handleNextStep}
                       >
                         Next
                       </Button>
