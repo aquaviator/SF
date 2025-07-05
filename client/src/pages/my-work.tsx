@@ -1154,11 +1154,14 @@ export default function MyWork() {
   const isCurrentlyClockedIn = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayEntries = (timeEntries || []).filter((entry: any) => {
+      if (!entry.clockInTime) return false;
       const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
       return entryDate === today;
     });
     
-    return todayEntries.some((entry: any) => !entry.clockOutTime && entry.status === 'clocked_in');
+    // A person is currently clocked in if they have a clock-in time but no clock-out time
+    // Status can be 'clocked_in', 'late', 'on_break', etc.
+    return todayEntries.some((entry: any) => entry.clockInTime && !entry.clockOutTime);
   };
 
   // Quick actions that staff can perform
