@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
+import { useState, useEffect } from "react";
 
 export function SidebarNav() {
   const { role, user, tenantId, switchRole, switchStaff, currentStaffId } = useAuth();
   const [location] = useLocation();
+  const [imgErrored, setImgErrored] = useState(false);
   
   const menuItems = getMenuForRole(role);
   const moreMenuItems = getMoreMenuForRole(role);
@@ -30,6 +32,20 @@ export function SidebarNav() {
     queryKey: ["/api/users", user?.id],
     queryFn: () => fetch(`/api/users/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
+  });
+
+  // Reset image error state when photoUrl changes
+  useEffect(() => {
+    setImgErrored(false);
+  }, [userProfile?.photoUrl]);
+
+  // Debug logging for avatar troubleshooting
+  console.log("SidebarNav Debug:", {
+    user,
+    userProfile,
+    photoUrl: userProfile?.photoUrl,
+    imgErrored,
+    enabled: !!user?.id
   });
 
   // Fetch pending requests count for owners
@@ -93,16 +109,17 @@ export function SidebarNav() {
       <div className="px-6 pb-4">
         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
-            {userProfile?.photoUrl ? (
+            {userProfile?.photoUrl && !imgErrored ? (
               <img
                 src={userProfile.photoUrl}
                 alt="Profile"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to initials if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.parentElement!.innerHTML = `<span class="text-white text-sm font-medium">${getUserInitials()}</span>`;
+                onError={() => {
+                  console.log("🖼️ IMAGE_LOAD_ERROR", { photoUrl: userProfile.photoUrl });
+                  setImgErrored(true);
+                }}
+                onLoad={() => {
+                  console.log("✅ IMAGE_LOAD_SUCCESS", { photoUrl: userProfile.photoUrl });
                 }}
               />
             ) : (
