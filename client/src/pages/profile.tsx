@@ -34,6 +34,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -118,6 +119,28 @@ export default function Profile() {
       });
     },
   });
+
+  // Handle pending photo upload when user data is available
+  useEffect(() => {
+    if (pendingPhotoUrl && userData && user?.id) {
+      console.log('🚀 PROCESSING_PENDING_PHOTO', { 
+        pendingPhotoLength: pendingPhotoUrl.length,
+        hasUserData: !!userData,
+        userId: user.id
+      });
+      
+      const updateData = {
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email,
+        photoUrl: pendingPhotoUrl
+      };
+      
+      console.log('📤 EXECUTING_PHOTO_MUTATION', { photoLength: pendingPhotoUrl.length });
+      updateMutation.mutate(updateData);
+      setPendingPhotoUrl(null); // Clear pending photo
+    }
+  }, [pendingPhotoUrl, userData, user?.id, updateMutation]);
 
   // Photo upload functionality
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,8 +293,8 @@ export default function Profile() {
                   type="avatar"
                   currentImage={userData?.photoUrl}
                   onImageChange={(photoUrl) => {
-                    console.log('🎯 DIRECT_CALLBACK_TEST', { photoUrl: photoUrl?.substring(0, 50) + '...' });
-                    handlePhotoUrlChange(photoUrl);
+                    console.log('🎯 PHOTO_RECEIVED_IN_PROFILE', { photoUrl: photoUrl?.substring(0, 50) + '...' });
+                    setPendingPhotoUrl(photoUrl);
                   }}
                   size="md"
                 />
