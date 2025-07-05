@@ -28,9 +28,8 @@ export default function StaffActivation() {
   const [activationStatus, setActivationStatus] = useState<"pending" | "success" | "error">("pending");
   const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
 
-  // Extract token from URL
-  const urlParams = new URLSearchParams(location.split("?")[1] || "");
-  const token = urlParams.get("token");
+  // Extract token from URL path
+  const token = location.split("/").pop(); // Gets the last segment from /staff/activate/:token
 
   const form = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
