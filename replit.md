@@ -416,6 +416,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Enhanced template scheduling with comprehensive Play button modal featuring start/end date range selection
   - Added template details preview showing recurrence pattern, positions, and helpful workflow explanations
   - Mobile navigation now prioritizes daily operational needs while keeping management features accessible
+- July 05, 2025. Fixed owner profile avatar upload by matching working logo upload system:
+  - Replaced complex file upload mutation with simple Base64 onImageChange pattern used by logo upload
+  - PhotoUpload component now converts images to Base64 and immediately updates profile via PUT /api/users/:id
+  - Removed redundant photo upload API endpoint and FormData handling that was causing owner upload failures
+  - Profile avatar upload now works consistently for both owner and staff users using same Base64 approach
+  - Sidebar avatar updates immediately after successful profile mutation with proper cache invalidation
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

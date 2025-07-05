@@ -110,6 +110,10 @@ export default function Profile() {
       });
       setIsModalOpen(false);
       // Invalidate sidebar cache to show updated data
+      console.log('🔄 CACHE_INVALIDATION', { 
+        queryKey: ["/api/users", user?.id],
+        userId: user?.id 
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
     },
     onError: (error: Error) => {
@@ -194,7 +198,15 @@ export default function Profile() {
                   type="avatar"
                   currentImage={currentPhotoUrl || userData?.photoUrl}
                   onImageChange={(imageUrl) => {
+                    console.log('🔄 AVATAR_UPLOAD_CALLBACK', { 
+                      userId: user?.id,
+                      hasUserData: !!userData,
+                      imageUrlLength: imageUrl?.length,
+                      imageUrlPreview: imageUrl?.substring(0, 50) + '...'
+                    });
+                    
                     setCurrentPhotoUrl(imageUrl);
+                    
                     // Update profile immediately with Base64 image
                     if (userData && user?.id) {
                       const updateData = {
@@ -203,7 +215,20 @@ export default function Profile() {
                         email: userData.email,
                         photoUrl: imageUrl
                       };
+                      
+                      console.log('🚀 API_REQUEST_PAYLOAD', {
+                        endpoint: `/api/users/${user.id}`,
+                        hasPhotoUrl: !!updateData.photoUrl,
+                        photoUrlLength: updateData.photoUrl?.length,
+                        photoUrlPreview: updateData.photoUrl?.substring(0, 50) + '...'
+                      });
+                      
                       updateMutation.mutate(updateData);
+                    } else {
+                      console.log('❌ AVATAR_UPLOAD_BLOCKED', {
+                        hasUserData: !!userData,
+                        hasUserId: !!user?.id
+                      });
                     }
                   }}
                   size="md"
