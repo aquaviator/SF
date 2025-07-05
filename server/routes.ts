@@ -388,6 +388,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newStatus = response === "accept" ? "confirmed" : "declined";
       const updatedShift = await storage.updateShift(shiftId, { status: newStatus });
       
+      // Auto-escalation: Convert declined assignments to opportunities
+      if (response === "decline") {
+        // Check if this is a policy violation (declined outside acceptable window)
+        const shiftDate = new Date(shift.date);
+        const now = new Date();
+        const hoursUntilShift = (shiftDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        
+        // Auto-convert to opportunity if declined with sufficient notice (>24 hours)
+        if (hoursUntilShift > 24) {
+          console.log("🤖 AUTO_ESCALATION_TRIGGERED", {
+            shiftId,
+            hoursUntilShift: Math.round(hoursUntilShift),
+            reason: "declined_with_notice",
+            timestamp: new Date()
+          });
+          
+          // Convert to opportunity automatically
+          await storage.updateShift(shiftId, {
+            status: "open",
+            assignmentType: "opportunity",
+            assignedTo: null,
+            description: `Available opportunity - ${shift.role} position`
+          });
+          
+          console.log("✅ AUTO_OPPORTUNITY_CREATED", {
+            shiftId,
+            originalRole: shift.role,
+            date: shift.date,
+            timestamp: new Date()
+          });
+        }
+      }
+      
       // Log the assignment response
       await storage.createActivityLog({
         tenantId,

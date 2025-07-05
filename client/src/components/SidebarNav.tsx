@@ -65,14 +65,17 @@ export function SidebarNav() {
 
         return pendingHoliday + pendingSwap;
       } else if (role === "staff") {
-        // For staff, count pending assignments (work requests)
-        const pendingAssignments = await fetch(
-          `/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`
-        )
-          .then((res) => res.json())
-          .catch(() => []);
+        // For staff, count pending assignments AND available opportunities
+        const [pendingAssignments, opportunities] = await Promise.all([
+          fetch(`/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`)
+            .then((res) => res.json())
+            .catch(() => []),
+          fetch(`/api/opportunities?tenantId=${tenantId}&userId=${user?.id}`)
+            .then((res) => res.json())
+            .catch(() => [])
+        ]);
         
-        return pendingAssignments.length;
+        return pendingAssignments.length + opportunities.length;
       }
       
       return 0;
