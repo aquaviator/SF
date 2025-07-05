@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 import { useState, useEffect } from "react";
-import shiftfloLogo from "@assets/ChatGPT Image Jul 5, 2025, 12_57_47 PM_1751716679541.png";
+import { ShiftFloLogo } from "@/components/ShiftFloLogo";
 
 export function SidebarNav() {
   const { role, user, tenantId, switchRole, switchStaff, currentStaffId } = useAuth();
@@ -104,18 +104,13 @@ export function SidebarNav() {
     <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col h-full">
       {/* Header */}
       <div className="p-6">
-        <div className="flex items-center space-x-3">
-          <img
-            src={shiftfloLogo}
-            alt="ShiftFlo"
-            className="h-8 w-auto object-contain"
+        <div className="flex justify-center">
+          <ShiftFloLogo 
+            variant="icon" 
+            width={40} 
+            height={40} 
+            className="rounded-lg"
           />
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">ShiftFlo</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {role === "owner" ? "Business Dashboard" : "Staff Portal"}
-            </p>
-          </div>
         </div>
       </div>
 
