@@ -120,27 +120,44 @@ export default function Profile() {
     },
   });
 
-  // Handle pending photo upload when user data is available
+  // Handle pending photo upload/deletion when user data is available
   useEffect(() => {
-    if (pendingPhotoUrl && userData && user?.id) {
+    if (pendingPhotoUrl !== null && userData && user?.id) {
       console.log('🚀 PROCESSING_PENDING_PHOTO', { 
-        pendingPhotoLength: pendingPhotoUrl.length,
+        pendingPhotoLength: pendingPhotoUrl?.length || 0,
         hasUserData: !!userData,
-        userId: user.id
+        userId: user.id,
+        userDataId: userData.id,
+        isDelete: pendingPhotoUrl === ''
       });
       
       const updateData = {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
         email: userData.email,
-        photoUrl: pendingPhotoUrl
+        photoUrl: pendingPhotoUrl || null
       };
       
-      console.log('📤 EXECUTING_PHOTO_MUTATION', { photoLength: pendingPhotoUrl.length });
+      console.log('📤 EXECUTING_PHOTO_MUTATION', { 
+        photoLength: pendingPhotoUrl?.length || 0,
+        isDelete: pendingPhotoUrl === '',
+        updateData: { 
+          ...updateData, 
+          photoUrl: pendingPhotoUrl ? pendingPhotoUrl.substring(0, 50) + '...' : 'DELETED' 
+        }
+      });
+      
       updateMutation.mutate(updateData);
       setPendingPhotoUrl(null); // Clear pending photo
+    } else {
+      console.log('❌ PHOTO_UPLOAD_BLOCKED', {
+        hasPendingPhoto: pendingPhotoUrl !== null,
+        hasUserData: !!userData,
+        hasUserId: !!user?.id,
+        pendingPhotoLength: pendingPhotoUrl?.length || 0
+      });
     }
-  }, [pendingPhotoUrl, userData, user?.id, updateMutation]);
+  }, [pendingPhotoUrl, userData, user?.id]);
 
   // Photo upload functionality
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,8 +310,10 @@ export default function Profile() {
                   type="avatar"
                   currentImage={userData?.photoUrl}
                   onImageChange={(photoUrl) => {
-                    console.log('🎯 PHOTO_RECEIVED_IN_PROFILE', { photoUrl: photoUrl?.substring(0, 50) + '...' });
-                    setPendingPhotoUrl(photoUrl);
+                    console.log('🎯 PHOTO_RECEIVED_IN_PROFILE', { 
+                      photoUrl: photoUrl ? photoUrl.substring(0, 50) + '...' : 'DELETED' 
+                    });
+                    setPendingPhotoUrl(photoUrl || null);
                   }}
                   size="md"
                 />
