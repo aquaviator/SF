@@ -2362,10 +2362,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return isInRange;
       });
       
-      // Calculate coverage statistics
-      const active = filteredShifts.filter(s => s.status === "confirmed" || s.status === "assigned").length;
+      // Calculate coverage statistics - FIX: Only confirmed shifts are truly active
+      const active = filteredShifts.filter(s => s.status === "confirmed").length;
       const upcoming = filteredShifts.filter(s => s.status === "claimed").length;
-      const unfilled = filteredShifts.filter(s => s.status === "open").length;
+      const unfilled = filteredShifts.filter(s => s.status === "open" || s.status === "declined").length;
       const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;
       
       console.log("📊 COVERAGE_CALCULATION_DEBUG", {
@@ -2708,6 +2708,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           affectedShifts: 2,
           urgency: "high",
           createdAt: swap.requestedAt || new Date().toISOString()
+        });
+      });
+      
+      // Identify declined assignments that need immediate action
+      const declinedShifts = shifts.filter(shift => shift.status === "declined");
+      
+      declinedShifts.forEach(shift => {
+        escalations.push({
+          id: shift.id,
+          type: "assignment_declined",
+          description: `${shift.role} assignment declined - requires new assignment`,
+          affectedShifts: 1,
+          urgency: "high",
+          createdAt: shift.updatedAt || new Date().toISOString()
         });
       });
       
