@@ -220,7 +220,8 @@ export default function Profile() {
                         endpoint: `/api/users/${user.id}`,
                         hasPhotoUrl: !!updateData.photoUrl,
                         photoUrlLength: updateData.photoUrl?.length,
-                        photoUrlPreview: updateData.photoUrl?.substring(0, 50) + '...'
+                        photoUrlPreview: updateData.photoUrl?.substring(0, 50) + '...',
+                        fullPayload: updateData
                       });
                       
                       updateMutation.mutate(updateData);
