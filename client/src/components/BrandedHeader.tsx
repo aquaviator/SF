@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { Clock } from "@/components/Clock";
 
 interface BrandedHeaderProps {
   businessName?: string;
@@ -44,8 +45,9 @@ export function BrandedHeader({
           </span>
         </div>
 
-        {/* Notification bell */}
-        <div className="flex items-center">
+        {/* Clock and notification bell */}
+        <div className="flex items-center space-x-4">
+          <Clock />
           <NotificationBell />
         </div>
       </div>

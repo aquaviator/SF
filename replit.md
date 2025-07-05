@@ -479,6 +479,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Updated Clock Out label to show "(optional for active shifts)" for late staff
   - Override modal now properly handles all active staff statuses: clocked_in, on_break, and late
   - Enhanced user experience for time adjustments with better reason categorization
+- July 05, 2025. Added real-time clock display to application header:
+  - Created Clock component with live updating time display using UK timezone (en-GB format)
+  - Shows current time in HH:MM:SS format with date (e.g., "16:49:12" and "Sat 5 Jul")
+  - Positioned next to notification bell in BrandedHeader for easy time reference
+  - Updates every second with proper cleanup to prevent memory leaks
+  - Helps clarify timezone context for shift scheduling and time entry management
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
