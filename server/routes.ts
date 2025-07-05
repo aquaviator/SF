@@ -3624,7 +3624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { business, owner, planId } = req.body;
 
       // Validate required fields
-      if (!business?.name || !business?.subdomain || !owner?.firstName || !owner?.lastName || !owner?.email || !owner?.username || !owner?.password || !planId) {
+      if (!business?.name || !business?.subdomain || !owner?.firstName || !owner?.lastName || !owner?.email || !owner?.password || !planId) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -3638,13 +3638,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.insert(businessProfiles).values({
         tenantId: newTenant.subdomain,
         name: business.name,
-        businessType: business.businessType,
+        businessType: business.businessType || "Other",
         address: business.address,
         phone: business.phone,
-        email: business.email,
         website: business.website,
         logoUrl: business.logoUrl,
-        description: business.description,
+        ownerName: `${owner.firstName} ${owner.lastName}`,
       });
 
       // Hash password and create owner user
@@ -3652,7 +3651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(owner.password, 10);
       const [newUser] = await db.insert(users).values({
         tenantId: newTenant.subdomain,
-        username: owner.username,
+        username: owner.email, // Use email as username
         password: hashedPassword,
         role: 'owner',
         firstName: owner.firstName,

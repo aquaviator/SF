@@ -26,16 +26,13 @@ const registrationSchema = z.object({
     businessType: z.string().min(1, "Please select a business type"),
     address: z.string().optional(),
     phone: z.string().optional(),
-    email: z.string().email("Please enter a valid email address").optional(),
-    website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-    description: z.string().optional(),
+    website: z.string().optional(),
   }),
   // Owner Information
   owner: z.object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
-    username: z.string().min(3, "Username must be at least 3 characters"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   }).refine((data) => data.password === data.confirmPassword, {
@@ -73,15 +70,12 @@ export default function BusinessRegistration() {
         businessType: "",
         address: "",
         phone: "",
-        email: "",
         website: "",
-        description: "",
       },
       owner: {
         firstName: "",
         lastName: "",
         email: "",
-        username: "",
         password: "",
         confirmPassword: "",
       },
@@ -282,20 +276,6 @@ export default function BusinessRegistration() {
 
                       <FormField
                         control={form.control}
-                        name="business.email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Email</FormLabel>
-                            <FormControl>
-                              <Input placeholder="info@acmerestaurant.com" type="email" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="business.phone"
                         render={({ field }) => (
                           <FormItem>
@@ -315,7 +295,7 @@ export default function BusinessRegistration() {
                           <FormItem>
                             <FormLabel>Website</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://acmerestaurant.com" {...field} />
+                              <Input placeholder="acmerestaurant.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -331,22 +311,6 @@ export default function BusinessRegistration() {
                               <FormLabel>Business Address</FormLabel>
                               <FormControl>
                                 <Textarea placeholder="123 High Street, London, UK" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <FormField
-                          control={form.control}
-                          name="business.description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Business Description</FormLabel>
-                              <FormControl>
-                                <Textarea placeholder="Brief description of your business..." {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -387,33 +351,21 @@ export default function BusinessRegistration() {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="owner.email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email Address *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="john@acmerestaurant.com" type="email" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="owner.username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="johnsmith" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="md:col-span-2">
+                        <FormField
+                          control={form.control}
+                          name="owner.email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email Address *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="john@acmerestaurant.com" type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                       <FormField
                         control={form.control}
