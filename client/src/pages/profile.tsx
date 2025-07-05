@@ -269,7 +269,10 @@ export default function Profile() {
                 <PhotoUpload
                   type="avatar"
                   currentImage={userData?.photoUrl}
-                  onImageChange={handlePhotoUrlChange}
+                  onImageChange={(photoUrl) => {
+                    console.log('🎯 DIRECT_CALLBACK_TEST', { photoUrl: photoUrl?.substring(0, 50) + '...' });
+                    handlePhotoUrlChange(photoUrl);
+                  }}
                   size="md"
                 />
               </div>
