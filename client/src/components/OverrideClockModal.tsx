@@ -35,11 +35,14 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     return date.toISOString().split('T')[0];
   };
 
-  // Format time for input type="time"
+  // Format time for input type="time" - convert UTC to local time
   const formatTime = (timestamp: string | Date | null): string => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
-    return date.toTimeString().slice(0, 5);
+    // Convert to local time format for time input
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   // Get default values from actualIn/actualOut or fall back to scheduled times
