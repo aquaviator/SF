@@ -132,40 +132,17 @@ export default function Subscription() {
     queryKey: ["/api/subscription/plans"],
   });
 
-  // Fetch Invoices
+  // Fetch Invoices from database
   const { data: invoices = [] } = useQuery<Invoice[]>({
     queryKey: ["/api/subscription/invoices", tenantId],
     queryFn: async () => {
-      // Mock data for now
-      return [
-        {
-          id: 1,
-          invoiceNumber: "INV-2024-001",
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-          amount: 49,
-          status: "paid",
-          downloadUrl: "/invoices/inv-2024-001.pdf",
-          description: "Professional Plan - Monthly",
-        },
-        {
-          id: 2,
-          invoiceNumber: "INV-2024-002",
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60),
-          amount: 49,
-          status: "paid",
-          downloadUrl: "/invoices/inv-2024-002.pdf",
-          description: "Professional Plan - Monthly",
-        },
-        {
-          id: 3,
-          invoiceNumber: "INV-2024-003",
-          date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5),
-          amount: 49,
-          status: "pending",
-          description: "Professional Plan - Monthly",
-        },
-      ];
+      const response = await fetch(`/api/subscription/invoices?tenantId=${tenantId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoices');
+      }
+      return response.json();
     },
+    enabled: !!tenantId,
   });
 
   // Billing Mutation

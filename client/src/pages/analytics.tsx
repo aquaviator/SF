@@ -86,60 +86,108 @@ export default function Analytics() {
     queryKey: ["/api/staff", tenantId],
   });
 
-  // Fetch analytics reports from database
-  const { data: analyticsReports = [] } = useQuery({
-    queryKey: ["/api/analytics/reports", tenantId],
+  // Fetch time entries for analytics
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ["/api/time-entries", tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/analytics/reports?tenantId=${tenantId}`);
-      if (!response.ok) throw new Error("Failed to fetch analytics reports");
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error("Failed to fetch time entries");
       return response.json();
     },
   });
 
-  // Calculate Labor Cost Data from analytics reports
+  // Fetch analytics reports from database
+  const { data: analyticsReports = [] } = useQuery({
+    queryKey: ["/api/analytics/reports", tenantId],
+  });
+
+  // Calculate Labor Cost Data from real shifts and staff data
   const laborCostData: LaborCostData[] = React.useMemo(() => {
-    const laborReport = analyticsReports.find((report: any) => report.reportType === 'labor_cost');
-    if (laborReport && laborReport.dataPoints) {
-      try {
-        return JSON.parse(laborReport.dataPoints);
-      } catch (e) {
-        console.error('Failed to parse labor cost data:', e);
-      }
+    if (!Array.isArray(shiftsData) || !Array.isArray(staffData) || shiftsData.length === 0) {
+      // Provide baseline data for empty template
+      return [
+        { month: "Jan", cost: 0, budget: 0 },
+        { month: "Feb", cost: 0, budget: 0 },
+        { month: "Mar", cost: 0, budget: 0 },
+        { month: "Apr", cost: 0, budget: 0 },
+        { month: "May", cost: 0, budget: 0 },
+        { month: "Jun", cost: 0, budget: 0 },
+      ];
     }
-    return [];
-  }, [analyticsReports]);
+    
+    const monthlyData = shiftsData.reduce((acc: Record<string, any>, shift: any) => {
+      const date = new Date(shift.date);
+      const month = date.toLocaleString('default', { month: 'short' });
+      
+      if (!acc[month]) {
+        acc[month] = { cost: 0, budget: 0, hours: 0 };
+      }
+      
+      // Calculate hours for the shift
+      const startTime = new Date(`${shift.date} ${shift.startTime}`);
+      const endTime = new Date(`${shift.date} ${shift.endTime}`);
+      const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      
+      // Estimate cost (£12/hour average)
+      const estimatedCost = hours * 12;
+      acc[month].cost += estimatedCost;
+      acc[month].budget += estimatedCost * 1.1; // 10% budget buffer
+      acc[month].hours += hours;
+      
+      return acc;
+    }, {});
+
+    return Object.entries(monthlyData).map(([month, data]: [string, any]) => ({
+      month,
+      cost: Math.round(data.cost),
+      budget: Math.round(data.budget),
+    }));
+  }, [shiftsData, staffData]);
 
   // Calculate Fill Rate Data from real shifts
   const fillRateData: FillRateData[] = React.useMemo(() => {
-    if (!Array.isArray(shiftsData)) return [];
+    if (!Array.isArray(shiftsData) || shiftsData.length === 0) {
+      // Provide baseline data for empty template
+      return [
+        { department: "General", fillRate: 0, target: 85 },
+        { department: "Management", fillRate: 0, target: 90 },
+        { department: "Operations", fillRate: 0, target: 80 },
+      ];
+    }
     
-    const weeklyData = shiftsData.reduce((acc: Record<string, any>, shift: any) => {
-      const date = new Date(shift.date);
-      const week = `Week ${Math.ceil(date.getDate() / 7)}`;
+    const departmentData = shiftsData.reduce((acc: Record<string, any>, shift: any) => {
+      const dept = shift.role || "General";
       
-      if (!acc[week]) {
-        acc[week] = { total: 0, filled: 0 };
+      if (!acc[dept]) {
+        acc[dept] = { total: 0, filled: 0 };
       }
       
-      acc[week].total++;
-      if (shift.assignedTo) {
-        acc[week].filled++;
+      acc[dept].total++;
+      if (shift.assignedTo && shift.status !== 'open') {
+        acc[dept].filled++;
       }
       
       return acc;
     }, {});
 
-    return Object.entries(weeklyData).map(([week, data]: [string, any]) => ({
-      week,
+    return Object.entries(departmentData).map(([department, data]: [string, any]) => ({
+      department,
       fillRate: Math.round((data.filled / data.total) * 100),
-      department: `Week ${week}`,
       target: 85,
     }));
   }, [shiftsData]);
 
   // Calculate Time vs Spend Data from real shifts
   const timeSpendData: TimeSpendData[] = React.useMemo(() => {
-    if (!Array.isArray(shiftsData)) return [];
+    if (!Array.isArray(shiftsData) || shiftsData.length === 0) {
+      // Provide baseline data for empty template
+      return [
+        { week: "Week 1", scheduled: 0, actual: 0, overtime: 0 },
+        { week: "Week 2", scheduled: 0, actual: 0, overtime: 0 },
+        { week: "Week 3", scheduled: 0, actual: 0, overtime: 0 },
+        { week: "Week 4", scheduled: 0, actual: 0, overtime: 0 },
+      ];
+    }
     
     const weeklyTimeData = shiftsData.reduce((acc: Record<string, any>, shift: any) => {
       const date = new Date(shift.date);

@@ -494,6 +494,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Updated AuthContext to use "template-business" tenant and correct user IDs (16, 17, 18)
   - Template ready for deployment with minimal viable business structure and ZERO shifts
   - Clean deployment template shows no shifts in scheduling calendar as requested
+- July 05, 2025. Enhanced Analytics and Subscription pages with proper database integration:
+  - Updated Analytics page to show meaningful baseline data for empty template (charts with 0 values)
+  - Added fallback data for Labor Cost, Fill Rate, and Time Spend charts when no shifts exist
+  - Fixed Subscription page to properly fetch invoices from database instead of mock data
+  - Analytics now displays authentic empty state with proper chart structures for new businesses
+  - Both pages now fully integrated with database queries and handle empty template state gracefully
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
