@@ -129,7 +129,8 @@ export default function Dashboard() {
   // Calculate staff dashboard statistics
   const calculateStaffStats = (): DashboardStats[] => {
     const userId = parseInt(user?.id || "1");
-    const myShifts = shifts.filter(shift => shift.assignedTo === userId);
+    // Only count confirmed shifts, not pending assignments
+    const myShifts = shifts.filter(shift => shift.assignedTo === userId && shift.status === "confirmed");
     const thisWeekMyShifts = myShifts.filter(shift => isThisWeek(parseISO(shift.date)));
     const availableOpportunities = opportunities.filter(opp => opp.isActive);
     const myRequests = swapRequests.filter(req => req.requesterId === userId && req.status === "pending");
@@ -338,6 +339,15 @@ export default function Dashboard() {
                         </div>
                       )}
                     </div>
+                    {/* Add descriptive text for staff dashboard */}
+                    {role === "staff" && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {stat.title === "My Shifts" && "Your confirmed upcoming shifts"}
+                        {stat.title === "This Week" && "Shifts scheduled for this week"}
+                        {stat.title === "Available" && "Open opportunities you can claim"}
+                        {stat.title === "Requests" && "Your pending swap requests"}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
