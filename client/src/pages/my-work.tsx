@@ -1176,17 +1176,40 @@ export default function MyWork() {
   const calculateAttendanceRate = () => {
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlyShifts = shifts.filter(shift => {
+    
+    // Get all past shifts (before today) in this month
+    const today_start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const pastShifts = shifts.filter(shift => {
       const shiftDate = new Date(shift.date);
-      return shiftDate >= startOfMonth && shiftDate <= today;
+      return shiftDate >= startOfMonth && shiftDate < today_start;
     });
     
-    if (monthlyShifts.length === 0) return "100.0";
+
     
-    const attendedShifts = monthlyShifts.filter(shift => 
-      shift.status === "completed" || shift.status === "clocked_out"
-    );
-    const rate = (attendedShifts.length / monthlyShifts.length) * 100;
+    if (pastShifts.length === 0) {
+      // If no past shifts this month, but we have upcoming shifts, show 100%
+      const upcomingShifts = shifts.filter(shift => {
+        const shiftDate = new Date(shift.date);
+        return shiftDate >= today;
+      });
+      return upcomingShifts.length > 0 ? "100.0" : "0.0";
+    }
+    
+    // Count attended shifts (completed, clocked_out, or with time entries)
+    const attendedShifts = pastShifts.filter(shift => {
+      if (shift.status === "completed" || shift.status === "clocked_out") return true;
+      
+      // Check if there are time entries for this shift or any time entry on this date
+      const shiftDate = shift.date;
+      const hasTimeEntry = (timeEntries || []).some((entry: any) => {
+        const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+        return entry.shiftId === shift.id || entryDate === shiftDate;
+      });
+      
+      return hasTimeEntry;
+    });
+    
+    const rate = (attendedShifts.length / pastShifts.length) * 100;
     return rate.toFixed(1);
   };
 

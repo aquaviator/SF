@@ -448,6 +448,7 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Improved shift status validation preventing swaps on past shifts with clear error messaging
   - Updated clock-in/out controls to reflect actual time entry status from database
   - Fixed all Date object rendering errors in React components with proper time formatting
+  - Fixed attendance rate calculation bug - corrected date comparison logic to exclude current day from past shifts
   - Staff dashboard now provides reliable data confidence with authentic time tracking integration
 
 ## User Preferences
