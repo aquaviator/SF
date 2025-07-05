@@ -37,7 +37,9 @@ import {
   CheckCircle,
   Plus,
   Eye,
-  BarChart3
+  BarChart3,
+  Loader2,
+  ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -90,6 +92,167 @@ interface RecentActivity {
   description: string;
   timestamp: Date;
   user: string;
+}
+
+// Monthly Shift Overview Component
+interface MonthlyShiftOverviewProps {
+  tenantId: string;
+}
+
+function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
+  const [selectedWeek, setSelectedWeek] = useState(0);
+  
+  const { data: shifts = [], isLoading } = useQuery({
+    queryKey: ['/api/shifts', tenantId],
+    queryFn: async () => {
+      const response = await apiRequest(`/api/shifts?tenantId=${tenantId}`);
+      return response;
+    },
+  });
+
+  // Get the next 4 weeks starting from today
+  const getWeeksData = () => {
+    const today = new Date();
+    const weeks = [];
+    
+    for (let i = 0; i < 4; i++) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() + (i * 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      const weekShifts = shifts.filter((shift: any) => {
+        const shiftDate = new Date(shift.date);
+        return shiftDate >= weekStart && shiftDate <= weekEnd;
+      });
+      
+      const allocated = weekShifts.filter((s: any) => s.status === 'assigned' || s.status === 'confirmed').length;
+      const confirmed = weekShifts.filter((s: any) => s.status === 'confirmed').length;
+      const needsAttention = weekShifts.filter((s: any) => s.status === 'declined' || s.status === 'open').length;
+      const open = weekShifts.filter((s: any) => s.status === 'open').length;
+      
+      weeks.push({
+        weekStart,
+        weekEnd,
+        total: weekShifts.length,
+        allocated,
+        confirmed,
+        needsAttention,
+        open,
+        shifts: weekShifts
+      });
+    }
+    
+    return weeks;
+  };
+
+  const weeksData = getWeeksData();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2 text-sm text-muted-foreground">Loading shift overview...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Week tabs */}
+      <div className="flex flex-wrap gap-2">
+        {weeksData.map((week, index) => (
+          <button
+            key={index}
+            onClick={() => setSelectedWeek(index)}
+            className={`px-3 py-2 text-sm rounded-md transition-colors ${
+              selectedWeek === index
+                ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Week {index + 1}: {week.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {week.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </button>
+        ))}
+      </div>
+
+      {/* Selected week overview */}
+      {weeksData[selectedWeek] && (
+        <div className="space-y-4">
+          {/* Week summary cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="text-2xl font-bold text-blue-700">{weeksData[selectedWeek].total}</div>
+              <div className="text-sm text-blue-600">Total Shifts</div>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="text-2xl font-bold text-green-700">{weeksData[selectedWeek].confirmed}</div>
+              <div className="text-sm text-green-600">Confirmed</div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="text-2xl font-bold text-yellow-700">{weeksData[selectedWeek].allocated - weeksData[selectedWeek].confirmed}</div>
+              <div className="text-sm text-yellow-600">Assigned (Pending)</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="text-2xl font-bold text-red-700">{weeksData[selectedWeek].needsAttention}</div>
+              <div className="text-sm text-red-600">Needs Attention</div>
+            </div>
+          </div>
+
+          {/* Daily breakdown */}
+          {weeksData[selectedWeek].shifts.length > 0 ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium mb-3">Daily Breakdown</h4>
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-2 text-sm">
+                {Array.from({ length: 7 }, (_, dayIndex) => {
+                  const dayDate = new Date(weeksData[selectedWeek].weekStart);
+                  dayDate.setDate(dayDate.getDate() + dayIndex);
+                  const dayShifts = weeksData[selectedWeek].shifts.filter((shift: any) => {
+                    const shiftDate = new Date(shift.date);
+                    return shiftDate.toDateString() === dayDate.toDateString();
+                  });
+                  
+                  return (
+                    <div key={dayIndex} className="bg-white rounded p-2 border">
+                      <div className="font-medium text-xs text-gray-600">
+                        {dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}
+                      </div>
+                      <div className="text-xs mt-1">
+                        {dayShifts.length > 0 ? (
+                          dayShifts.map((shift: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between">
+                              <span className="truncate">{shift.role}</span>
+                              <Badge 
+                                variant={
+                                  shift.status === 'confirmed' ? 'default' :
+                                  shift.status === 'assigned' ? 'secondary' :
+                                  shift.status === 'declined' ? 'destructive' : 'outline'
+                                }
+                                className="text-xs"
+                              >
+                                {shift.status}
+                              </Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-gray-400">No shifts</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              <Calendar className="h-8 w-8 mx-auto mb-2" />
+              <p>No shifts scheduled for this week</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function OwnerDashboard() {
@@ -380,6 +543,24 @@ export default function OwnerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Shift Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Month Ahead - Shift Overview
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MonthlyShiftOverview tenantId={tenantId} />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Staff Status */}
