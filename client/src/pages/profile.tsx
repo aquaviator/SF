@@ -135,7 +135,7 @@ export default function Profile() {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
         email: userData.email,
-        photoUrl: pendingPhotoUrl || null
+        photoUrl: pendingPhotoUrl === '' ? '' : pendingPhotoUrl
       };
       
       console.log('📤 EXECUTING_PHOTO_MUTATION', { 
@@ -149,12 +149,13 @@ export default function Profile() {
       
       updateMutation.mutate(updateData);
       setPendingPhotoUrl(null); // Clear pending photo
-    } else {
+    } else if (pendingPhotoUrl !== null) {
       console.log('❌ PHOTO_UPLOAD_BLOCKED', {
         hasPendingPhoto: pendingPhotoUrl !== null,
         hasUserData: !!userData,
         hasUserId: !!user?.id,
-        pendingPhotoLength: pendingPhotoUrl?.length || 0
+        pendingPhotoLength: pendingPhotoUrl?.length || 0,
+        pendingPhotoUrl: pendingPhotoUrl ? 'HAS_VALUE' : 'NULL_OR_EMPTY'
       });
     }
   }, [pendingPhotoUrl, userData, user?.id]);
