@@ -1,9 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Helper function to calculate days between dates
 function calculateRequestDays(startDate: string, endDate: string): number {
@@ -97,6 +99,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(shifts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch shifts" });
+    }
+  });
+
+  app.get("/api/shifts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const shift = await storage.getShift(id);
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+      res.json(shift);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch shift" });
     }
   });
 
@@ -481,6 +496,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         action: "denied", 
         message: "Failed to process swap request" 
+      });
+    }
+  });
+
+  // New policy-driven cancel action endpoint
+  app.post("/api/shift-actions/request-cancel", async (req, res) => {
+    try {
+      const { tenantId, shiftId, requestedBy, reason } = req.body;
+      
+      if (!tenantId || !shiftId || !requestedBy) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // For now, directly update the shift status to cancelled
+      const shift = await storage.getShift(parseInt(shiftId));
+      if (!shift) {
+        return res.status(404).json({ 
+          success: false, 
+          action: "denied", 
+          message: "Shift not found" 
+        });
+      }
+
+      // Check if it's a past shift
+      const shiftDate = new Date(shift.date);
+      const now = new Date();
+      if (shiftDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          action: "denied", 
+          message: "Cannot cancel a past shift" 
+        });
+      }
+
+      // Update shift status to cancelled using existing imports
+      await db.update(shifts).set({ status: "cancelled" }).where(eq(shifts.id, parseInt(shiftId)));
+
+      res.status(200).json({
+        success: true,
+        action: "approved",
+        message: "Shift cancelled successfully"
+      });
+    } catch (error) {
+      console.error("Error processing cancel request:", error);
+      res.status(500).json({ 
+        success: false, 
+        action: "denied", 
+        message: "Failed to process cancel request" 
       });
     }
   });
