@@ -2508,14 +2508,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const unfilled = filteredShifts.filter(s => s.status === "open" || s.status === "declined").length;
       const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;
       
-      // Get detailed breakdown of problematic shifts
-      const openShifts = filteredShifts.filter(s => s.status === "open");
-      const declinedShifts = filteredShifts.filter(s => s.status === "declined");
-      const assignedShifts = filteredShifts.filter(s => s.status === "assigned");
-      const otherProblematicShifts = filteredShifts.filter(s => 
-        !["confirmed", "open", "declined", "assigned"].includes(s.status)
-      );
-      
       console.log("📊 COVERAGE_CALCULATION_DEBUG", {
         tenantId,
         totalFiltered: filteredShifts.length,
@@ -2526,19 +2518,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         statusBreakdown: filteredShifts.reduce((acc, s) => {
           acc[s.status] = (acc[s.status] || 0) + 1;
           return acc;
-        }, {}),
-        problemDetails: {
-          openShifts: openShifts.length,
-          declinedShifts: declinedShifts.length, 
-          assignedShifts: assignedShifts.length,
-          otherProblematic: otherProblematicShifts.length,
-          detailedBreakdown: {
-            open: openShifts.map(s => ({ id: s.id, date: s.date, role: s.role })),
-            declined: declinedShifts.map(s => ({ id: s.id, date: s.date, role: s.role })),
-            assigned: assignedShifts.map(s => ({ id: s.id, date: s.date, role: s.role })),
-            other: otherProblematicShifts.map(s => ({ id: s.id, date: s.date, role: s.role, status: s.status }))
-          }
-        }
         }, {} as Record<string, number>)
       });
       

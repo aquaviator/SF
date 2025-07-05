@@ -125,7 +125,6 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
       
       const allocated = weekShifts.filter((s: any) => s.status === 'assigned' || s.status === 'confirmed').length;
       const confirmed = weekShifts.filter((s: any) => s.status === 'confirmed').length;
-      const needsAttention = weekShifts.filter((s: any) => s.status === 'declined' || s.status === 'open').length;
       const open = weekShifts.filter((s: any) => s.status === 'open').length;
       
       weeks.push({
@@ -134,7 +133,6 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
         total: weekShifts.length,
         allocated,
         confirmed,
-        needsAttention,
         open,
         shifts: weekShifts
       });
@@ -211,9 +209,9 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
               <div className="text-2xl font-bold text-yellow-700">{weeksData[selectedWeek].allocated - weeksData[selectedWeek].confirmed}</div>
               <div className="text-sm text-yellow-600">Assigned (Pending)</div>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-red-700">{weeksData[selectedWeek].needsAttention}</div>
-              <div className="text-sm text-red-600">Needs Attention</div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="text-2xl font-bold text-gray-700">{weeksData[selectedWeek].open}</div>
+              <div className="text-sm text-gray-600">Open Shifts</div>
             </div>
           </div>
 
