@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If userId provided, filter out opportunities on dates when user already has shifts
       if (userId) {
-        const userShifts = await storage.getShiftsByUser(parseInt(userId), tenantId);
+        const userShifts = await storage.getShiftsByUser(tenantId, parseInt(userId));
         const userShiftDates = new Set(
           userShifts
             .filter(shift => shift.status === "assigned" || shift.status === "confirmed")

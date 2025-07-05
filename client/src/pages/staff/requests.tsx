@@ -37,8 +37,12 @@ export default function StaffRequests() {
     queryFn: async () => {
       console.log("🔍 FETCHING_OPPORTUNITIES", { tenantId, userId: user?.id, timestamp: new Date() });
       const response = await fetch(`/api/opportunities?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) {
+        console.error("❌ OPPORTUNITIES_ERROR", { status: response.status, statusText: response.statusText });
+        return [];
+      }
       const data = await response.json();
-      console.log("✅ OPPORTUNITIES_RECEIVED", { count: data.length, opportunities: data, timestamp: new Date() });
+      console.log("✅ OPPORTUNITIES_RECEIVED", { opportunities: data, timestamp: new Date() });
       return data;
     }
   });
