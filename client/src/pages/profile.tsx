@@ -345,7 +345,26 @@ export default function Profile() {
                   currentImage={userData?.photoUrl}
                   onImageChange={(photoUrl) => {
                     console.log('🎯 INLINE_CALLBACK_TRIGGERED', { photoUrl: photoUrl?.substring(0, 50) });
-                    handleDirectPhotoChange(photoUrl);
+                    
+                    // Update form immediately with the new photo
+                    form.setValue('photoUrl', photoUrl);
+                    
+                    // Also update via API immediately
+                    if (userData && user?.id) {
+                      const updateData = {
+                        firstName: userData.firstName || "",
+                        lastName: userData.lastName || "",
+                        email: userData.email,
+                        photoUrl: photoUrl === '' ? '' : photoUrl
+                      };
+                      
+                      console.log('📤 IMMEDIATE_PHOTO_UPDATE', { 
+                        photoLength: photoUrl?.length || 0,
+                        isDelete: photoUrl === ''
+                      });
+                      
+                      updateMutation.mutate(updateData);
+                    }
                   }}
                   size="md"
                 />
