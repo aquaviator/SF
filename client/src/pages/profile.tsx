@@ -32,9 +32,7 @@ export default function Profile() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   
 
 
@@ -122,15 +120,11 @@ export default function Profile() {
     },
   });
 
-  // Direct photo handler with immediate processing
-  const handleDirectPhotoChange = useCallback((photoUrl: string) => {
-    console.log('🎯 PHOTO_RECEIVED_DIRECT', { 
-      photoUrl: photoUrl ? photoUrl.substring(0, 50) + '...' : 'DELETED',
-      hasUserData: !!userData,
-      userId: user?.id
-    });
-    
-    if (userData && user?.id) {
+  // Photo upload mutation with proper error handling
+  const photoUploadMutation = useMutation({
+    mutationFn: async (photoUrl: string) => {
+      if (!userData || !user?.id) throw new Error("User data not available");
+      
       const updateData = {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
@@ -138,152 +132,47 @@ export default function Profile() {
         photoUrl: photoUrl === '' ? '' : photoUrl
       };
       
-      console.log('📤 DIRECT_PHOTO_MUTATION', { 
+      console.log('📤 PHOTO_MUTATION_START', { 
         photoLength: photoUrl?.length || 0,
         isDelete: photoUrl === ''
       });
       
-      updateMutation.mutate(updateData);
-    } else {
-      console.log('❌ DIRECT_PHOTO_BLOCKED', {
-        hasUserData: !!userData,
-        hasUserId: !!user?.id
-      });
-      setPendingPhotoUrl(photoUrl || null);
-    }
-  }, [userData, user?.id, updateMutation]);
-
-  // Handle pending photo upload/deletion when user data is available
-  useEffect(() => {
-    if (pendingPhotoUrl !== null && userData && user?.id) {
-      console.log('🚀 PROCESSING_PENDING_PHOTO', { 
-        pendingPhotoLength: pendingPhotoUrl?.length || 0,
-        hasUserData: !!userData,
-        userId: user.id,
-        userDataId: userData.id,
-        isDelete: pendingPhotoUrl === ''
+      const response = await apiRequest('PUT', `/api/users/${user.id}`, updateData);
+      if (!response.ok) throw new Error("Failed to update profile photo");
+      
+      return response.json();
+    },
+    onMutate: () => {
+      setIsUploadingPhoto(true);
+    },
+    onSuccess: () => {
+      setIsUploadingPhoto(false);
+      toast({
+        title: "Success",
+        description: "Profile photo updated successfully!",
       });
       
-      const updateData = {
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email,
-        photoUrl: pendingPhotoUrl === '' ? '' : pendingPhotoUrl
-      };
-      
-      console.log('📤 EXECUTING_PHOTO_MUTATION', { 
-        photoLength: pendingPhotoUrl?.length || 0,
-        isDelete: pendingPhotoUrl === '',
-        updateData: { 
-          ...updateData, 
-          photoUrl: pendingPhotoUrl ? pendingPhotoUrl.substring(0, 50) + '...' : 'DELETED' 
-        }
-      });
-      
-      updateMutation.mutate(updateData);
-      setPendingPhotoUrl(null); // Clear pending photo
-    } else if (pendingPhotoUrl !== null) {
-      console.log('❌ PHOTO_UPLOAD_BLOCKED', {
-        hasPendingPhoto: pendingPhotoUrl !== null,
-        hasUserData: !!userData,
-        hasUserId: !!user?.id,
-        pendingPhotoLength: pendingPhotoUrl?.length || 0,
-        pendingPhotoUrl: pendingPhotoUrl ? 'HAS_VALUE' : 'NULL_OR_EMPTY'
-      });
-    }
-  }, [pendingPhotoUrl, userData, user?.id]);
-
-  // Photo upload functionality
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "Photo must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
+      // Refresh user data
+      if (user?.id) {
+        apiRequest('GET', `/api/users/${user.id}`)
+          .then(res => res.json())
+          .then(data => setUserData(data))
+          .catch(console.error);
       }
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error", 
-          description: "Please select a valid image file",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setPhotoFile(file);
-    }
-  };
-
-  const handlePhotoUrlChange = (photoUrl: string) => {
-    console.log('🔄 HANDLE_PHOTO_URL_CHANGE_CALLED', { 
-      hasUserData: !!userData, 
-      hasUserId: !!user?.id,
-      photoUrlLength: photoUrl?.length
-    });
-    
-    if (userData && user?.id) {
-      console.log('📸 PHOTO_URL_CHANGE', { photoUrl: photoUrl?.substring(0, 50) + '...', userId: user.id });
-      
-      // Update user data with new photo URL
-      const updatedData = { ...userData, photoUrl };
-      setUserData(updatedData);
-      
-      // Also update the backend immediately
-      const updateData = {
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email,
-        photoUrl: photoUrl
-      };
-      
-      console.log('📤 PROFILE_UPDATE_MUTATION', { updateData: { ...updateData, photoUrl: updateData.photoUrl?.substring(0, 50) + '...' } });
-      updateMutation.mutate(updateData);
-    } else {
-      console.error('❌ PHOTO_UPLOAD_BLOCKED', { userData: !!userData, userId: !!user?.id });
-    }
-  };
-
-  const uploadPhoto = async () => {
-    if (!photoFile) return;
-    
-    setUploadingPhoto(true);
-    try {
-      const formData = new FormData();
-      formData.append('photo', photoFile);
-      formData.append('userId', user?.id?.toString() || '');
-      
-      const response = await apiRequest('POST', `/api/users/${user?.id}/photo`, formData);
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Success",
-          description: "Profile photo updated successfully!",
-        });
-        setPhotoFile(null);
-        // Refresh user data to get new photo URL
-        if (user?.id) {
-          const updatedUser = await apiRequest('GET', `/api/users/${user.id}`);
-          const userData = await updatedUser.json();
-          setUserData(userData);
-        }
-      }
-    } catch (error) {
+    },
+    onError: (error: Error) => {
+      setIsUploadingPhoto(false);
       toast({
         title: "Error",
-        description: "Failed to upload photo",
+        description: error.message || "Failed to update profile photo",
         variant: "destructive",
       });
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
+    },
+  });
+
+
+
+
 
   const onSubmit = (data: ProfileFormData) => {
     updateMutation.mutate(data);
@@ -344,27 +233,14 @@ export default function Profile() {
                   type="avatar"
                   currentImage={userData?.photoUrl}
                   onImageChange={(photoUrl) => {
-                    console.log('🎯 INLINE_CALLBACK_TRIGGERED', { photoUrl: photoUrl?.substring(0, 50) });
+                    console.log('🎯 PHOTO_UPLOAD_CALLBACK_TRIGGERED', { 
+                      photoUrl: photoUrl?.substring(0, 50),
+                      hasUserData: !!userData,
+                      hasUserId: !!user?.id
+                    });
                     
-                    // Update form immediately with the new photo
-                    form.setValue('photoUrl', photoUrl);
-                    
-                    // Also update via API immediately
-                    if (userData && user?.id) {
-                      const updateData = {
-                        firstName: userData.firstName || "",
-                        lastName: userData.lastName || "",
-                        email: userData.email,
-                        photoUrl: photoUrl === '' ? '' : photoUrl
-                      };
-                      
-                      console.log('📤 IMMEDIATE_PHOTO_UPDATE', { 
-                        photoLength: photoUrl?.length || 0,
-                        isDelete: photoUrl === ''
-                      });
-                      
-                      updateMutation.mutate(updateData);
-                    }
+                    // Trigger the photo upload mutation
+                    photoUploadMutation.mutate(photoUrl);
                   }}
                   size="md"
                 />
