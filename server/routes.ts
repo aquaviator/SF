@@ -3673,7 +3673,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await db.insert(subscriptions).values({
         tenantId: newTenant.subdomain,
+        planId: planDetails.id.toString(), // Convert to string as required by schema
         status: 'trial',
+        startDate: startDate,
+        endDate: endDate,
         seatsIncluded: planDetails.minSeats,
         pricePerSeat: planDetails.pricePerSeat,
         monthlyTotal: planDetails.minSeats * planDetails.pricePerSeat,
