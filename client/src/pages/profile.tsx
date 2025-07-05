@@ -93,6 +93,13 @@ export default function Profile() {
         photoUrl: data.photoUrl,
       };
       
+      console.log('🚀 API_REQUEST_PAYLOAD', { 
+        endpoint: `/api/users/${user?.id}`, 
+        hasPhotoUrl: !!fullUpdateData.photoUrl,
+        photoUrlLength: fullUpdateData.photoUrl?.length,
+        photoUrlPreview: fullUpdateData.photoUrl?.substring(0, 50) + '...'
+      });
+      
       return apiRequest("PUT", `/api/users/${user?.id}`, fullUpdateData);
     },
     onSuccess: () => {
@@ -142,17 +149,22 @@ export default function Profile() {
 
   const handlePhotoUrlChange = (photoUrl: string) => {
     if (userData && user?.id) {
+      console.log('📸 PHOTO_URL_CHANGE', { photoUrl: photoUrl?.substring(0, 50) + '...', userId: user.id });
+      
       // Update user data with new photo URL
       const updatedData = { ...userData, photoUrl };
       setUserData(updatedData);
       
       // Also update the backend immediately
-      updateMutation.mutate({
+      const updateData = {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
         email: userData.email,
         photoUrl: photoUrl
-      });
+      };
+      
+      console.log('📤 PROFILE_UPDATE_MUTATION', { updateData: { ...updateData, photoUrl: updateData.photoUrl?.substring(0, 50) + '...' } });
+      updateMutation.mutate(updateData);
     }
   };
 
