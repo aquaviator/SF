@@ -422,6 +422,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Removed redundant photo upload API endpoint and FormData handling that was causing owner upload failures
   - Profile avatar upload now works consistently for both owner and staff users using same Base64 approach
   - Sidebar avatar updates immediately after successful profile mutation with proper cache invalidation
+- July 05, 2025. Implemented custom ShiftFlo branding throughout application:
+  - Updated SidebarNav header to display ShiftFlo logo and "ShiftFlo" text instead of "Agent Shifts"
+  - Updated BrandedHeader to use ShiftFlo logo as fallback when business logo unavailable
+  - Changed all "powered by shiftflo" text to "powered by ShiftFlo" for consistent branding
+  - Imported and used user-provided ShiftFlo logo asset across all branding components
+  - Application now displays custom branding instead of generic "Agent Shifts" placeholder
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

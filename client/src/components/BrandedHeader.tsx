@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
+import shiftfloLogo from "@assets/ChatGPT Image Jul 5, 2025, 12_57_47 PM_1751716679541.png";
 
 export function BrandedHeader() {
   const { tenantId } = useAuth();
@@ -38,24 +39,24 @@ export function BrandedHeader() {
                   {businessName}
                 </h1>
                 <p className="text-xs text-gray-500 leading-tight">
-                  powered by shiftflo
+                  powered by ShiftFlo
                 </p>
               </div>
             </div>
           ) : (
             <div className="flex items-center space-x-3">
-              {/* Default logo placeholder */}
-              <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {businessName.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              {/* ShiftFlo logo fallback */}
+              <img
+                src={shiftfloLogo}
+                alt="ShiftFlo"
+                className="h-10 w-auto object-contain"
+              />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold text-gray-900 leading-tight">
                   {businessName}
                 </h1>
                 <p className="text-xs text-gray-500 leading-tight">
-                  powered by shiftflo
+                  powered by ShiftFlo
                 </p>
               </div>
             </div>
@@ -68,7 +69,7 @@ export function BrandedHeader() {
             {businessName}
           </h1>
           <p className="text-xs text-gray-500">
-            powered by shiftflo
+            powered by ShiftFlo
           </p>
         </div>
 
