@@ -78,6 +78,7 @@ function ProtectedRoutes() {
               <Route path="/staff/requests" component={StaffRequests} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
+              <Route path="/profile" component={Profile} />
               <Route component={NotFound} />
             </Switch>
           </div>
