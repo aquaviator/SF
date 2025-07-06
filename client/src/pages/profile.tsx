@@ -300,9 +300,24 @@ export default function Profile() {
   // Handle business logo upload
   const handleBusinessLogoChange = async (imageDataUrl: string) => {
     try {
-      const response = await apiRequest("PUT", `/api/business-profile?tenantId=${tenantId}`, {
+      if (!businessData) {
+        throw new Error("Business data not available");
+      }
+
+      // Send complete business profile with updated logo
+      const updateData = {
+        tenantId: businessData.tenantId,
+        name: businessData.name,
+        address: businessData.address || "",
+        phone: businessData.phone || "",
+        email: businessData.email || "",
+        website: businessData.website || "",
+        businessType: businessData.businessType || "",
+        description: businessData.description || "",
         logoUrl: imageDataUrl,
-      });
+      };
+
+      const response = await apiRequest("PUT", `/api/business-profile`, updateData);
       
       if (response.ok) {
         const updatedBusiness = await response.json();

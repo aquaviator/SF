@@ -23,6 +23,11 @@ type SwapRequestFormData = z.infer<typeof swapRequestFormSchema>;
 export default function SwapRequests() {
   const { tenantId, user } = useRole();
   
+  // Early return if no tenantId
+  if (!tenantId || !user) {
+    return <div>Loading...</div>;
+  }
+  
   const {
     data: swapRequests = [],
     isLoading,
@@ -34,7 +39,7 @@ export default function SwapRequests() {
     handleSubmit,
   } = useCrud<SwapRequest>({
     queryKey: ["swapRequests", tenantId],
-    endpoint: `/api/swap-requests?tenantId=${tenantId}`,
+    endpoint: `/api/swap-requests?tenantId=${tenantId || ''}`,
   });
 
   const form = useForm<SwapRequestFormData>({
@@ -67,8 +72,8 @@ export default function SwapRequests() {
 
   const onSubmit = (data: SwapRequestFormData) => {
     const submitData = {
-      tenantId,
-      requesterId: parseInt(user?.id || "1"),
+      tenantId: tenantId!, // Safe after early return check
+      requesterId: user.id, // Safe after early return check 
       originalShiftId: parseInt(data.originalShiftId),
       targetShiftId: data.targetShiftId ? parseInt(data.targetShiftId) : null,
       status: "pending" as const,
