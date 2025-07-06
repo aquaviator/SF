@@ -1,4 +1,4 @@
-import { X, HelpCircle } from "lucide-react";
+import { X, HelpCircle, LogOut } from "lucide-react";
 // Mobile cache refresh: 2025-07-06 10:21
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ interface MoreDrawerProps {
 }
 
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
-  const { role, user, tenantId, switchRole } = useAuth();
+  const { role, user, tenantId, switchRole, logout } = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
   const moreMenuItems = getMoreMenuForRole(role);
 
@@ -67,6 +67,13 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
       return `${user.firstName} ${user.lastName}`;
     }
     return user.email?.split('@')[0] || "User";
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+    window.location.href = '/login';
   };
 
   // Focus trap and escape key handling
@@ -249,6 +256,23 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
             <HelpCircle className="w-5 h-5 text-gray-500" />
             <span className="font-medium">Help & Support</span>
           </Link>
+
+          {/* Logout Button */}
+          <Separator className="my-4" />
+          
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center gap-3 p-3 rounded-lg transition-colors w-full",
+              "text-red-600 hover:text-red-700 hover:bg-red-50",
+              "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+              "min-h-[48px]"
+            )}
+            aria-label="Log out of account"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Log Out</span>
+          </button>
         </nav>
       </div>
     </div>

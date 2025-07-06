@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 import { useState, useEffect } from "react";
 import ShiftFloLogo from "@/components/ShiftFloLogo";
+import { LogOut } from "lucide-react";
 
 export function SidebarNav() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const [imgErrored, setImgErrored] = useState(false);
@@ -110,6 +111,12 @@ export function SidebarNav() {
       return `${user.firstName} ${user.lastName}`;
     }
     return user.email?.split("@")[0] || "User";
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/login';
   };
 
   return (
@@ -236,6 +243,17 @@ export function SidebarNav() {
               </Link>
             );
           })}
+        </div>
+
+        {/* Logout Button */}
+        <div className="border-t border-gray-200 mt-4 pt-4">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-red-600 hover:text-red-700 hover:bg-red-50 w-full"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Log Out</span>
+          </button>
         </div>
       </nav>
     </aside>
