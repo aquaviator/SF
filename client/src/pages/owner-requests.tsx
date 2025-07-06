@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Search, Calendar, Users, CheckCircle, XCircle, Clock, AlertCircle, Bell } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 
 interface HolidayRequest {
   id: number;
@@ -33,7 +33,7 @@ export default function OwnerRequestsPage() {
   const [filterText, setFilterText] = useState("");
   const [selectedTab, setSelectedTab] = useState("holiday");
   const queryClient = useQueryClient();
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
 
   console.log("OWNER REQUESTS: Loading requests dashboard...");
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Loader2, User } from "lucide-react";
@@ -15,7 +15,7 @@ interface UserType {
 }
 
 export default function ProfileSimple() {
-  const { user } = useAuth();
+  const { user } = useRole();
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);

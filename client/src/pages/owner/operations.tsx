@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
 import { dashboardApi } from "@/lib/dashboardApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +36,7 @@ interface CoverageDetailsModalProps {
 }
 
 function CoverageDetailsModal({ isOpen, onClose, coverageData }: CoverageDetailsModalProps) {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const [coverageThreshold, setCoverageThreshold] = useState(80);
@@ -377,7 +376,7 @@ interface TimeEntryModalProps {
 }
 
 function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalProps) {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
   
@@ -580,8 +579,7 @@ function BulkHolidayModal({ isOpen, onClose, pendingRequests }: BulkHolidayModal
 }
 
 export default function OwnerOperationsPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { role, tenantId, isOwner } = useRole();
+  const { user, isAuthenticated, isLoading: authLoading, role, tenantId, isOwner } = useRole();
   const [, navigate] = useLocation();
 
   // Modal visibility states

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Edit, User, Mail, Loader2, Save } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -41,7 +41,7 @@ interface UserType {
 }
 
 export default function PersonalProfile() {
-  const { user } = useAuth();
+  const { user } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [userData, setUserData] = useState<UserType | null>(null);

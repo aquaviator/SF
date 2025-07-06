@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Clock } from "@/components/Clock";
 
@@ -13,7 +13,7 @@ export function BrandedHeader({
   businessName: propBusinessName,
   businessLogoUrl: propBusinessLogoUrl,
 }: BrandedHeaderProps = {}) {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
 
   const { data: businessProfile } = useQuery({
     queryKey: ["/api/business-profile", tenantId],

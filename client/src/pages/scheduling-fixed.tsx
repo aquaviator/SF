@@ -41,7 +41,7 @@ import {
   Trash2,
   Edit
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
 import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
@@ -73,7 +73,7 @@ const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
 type EnhancedTemplateData = z.infer<typeof enhancedTemplateSchema>;
 
 export default function Scheduling() {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

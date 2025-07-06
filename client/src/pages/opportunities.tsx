@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Shift } from "@shared/schema";
 
 export default function Opportunities() {
-  const { tenantId, user } = useAuth();
+  const { tenantId, user } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   

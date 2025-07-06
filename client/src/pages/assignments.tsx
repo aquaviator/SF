@@ -9,7 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { Assignment } from "@shared/schema";
 
 const assignmentFormSchema = z.object({
@@ -22,7 +22,7 @@ const assignmentFormSchema = z.object({
 type AssignmentFormData = z.infer<typeof assignmentFormSchema>;
 
 export default function Assignments() {
-  const { tenantId, user } = useAuth();
+  const { tenantId, user } = useRole();
   
   const {
     data: assignments,

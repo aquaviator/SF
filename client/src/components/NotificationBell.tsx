@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function NotificationBell() {
-  const { role, tenantId } = useAuth();
+  const { role, tenantId } = useRole();
 
   // Fetch pending requests count for owners
   const { data: pendingRequestsCount = 0 } = useQuery({

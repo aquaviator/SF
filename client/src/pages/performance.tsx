@@ -26,7 +26,7 @@ import {
   Calendar,
   Target
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 
 interface PerformanceMetric {
   id: number;
@@ -52,7 +52,7 @@ interface ShiftData {
 }
 
 export default function Performance() {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId } = useRole();
   const [timeRange, setTimeRange] = React.useState("last-6-months");
   
   // Fetch performance metrics

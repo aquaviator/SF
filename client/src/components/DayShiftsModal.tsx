@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { Shift } from "@shared/schema";
 
 interface DayShiftsModalProps {
@@ -34,7 +34,7 @@ export function DayShiftsModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getRoleColorByTitle, getRoleLabelByTitle, getRoleInitialByTitle } = useRoleColors();
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   const [dayShifts, setDayShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);

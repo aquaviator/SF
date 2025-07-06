@@ -79,7 +79,7 @@ const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
 type EnhancedTemplateData = z.infer<typeof enhancedTemplateSchema>;
 
 export default function Scheduling() {
-  const { user, tenantId, role } = useAuth();
+  const { user, tenantId, role } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

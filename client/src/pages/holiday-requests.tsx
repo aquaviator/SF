@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { HolidayRequest } from "@shared/schema";
 
 const holidayRequestFormSchema = z.object({
@@ -25,7 +25,7 @@ const holidayRequestFormSchema = z.object({
 type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
 
 export default function HolidayRequests() {
-  const { tenantId, user } = useAuth();
+  const { tenantId, user } = useRole();
   
   // Memoized query function to fetch holiday requests with user names
   const fetchHolidayRequests = useCallback(async () => {
