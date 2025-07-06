@@ -227,24 +227,21 @@ export default function Workforce() {
     }
   };
 
-  // Get performance data from database
+  // Get performance data from database - disabled until we have proper endpoint
   const { data: timeEntries = [] } = useQuery({
-    queryKey: ["/api/time-entries", tenantId],
+    queryKey: ["/api/time-entries-all", tenantId],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/time-entries?tenantId=${tenantId}`);
-        if (!response.ok) {
-          console.warn("Time entries API error:", response.status, response.statusText);
-          return [];
-        }
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        // For workforce management, we need all tenant time entries
+        // This endpoint doesn't exist yet, so return empty array
+        console.log("WORKFORCE: Time entries endpoint disabled - requires userId parameter");
+        return [];
       } catch (error) {
         console.warn("Time entries fetch error:", error);
         return [];
       }
     },
-    enabled: !!tenantId,
+    enabled: false, // Disable until proper endpoint exists
   });
 
   const { data: shifts = [] } = useQuery({

@@ -57,6 +57,19 @@ export class StrikeService {
    * Assign a no-show strike to a user
    */
   async assignNoShowStrike(tenantId: string, userId: number, shiftId: number): Promise<void> {
+    // Check if a strike already exists for this shift by getting all user strikes and filtering
+    const userStrikes = await storage.getStaffStrikesByUser(tenantId, userId);
+    const existingStrike = userStrikes.find(strike => strike.shiftId === shiftId);
+    if (existingStrike) {
+      console.log("🔍 STRIKE_ALREADY_EXISTS", { 
+        userId, 
+        shiftId, 
+        existingStrikeId: existingStrike.id,
+        timestamp: new Date() 
+      });
+      return;
+    }
+
     // Get the policy for this tenant
     const policy = await db
       .select()

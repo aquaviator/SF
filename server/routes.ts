@@ -410,7 +410,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/staff/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertUserSchema.parse(req.body);
+      
+      // For staff updates, we only allow partial updates of specific fields
+      const staffUpdateSchema = z.object({
+        firstName: z.string().min(1, "First name is required").optional(),
+        lastName: z.string().min(1, "Last name is required").optional(),
+        email: z.string().email("Valid email is required").optional(),
+        phone: z.string().nullable().optional(),
+        address: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+        employeeId: z.string().nullable().optional(),
+        emergencyContactName: z.string().nullable().optional(),
+        emergencyContactPhone: z.string().nullable().optional(),
+        photoUrl: z.string().nullable().optional(),
+        bio: z.string().nullable().optional(),
+      });
+      
+      const validatedData = staffUpdateSchema.parse(req.body);
       const user = await storage.updateUser(id, validatedData);
       if (!user) {
         return res.status(404).json({ message: "Staff member not found" });
@@ -420,6 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      console.error("Staff update error:", error);
       res.status(500).json({ message: "Failed to update staff member" });
     }
   });

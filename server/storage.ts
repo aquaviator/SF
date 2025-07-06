@@ -209,6 +209,7 @@ export interface IStorage {
   getStaffStrike(id: number): Promise<StaffStrike | undefined>;
   getStaffStrikesByTenant(tenantId: string): Promise<StaffStrike[]>;
   getStaffStrikesByUser(tenantId: string, userId: number): Promise<StaffStrike[]>;
+  getStrikesByUserAndShift(userId: number, shiftId: number): Promise<StaffStrike[]>;
   getTotalStrikePoints(tenantId: string, userId: number): Promise<number>;
   createStaffStrike(strike: InsertStaffStrike): Promise<StaffStrike>;
   updateStaffStrike(id: number, strike: InsertStaffStrike): Promise<StaffStrike | undefined>;
@@ -2130,6 +2131,12 @@ export class DatabaseStorage implements IStorage {
   async getStaffStrikesByUser(tenantId: string, userId: number): Promise<StaffStrike[]> {
     return await database.select().from(staffStrikes).where(
       and(eq(staffStrikes.tenantId, tenantId), eq(staffStrikes.userId, userId))
+    );
+  }
+
+  async getStrikesByUserAndShift(userId: number, shiftId: number): Promise<StaffStrike[]> {
+    return await database.select().from(staffStrikes).where(
+      and(eq(staffStrikes.userId, userId), eq(staffStrikes.shiftId, shiftId))
     );
   }
 
