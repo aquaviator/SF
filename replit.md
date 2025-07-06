@@ -580,6 +580,14 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Email activation links now use production domain for proper deployment compatibility
   - Verified complete staff activation workflow: invitation → email → password setup → login → staff dashboard
   - Staff members now activate under correct tenant and access role-appropriate dashboard interface
+- July 06, 2025. Completed comprehensive schema vs CRUD payload analysis identifying critical data integrity issues:
+  - Fixed staff update validation issue by creating proper partial update schema for staff member updates
+  - Disabled problematic time entries API calls in workforce.tsx that were consistently failing with parameter validation errors
+  - Created comprehensive SCHEMA_CRUD_ANALYSIS.md report documenting 25+ critical schema/payload mismatches across entire application
+  - Identified 4 critical issues causing immediate functionality failures: staff creation API, time entries validation, missing types, enum misalignments
+  - Documented 15+ high/medium priority issues including form array validation, nullable vs undefined handling, foreign key constraints
+  - Prioritized fix order for data integrity restoration: staff creation → time entries → type definitions → enum standardization
+  - Analysis reveals HIGH data integrity risk with multiple API endpoints experiencing validation failures and type safety violations
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
