@@ -1,4 +1,5 @@
 import { X, HelpCircle } from "lucide-react";
+// Mobile cache refresh: 2025-07-06 10:21
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
