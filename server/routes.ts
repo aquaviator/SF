@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, pricingPlans, promoCodes } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, promoCodes } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -12,6 +12,8 @@ import { sendActivationEmail } from "./utils/mailer";
 import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
+import { setupAdminSeatPricingRoutes } from "./routes/admin/seat-pricing";
+import { setupSeatPricingRoutes } from "./routes/seat-pricing";
 import { adminAuth, requireRole } from "./middleware/adminAuth";
 
 declare module 'express-session' {
@@ -126,6 +128,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup admin authentication and 2FA routes
   setupAdminAuthRoutes(app);
   setup2FARoutes(app);
+  
+  // Setup seat pricing routes
+  setupAdminSeatPricingRoutes(app);
+  setupSeatPricingRoutes(app);
 
   // Authentication endpoints
   app.post('/api/auth/login', async (req, res) => {
@@ -4549,6 +4555,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to send broadcast' });
     }
   });
+
+  // Setup admin routes
+  setupAdminAuthRoutes(app);
+  setup2FARoutes(app);
+  setupAdminSeatPricingRoutes(app);
+  setupSeatPricingRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

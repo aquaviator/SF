@@ -403,12 +403,9 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Seat-based billing tables
+// Simplified seat-based billing table
 export const seatPricing = pgTable("seat_pricing", {
   id: serial("id").primaryKey(),
-  tierName: text("tier_name").notNull(), // "Starter", "Professional", "Enterprise"
-  minSeats: integer("min_seats").notNull().default(1),
-  maxSeats: integer("max_seats"), // null for unlimited
   pricePerSeat: integer("price_per_seat").notNull(), // in pence (300 = £3.00)
   features: text("features").array().notNull(),
   isActive: boolean("is_active").notNull().default(true),
@@ -773,15 +770,7 @@ export const supportTickets = pgTable("support_tickets", {
   resolvedAt: timestamp("resolved_at"),
 });
 
-export const pricingPlans = pgTable("pricing_plans", {
-  id: serial("id").primaryKey(),
-  name: varchar("name").notNull(),
-  pricePerSeat: decimal("price_per_seat", { precision: 10, scale: 2 }).notNull(),
-  features: jsonb("features").notNull().default([]),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+// Removed: Complex pricing plans table - using seat_pricing instead
 
 export const promoCodes = pgTable("promo_codes", {
   id: serial("id").primaryKey(),
@@ -819,11 +808,7 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
   createdAt: true,
 });
 
-export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Removed: Pricing plans table - using simplified seat pricing instead
 
 export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
   id: true,

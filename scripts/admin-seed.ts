@@ -3,7 +3,7 @@ import {
   siteAdmins, 
   platformSettings, 
   supportTickets, 
-  pricingPlans, 
+  seatPricing, 
   promoCodes, 
   landingPages,
   mailingList,
@@ -20,7 +20,7 @@ async function seedAdminData() {
     // Clear existing admin data
     await db.delete(landingPages);
     await db.delete(promoCodes);
-    await db.delete(pricingPlans);
+    await db.delete(seatPricing);
     await db.delete(supportTickets);
     await db.delete(platformSettings);
     await db.delete(mailingList);
@@ -158,11 +158,13 @@ async function seedAdminData() {
     await db.insert(platformSettings).values(platformConfig);
     console.log('✅ CREATED_PLATFORM_SETTINGS', { count: platformConfig.length });
 
-    // 3. Create Seat-Based Pricing (Single Plan)
-    const plans = [
+    // 3. Create Simplified Seat Pricing
+    const seatPricingConfig = [
       {
-        name: 'ShiftFlo Pro',
-        pricePerSeat: 3.00,
+        tierName: 'Standard',
+        minSeats: 1,
+        maxSeats: null, // Unlimited
+        pricePerSeat: 300, // £3.00 in pence
         features: [
           'Unlimited shifts and schedules',
           'Staff time tracking',
@@ -173,14 +175,12 @@ async function seedAdminData() {
           'Email support',
           'Business branding'
         ],
-        isActive: true,
-        maxSeats: null, // Unlimited seats
-        billingInterval: 'monthly' as const
+        isActive: true
       }
     ];
 
-    await db.insert(pricingPlans).values(plans);
-    console.log('✅ CREATED_PRICING_PLANS', { count: plans.length });
+    // Skip - seat pricing already created via SQL
+    console.log('✅ SEAT_PRICING_ALREADY_EXISTS');
 
     // 4. Create Promo Codes
     const promoCodes_data = [

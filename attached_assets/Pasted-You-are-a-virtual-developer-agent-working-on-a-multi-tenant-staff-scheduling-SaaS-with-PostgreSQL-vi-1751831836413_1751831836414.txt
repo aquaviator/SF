@@ -1,0 +1,91 @@
+You are a virtual developer agent working on a multi-tenant staff-scheduling SaaS with PostgreSQL via Drizzle ORM, a Node.js/Express back end, and a React + Tailwind Admin front end.
+
+**Task: Simplify Pricing Model to Seat-Based Only**  
+**Goal:** Remove all “fancy” multi-plan logic and instead manage a single seat-based pricing via the existing `seat_pricing` table.
+
+---
+
+### Instructions
+
+1. **Remove Old Pricing Plans**  
+   - Delete any Drizzle schema, migrations, and admin routes for the `pricing_plans` table.  
+   - Remove `/api/admin/pricing-plans` endpoints and related React pages (`PricingPlans.jsx`, `PricingPlanModal.jsx`).
+
+2. **Expose Seat Pricing API**  
+   - Ensure you have `src/routes/admin/seat-pricing.ts` with CRUD on `seat_pricing`:
+     - **GET** `/api/admin/seat-pricing` → returns the single active row (or list if you support multiple tiers).  
+     - **PATCH** `/api/admin/seat-pricing/:id` → update `price_per_seat` (and optional `min_seats`, `max_seats`, `features`).  
+   - Protect both routes with `adminAuth`.
+
+3. **Admin UI – Seat Pricing Page**  
+   - **Sidebar Link:** add “Seat Pricing” under Financial.  
+   - Create `client/src/pages/SeatPricing.jsx`:
+     ```jsx
+     import { useState, useEffect } from 'react';
+     import { Input, Button } from '@/components/ui';
+     
+     export default function SeatPricing() {
+       const [plan, setPlan] = useState(null);
+       const [price, setPrice] = useState('');
+       useEffect(() => {
+         fetch('/api/admin/seat-pricing', { credentials: 'include' })
+           .then(r => r.json()).then(data => {
+             setPlan(data);
+             setPrice((data.price_per_seat / 100).toFixed(2));
+           });
+       }, []);
+       const save = () => {
+         fetch(`/api/admin/seat-pricing/${plan.id}`, {
+           method: 'PATCH',
+           credentials: 'include',
+           headers: { 'Content-Type':'application/json' },
+           body: JSON.stringify({ price_per_seat: Math.round(parseFloat(price)*100) })
+         }).then(() => alert('Seat price updated'));
+       };
+       return plan && (
+         <div className="p-6">
+           <h2 className="text-xl font-semibold">Seat Pricing</h2>
+           <div className="mt-4">
+             <label>Price per seat (£)</label>
+             <Input value={price} onChange={e => setPrice(e.target.value)} type="number" step="0.01" />
+           </div>
+           <Button className="mt-4" onClick={save}>Save</Button>
+         </div>
+       );
+     }
+     ```
+   - Add route in your Admin router:  
+     ```jsx
+     <Route path="/admin/seat-pricing" element={<SeatPricing />} />
+     ```
+
+4. **Landing Page – Dynamic Seat Price**  
+   - In `client/src/pages/Landing.jsx`, replace any multiple-plan loop with a single fetch to `/api/seat-pricing`:
+     ```jsx
+     const [plan, setPlan] = useState(null);
+     useEffect(() => {
+       fetch('/api/seat-pricing')
+         .then(r => r.json()).then(data => setPlan(data));
+     }, []);
+     // Then render:
+     {plan && (
+       <div>
+         <h3>£{(plan.price_per_seat/100).toFixed(2)} per active staff member / month</h3>
+       </div>
+     )}
+     ```
+
+5. **Public Seat Pricing API**  
+   - Expose `GET /api/seat-pricing` (public, no auth) returning `{ price_per_seat }`.
+
+---
+
+**Output:**  
+Reply **only** with the code diffs and new files your agent would apply for:
+
+- Removal of `pricing_plans` schema, migrations, routes, and React pages  
+- New `src/routes/admin/seat-pricing.ts` and public `src/routes/seat-pricing.ts`  
+- `client/src/pages/SeatPricing.jsx` and Admin router update  
+- Updated `client/src/pages/Landing.jsx` with single-plan fetch and render  
+
+No extra explanation.```
