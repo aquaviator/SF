@@ -127,7 +127,15 @@ export default function Profile() {
   // Business mutation
   const businessMutation = useMutation({
     mutationFn: async (data: BusinessDetailsFormData) => {
-      const response = await apiRequest("PUT", `/api/business-profile?tenantId=${tenantId}`, data);
+      // Add required fields for server schema compliance
+      const completeData = {
+        tenantId: tenantId!,
+        ownerName: businessData?.ownerName || `${user?.firstName} ${user?.lastName}` || "",
+        logoUrl: businessData?.logoUrl || "",
+        ownerProfilePicture: businessData?.ownerProfilePicture || "",
+        ...data,
+      };
+      const response = await apiRequest("PUT", `/api/business-profile`, completeData);
       return response.json();
     },
     onSuccess: () => {
