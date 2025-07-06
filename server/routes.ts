@@ -3540,13 +3540,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Business registration error:", error);
-      console.error("Error code:", error.code);
-      console.error("Error constraint:", error.constraint);
-      console.error("Error detail:", error.detail);
       
       // Handle specific database constraint violations
       if (error.code === '23505') {
-        if (error.constraint === 'users_username_unique') {
+        if (error.constraint === 'users_username_unique' || error.detail?.includes('username')) {
           return res.status(400).json({ 
             message: "An account with this email already exists",
             field: "email"
