@@ -1,5 +1,5 @@
 import { X, HelpCircle, LogOut } from "lucide-react";
-// Mobile cache refresh: 2025-07-06 10:21
+// Mobile cache refresh: 2025-07-06 10:33
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -221,22 +221,7 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
             );
           })}
 
-          {/* Development Role Switcher */}
-          <Separator className="my-4" />
-          
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-yellow-800">DEV MODE</span>
-              <select
-                value={role}
-                onChange={(e) => switchRole(e.target.value as "owner" | "staff")}
-                className="text-sm bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-              >
-                <option value="owner">Owner</option>
-                <option value="staff">Staff</option>
-              </select>
-            </div>
-          </div>
+
 
           {/* Separator before help */}
           <Separator className="my-4" />
