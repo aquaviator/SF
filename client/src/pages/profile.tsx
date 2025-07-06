@@ -53,6 +53,7 @@ interface BusinessProfileType {
   id: number;
   tenantId: string;
   name: string;
+  ownerName?: string;
   address: string;
   phone: string;
   email: string;
@@ -60,6 +61,7 @@ interface BusinessProfileType {
   businessType?: string;
   description?: string;
   logoUrl?: string;
+  ownerProfilePicture?: string;
 }
 
 type BusinessDetailsFormData = z.infer<typeof businessDetailsSchema>;

@@ -21,8 +21,8 @@ export function BrandedHeader({
   });
 
   // Use props if provided, otherwise fall back to context data
-  const businessName = propBusinessName || businessProfile?.name || "ShiftFlo";
-  const businessLogoUrl = propBusinessLogoUrl || businessProfile?.logoUrl;
+  const businessName = propBusinessName || (businessProfile as any)?.name || "ShiftFlo";
+  const businessLogoUrl = propBusinessLogoUrl || (businessProfile as any)?.logoUrl;
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6">

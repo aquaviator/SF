@@ -388,7 +388,7 @@ export default function OwnerStrikesPage() {
       <StrikeHistoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        userId={selectedUserId}
+        userId={selectedUserId ?? undefined}
         tenantId={user?.tenantId}
         mode="owner"
         initialAction={modalAction}

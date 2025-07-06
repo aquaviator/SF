@@ -9,14 +9,17 @@ import { staffApi } from "@/lib/staffApi";
 import { Loader2 } from "lucide-react";
 
 interface Strike {
+  tenantId: string;
   id: number;
+  userId: number;
   points: number;
-  reason: string;
-  issuedAt: string;
-  expiresAt: string;
+  reason: "no_show" | "late_cancellation" | "manual_adjustment";
   isActive: boolean;
-  shiftId?: number;
-  notes?: string;
+  notes: string | null;
+  shiftId: number | null;
+  issuedBy: number | null;
+  issuedAt: Date;
+  expiresAt: Date | null;
 }
 
 interface StrikeData {
@@ -42,7 +45,7 @@ export default function StaffStrikesPage() {
         setIsLoading(true);
         setError(null);
         
-        const data = await staffApi.getStrikes(parseInt(user.id), user.tenantId);
+        const data = await staffApi.getStrikes(Number(user.id), user.tenantId);
         setStrikeData(data);
         
         console.log("STAFF_STRIKES_LOADED", { 
@@ -337,8 +340,10 @@ export default function StaffStrikesPage() {
       <StrikeHistoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        strike={selectedStrike}
-        userRole="staff"
+        userId={user?.id ? Number(user.id) : undefined}
+        tenantId={user?.tenantId}
+        mode="staff"
+        selectedStrike={selectedStrike}
       />
     </div>
   );

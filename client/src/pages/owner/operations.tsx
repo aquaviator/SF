@@ -73,7 +73,7 @@ function CoverageDetailsModal({ isOpen, onClose, coverageData }: CoverageDetails
         window.location.reload();
       }
     } catch (error) {
-      console.error("❌ ASSIGN_SHIFT_ERROR", { error: error.message, timestamp: new Date() });
+      console.error("❌ ASSIGN_SHIFT_ERROR", { error: (error as Error).message, timestamp: new Date() });
     }
   };
 

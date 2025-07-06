@@ -146,7 +146,7 @@ export default function Scheduling() {
   }, [editingShift, shiftForm]);
 
   // Additional data queries for shift form dropdowns
-  const { data: templates = [], isLoading: templatesLoading } = useQuery({
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<ScheduleTemplate[]>({
     queryKey: [`/api/schedule-templates?tenantId=${tenantId}`],
     enabled: !!tenantId
   });
@@ -168,13 +168,15 @@ export default function Scheduling() {
 
   // Handle shift form submission
   const onShiftSubmit = async (formData: ShiftFormData) => {
+    if (!tenantId) return;
+    
     try {
       const shiftData = {
         ...formData,
         assignedTo: formData.assignedTo ? parseInt(formData.assignedTo) : null,
-        status: formData.assignedTo ? "assigned" : "open",
+        status: (formData.assignedTo ? "assigned" : "open") as "assigned" | "open" | "claimed" | "confirmed" | "clocked_in" | "clocked_out" | "completed" | "declined" | "cancelled",
         tenantId,
-        assignmentType: formData.assignedTo ? "assigned" : "open_opportunity",
+        assignmentType: (formData.assignedTo ? "assigned" : "opportunity") as "assigned" | "opportunity",
         requiredStaff: 1,
         claimedBy: null,
         templateId: null,
@@ -276,10 +278,7 @@ export default function Scheduling() {
   // Use template to generate shifts
   const useTemplateMutation = useMutation({
     mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
-      apiRequest(`/api/schedule-templates/${templateId}/use`, {
-        method: "POST",
-        body: JSON.stringify({ startDate, endDate })
-      }),
+      apiRequest("POST", `/api/schedule-templates/${templateId}/use`, { startDate, endDate }),
     onSuccess: (result: any) => {
       toast({ 
         title: "Shifts Generated",
@@ -456,7 +455,7 @@ export default function Scheduling() {
                   onCreateShift={openCreateShiftModal}
                   onEditShift={openEditShiftModal}
                   onDuplicateShift={() => {}}
-                  onDeleteShift={handleShiftDelete}
+                  onDeleteShift={(id: string | number) => handleShiftDelete({ id } as any)}
                   userRole={user?.role || "staff"}
                 />
               </CardContent>
@@ -470,7 +469,8 @@ export default function Scheduling() {
               </CardHeader>
               <CardContent>
                 <DataTable 
-                  data={templates} 
+                  title="Schedule Templates"
+                  data={templates as ScheduleTemplate[]} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
                 />

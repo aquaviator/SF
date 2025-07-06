@@ -81,7 +81,7 @@ export default function OwnerRequestsPage() {
       const status = action === "approve" ? "approved" : "rejected";
       
       // Find the original request to get all required fields
-      const originalRequest = holidayRequests.find(req => req.id === id);
+      const originalRequest = holidayRequests.find((req: any) => req.id === id);
       if (!originalRequest) {
         throw new Error("Holiday request not found");
       }
@@ -165,7 +165,7 @@ export default function OwnerRequestsPage() {
     }
   };
 
-  const pendingHolidayCount = holidayRequests.filter(req => req.status === "pending").length;
+  const pendingHolidayCount = holidayRequests.filter((req: any) => req.status === "pending").length;
 
   return (
     <div className="flex flex-col h-full">
@@ -227,7 +227,7 @@ export default function OwnerRequestsPage() {
                       <div className="flex items-center gap-3">
                         {getRequestTypeIcon(request.type)}
                         <div>
-                          <CardTitle className="text-lg">{request.displayName || request.name || `User #${request.requesterId}`}</CardTitle>
+                          <CardTitle className="text-lg">{(request as any).displayName || (request as any).name || `User #${request.requesterId}`}</CardTitle>
                           <p className="text-sm text-gray-500 capitalize">{request.type} Request</p>
                         </div>
                       </div>

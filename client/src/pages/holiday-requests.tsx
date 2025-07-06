@@ -27,6 +27,10 @@ type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
 export default function HolidayRequests() {
   const { tenantId, user } = useRole();
   
+  if (!tenantId) {
+    return <div>Loading...</div>;
+  }
+  
   // Memoized query function to fetch holiday requests with user names
   const fetchHolidayRequests = useCallback(async () => {
     const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}`);
@@ -105,8 +109,8 @@ export default function HolidayRequests() {
   const onSubmit = (data: HolidayRequestFormData) => {
     const submitData = {
       ...data,
-      tenantId,
-      requesterId: parseInt(user?.id || "1"),
+      tenantId: tenantId!,
+      requesterId: Number(user?.id) || 1,
       status: "pending" as const,
       reviewedBy: null,
       reviewedAt: null,

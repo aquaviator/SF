@@ -83,6 +83,10 @@ export default function Scheduling() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  if (!tenantId) {
+    return <div>Loading...</div>;
+  }
+
   // Function to check if staff member is on holiday for a given date
   const checkStaffAvailability = async (staffId: number, date: string) => {
     try {
@@ -218,7 +222,7 @@ export default function Scheduling() {
         ...formData,
         assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? parseInt(formData.assignedTo) : null,
         status: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "open") as "assigned" | "open",
-        tenantId,
+        tenantId: tenantId!,
         assignmentType: (formData.assignedTo && formData.assignedTo !== "unassigned" ? "assigned" : "opportunity") as "assigned" | "opportunity",
         requiredStaff: 1,
         claimedBy: null,
