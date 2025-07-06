@@ -38,7 +38,7 @@ export default function Login() {
       });
       
       // Login successful, redirect to appropriate dashboard
-      const userData = response.user;
+      const userData = await response.json();
       if (userData.role === 'owner') {
         setLocation("/owner/dashboard");
       } else {
