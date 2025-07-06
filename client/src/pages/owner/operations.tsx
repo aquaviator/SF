@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { dashboardApi } from "@/lib/dashboardApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -579,7 +580,8 @@ function BulkHolidayModal({ isOpen, onClose, pendingRequests }: BulkHolidayModal
 }
 
 export default function OwnerOperationsPage() {
-  const { tenantId } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { role, tenantId, isOwner } = useRole();
   const [, navigate] = useLocation();
 
   // Modal visibility states
@@ -593,7 +595,67 @@ export default function OwnerOperationsPage() {
   // Auto-refresh timestamps
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  console.log("🎮 LIVE_OPS_PAGE_MOUNT", { tenantId, timestamp: new Date() });
+  // Extensive debugging
+  console.log("🚨 LIVE_OPS_DEBUG_INIT", { 
+    timestamp: new Date().toISOString(),
+    authLoading,
+    isAuthenticated,
+    user: user ? {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      tenantId: user.tenantId,
+      firstName: user.firstName,
+      lastName: user.lastName
+    } : null,
+    extractedRole: role,
+    extractedTenantId: tenantId,
+    isOwner,
+    pageLocation: window.location.pathname
+  });
+
+  // Early return if not authenticated or not owner
+  if (authLoading) {
+    console.log("🔄 LIVE_OPS_AUTH_LOADING");
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+        <p>Loading authentication...</p>
+      </div>
+    </div>;
+  }
+
+  if (!isAuthenticated) {
+    console.log("🚫 LIVE_OPS_NOT_AUTHENTICATED");
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+        <p>Please log in to access Live Operations.</p>
+      </div>
+    </div>;
+  }
+
+  if (!isOwner) {
+    console.log("🚫 LIVE_OPS_NOT_OWNER", { role, isOwner });
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Owner Access Required</h2>
+        <p>Only business owners can access Live Operations.</p>
+      </div>
+    </div>;
+  }
+
+  if (!tenantId) {
+    console.log("🚫 LIVE_OPS_NO_TENANT", { tenantId, user });
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Business Context Missing</h2>
+        <p>Unable to determine business context.</p>
+      </div>
+    </div>;
+  }
+
+  console.log("✅ LIVE_OPS_INITIALIZED", { tenantId, userId: user?.id, role });
 
   // Panel data queries with auto-refresh
   const { data: coverageData, isLoading: coverageLoading, refetch: refetchCoverage } = useQuery({

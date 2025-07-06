@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, User, Building } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhotoUpload } from "@/components/PhotoUpload";
@@ -70,9 +71,33 @@ export default function Profile() {
   const [personalData, setPersonalData] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { user, tenantId } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { role, tenantId, isOwner } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Extensive debugging
+  console.log("🚨 PROFILE_DEBUG_INIT", { 
+    timestamp: new Date().toISOString(),
+    authLoading,
+    isAuthenticated,
+    user: user ? {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      tenantId: user.tenantId,
+      firstName: user.firstName,
+      lastName: user.lastName
+    } : null,
+    extractedRole: role,
+    extractedTenantId: tenantId,
+    isOwner,
+    pageLocation: window.location.pathname,
+    personalData: personalData ? { id: personalData.id, firstName: personalData.firstName } : null,
+    businessData: businessData ? { id: businessData.id, name: businessData.name } : null,
+    isLoading,
+    error
+  });
 
   // Business details form
   const businessForm = useForm<BusinessDetailsFormData>({
@@ -147,17 +172,60 @@ export default function Profile() {
 
   // Load data on component mount
   useEffect(() => {
+    console.log("🔍 PROFILE_USEEFFECT_TRIGGERED", {
+      hasUser: !!user,
+      userId: user?.id,
+      hasTenantId: !!tenantId,
+      tenantId,
+      authLoading,
+      isAuthenticated,
+      timestamp: new Date().toISOString()
+    });
+
     const loadData = async () => {
-      if (!user?.id || !tenantId) return;
+      console.log("📊 PROFILE_DATA_LOADING_START", {
+        userId: user?.id,
+        tenantId,
+        userExists: !!user?.id,
+        tenantExists: !!tenantId,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!user?.id) {
+        console.log("🚫 PROFILE_NO_USER_ID", { user });
+        return;
+      }
+
+      if (!tenantId) {
+        console.log("🚫 PROFILE_NO_TENANT_ID", { tenantId, user });
+        return;
+      }
 
       try {
         setIsLoading(true);
+        console.log("⏳ PROFILE_LOADING_SET_TRUE");
         
         // Fetch personal data
-        const personalResponse = await fetch(`/api/users/${user.id}`);
+        const personalUrl = `/api/users/${user.id}`;
+        console.log("🔍 PROFILE_FETCHING_PERSONAL", { url: personalUrl, userId: user.id });
+        const personalResponse = await fetch(personalUrl);
+        console.log("📥 PROFILE_PERSONAL_RESPONSE", {
+          status: personalResponse.status,
+          ok: personalResponse.ok,
+          headers: Object.fromEntries(personalResponse.headers.entries())
+        });
+
         if (personalResponse.ok) {
           const personal = await personalResponse.json();
-          console.log("New profile - Personal data loaded:", personal);
+          console.log("✅ PROFILE_PERSONAL_SUCCESS", { 
+            personal: {
+              id: personal.id,
+              firstName: personal.firstName,
+              lastName: personal.lastName,
+              email: personal.email,
+              tenantId: personal.tenantId
+            }
+          });
           setPersonalData(personal);
           personalForm.reset({
             firstName: personal.firstName || "",
@@ -167,13 +235,33 @@ export default function Profile() {
             address: personal.address || "",
             bio: personal.bio || "",
           });
+        } else {
+          console.error("❌ PROFILE_PERSONAL_FAILED", {
+            status: personalResponse.status,
+            statusText: personalResponse.statusText
+          });
         }
 
         // Fetch business data
-        const businessResponse = await fetch(`/api/business-profile?tenantId=${tenantId}`);
+        const businessUrl = `/api/business-profile?tenantId=${tenantId}`;
+        console.log("🔍 PROFILE_FETCHING_BUSINESS", { url: businessUrl, tenantId });
+        const businessResponse = await fetch(businessUrl);
+        console.log("📥 PROFILE_BUSINESS_RESPONSE", {
+          status: businessResponse.status,
+          ok: businessResponse.ok,
+          headers: Object.fromEntries(businessResponse.headers.entries())
+        });
+
         if (businessResponse.ok) {
           const business = await businessResponse.json();
-          console.log("New profile - Business data loaded:", business);
+          console.log("✅ PROFILE_BUSINESS_SUCCESS", {
+            business: {
+              id: business.id,
+              name: business.name,
+              tenantId: business.tenantId,
+              email: business.email
+            }
+          });
           setBusinessData(business);
           businessForm.reset({
             name: business.name || "",
@@ -184,12 +272,18 @@ export default function Profile() {
             businessType: business.businessType || "",
             description: business.description || "",
           });
+        } else {
+          console.error("❌ PROFILE_BUSINESS_FAILED", {
+            status: businessResponse.status,
+            statusText: businessResponse.statusText
+          });
         }
       } catch (err) {
-        console.error("Error loading profile data:", err);
+        console.error("💥 PROFILE_DATA_LOADING_ERROR", { error: err, message: err.message });
         setError("Failed to load profile data");
       } finally {
         setIsLoading(false);
+        console.log("✅ PROFILE_LOADING_SET_FALSE");
       }
     };
 
