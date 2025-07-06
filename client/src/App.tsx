@@ -1,10 +1,10 @@
 import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
-import { queryClient } from "./lib/queryClient";
 import { Menu } from "@/components/Menu";
 import { BrandedHeader } from "@/components/BrandedHeader";
 import { BottomTabBar } from "@/components/BottomTabBar";
@@ -20,87 +20,93 @@ import Profile from "@/pages/profile";
 import OwnerDashboard from "@/pages/owner-dashboard";
 import Scheduling from "@/pages/scheduling";
 import Workforce from "@/pages/workforce";
+import OwnerRequests from "@/pages/owner-requests";
 import BusinessSettings from "@/pages/business-settings";
 import Policies from "@/pages/policies";
 import Analytics from "@/pages/analytics";
 import Subscription from "@/pages/subscription";
 import SeatBasedSubscription from "@/pages/seat-based-subscription";
-import OwnerRequests from "@/pages/owner-requests";
-import OwnerOperations from "@/pages/owner/operations";
-import StaffStrikes from "@/pages/staff/strikes";
-import OwnerStrikes from "@/pages/owner/strikes";
-import BusinessRegistration from "@/pages/business-registration";
-import StaffActivation from "@/pages/staff-activation";
-import Assignments from "@/pages/assignments";
-import MyShifts from "@/pages/my-shifts";
 import Performance from "@/pages/performance";
-import Login from "@/pages/login";
+import StaffStrikes from "@/pages/staff/strikes";
+import StaffRequests from "@/pages/staff/requests";
+import OwnerStrikes from "@/pages/owner/strikes";
+import OwnerOperations from "@/pages/owner/operations";
+import StaffActivation from "@/pages/staff-activation";
+import BusinessRegistration from "@/pages/business-registration";
+import SimplifiedRegistration from "@/pages/simplified-registration";
+import RegistrationSuccess from "@/pages/registration-success";
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-// Protected routes that require authentication
+// Protected routes component that wraps the main app layout
 function ProtectedRoutes() {
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isMoreDrawerOpen, setIsMoreDrawerOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <div className="flex-1 flex flex-col">
-        <BrandedHeader />
-        
-        <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <Switch>
-            <Route path="/dashboard" component={Dashboard} />
-            <Route path="/owner/dashboard" component={OwnerDashboard} />
-            <Route path="/owner/operations" component={OwnerOperations} />
-            <Route path="/owner/scheduling" component={Scheduling} />
-            <Route path="/owner/workforce" component={Workforce} />
-            <Route path="/owner/settings" component={BusinessSettings} />
-            <Route path="/owner/policies" component={Policies} />
-            <Route path="/owner/analytics" component={Analytics} />
-            <Route path="/owner/subscription" component={Subscription} />
-            <Route path="/owner/seat-subscription" component={SeatBasedSubscription} />
-            <Route path="/owner/requests" component={OwnerRequests} />
-            <Route path="/owner/strikes" component={OwnerStrikes} />
-            <Route path="/owner/profile" component={Profile} />
-            <Route path="/staff/profile" component={Profile} />
-            <Route path="/staff/strikes" component={StaffStrikes} />
-            <Route path="/shifts" component={Shifts} />
-            <Route path="/staff" component={Staff} />
-            <Route path="/my-work" component={MyWork} />
-            <Route path="/opportunities" component={Opportunities} />
-            <Route path="/swap-requests" component={SwapRequests} />
-            <Route path="/holiday-requests" component={HolidayRequests} />
-            <Route path="/assignments" component={Assignments} />
-            <Route path="/my-shifts" component={MyShifts} />
-            <Route path="/performance" component={Performance} />
-            <Route component={NotFound} />
-          </Switch>
-        </div>
-
-        <div className="md:hidden">
-          <BottomTabBar onMoreClick={() => setIsMoreOpen(true)} />
-          <MoreDrawer isOpen={isMoreOpen} onClose={() => setIsMoreOpen(false)} />
-        </div>
-      </div>
-
-      <div className="hidden md:block">
+    <div className="min-h-screen bg-gray-50">
+      {/* Desktop Layout: Sidebar + Main Content Side-by-Side */}
+      <div className="flex h-screen lg:overflow-hidden">
+        {/* Desktop Sidebar */}
         <Menu />
+        
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto lg:ml-0 pb-20 lg:pb-0">
+          <BrandedHeader />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <Switch>
+              <Route path="/dashboard" component={Dashboard} />
+              <Route path="/shifts" component={Shifts} />
+              <Route path="/staff" component={Staff} />
+              <Route path="/my-work" component={MyWork} />
+              <Route path="/opportunities" component={Opportunities} />
+              <Route path="/swap-requests" component={SwapRequests} />
+              <Route path="/holiday-requests" component={HolidayRequests} />
+              <Route path="/staff/holiday-requests" component={HolidayRequests} />
+              <Route path="/owner/dashboard" component={OwnerDashboard} />
+              <Route path="/owner/profile" component={Profile} />
+              <Route path="/owner/operations" component={OwnerOperations} />
+              <Route path="/owner/scheduling" component={Scheduling} />
+              <Route path="/owner/workforce" component={Workforce} />
+              <Route path="/owner/requests" component={OwnerRequests} />
+              <Route path="/owner/settings" component={BusinessSettings} />
+              <Route path="/owner/policies" component={Policies} />
+              <Route path="/owner/analytics" component={Analytics} />
+              <Route path="/owner/subscription" component={SeatBasedSubscription} />
+              <Route path="/staff/strikes" component={StaffStrikes} />
+              <Route path="/staff/requests" component={StaffRequests} />
+              <Route path="/staff/profile" component={Profile} />
+              <Route path="/owner/strikes" component={OwnerStrikes} />
+              <Route path="/staff/performance" component={Performance} />
+              <Route component={NotFound} />
+            </Switch>
+          </div>
+        </main>
       </div>
+      
+      {/* Mobile Navigation */}
+      <BottomTabBar onMoreClick={() => setIsMoreDrawerOpen(true)} />
+      <MoreDrawer 
+        isOpen={isMoreDrawerOpen} 
+        onClose={() => setIsMoreDrawerOpen(false)} 
+      />
     </div>
   );
 }
 
-// Public routes for unauthenticated users
+// Public routes component for unauthenticated users
 function PublicRoutes() {
   return (
     <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={BusinessRegistration} />
-      <Route path="/activate" component={StaffActivation} />
       <Route path="/" component={Landing} />
-      <Route component={NotFound} />
+      <Route path="/login" component={Login} />
+      <Route path="/business-registration" component={BusinessRegistration} />
+      <Route path="/register" component={SimplifiedRegistration} />
+      <Route path="/registration-success" component={RegistrationSuccess} />
+      <Route path="/activate" component={StaffActivation} />
+      <Route component={Landing} />
     </Switch>
   );
 }

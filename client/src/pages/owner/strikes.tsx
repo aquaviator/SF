@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,13 @@ interface StaffStrikeSummary {
   activeStrikes: number;
   lastIssued: string | null;
 }
+
 interface StrikesOverview {
   strikes: StaffStrikeSummary[];
+}
+
 export default function OwnerStrikesPage() {
-  const { user } = useRole();
+  const { user } = useAuth();
   const [strikesData, setStrikesData] = useState<StrikesOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +31,9 @@ export default function OwnerStrikesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<"view" | "add" | "adjust">("view");
   const [searchTerm, setSearchTerm] = useState("");
+
   console.log("LOAD_ALL_STRIKES", { tenantId: user?.tenantId, timestamp: new Date() });
+
   useEffect(() => {
     const fetchAllStrikes = async () => {
       if (!user?.tenantId) return;
@@ -39,6 +44,7 @@ export default function OwnerStrikesPage() {
         
         const data = await staffApi.getAllStaffStrikes(user.tenantId);
         setStrikesData(data);
+        
         console.log("OWNER_STRIKES_LOADED", { 
           tenantId: user.tenantId,
           staffCount: data.strikes.length,
@@ -52,23 +58,35 @@ export default function OwnerStrikesPage() {
         setIsLoading(false);
       }
     };
+
     fetchAllStrikes();
   }, [user?.tenantId]);
+
   const handleViewHistory = (userId: number) => {
     console.log("OPEN_STAFF_STRIKE_HISTORY", { userId, timestamp: new Date() });
     setSelectedUserId(userId);
     setModalAction("view");
     setIsModalOpen(true);
   };
+
   const handleManualStrike = (userId: number) => {
     console.log("MANUAL_STRIKE_ASSIGN", { userId, timestamp: new Date() });
+    setSelectedUserId(userId);
     setModalAction("add");
+    setIsModalOpen(true);
+  };
+
   const handleAdjustStrike = (userId: number) => {
     console.log("STRIKE_ADJUST", { userId, timestamp: new Date() });
+    setSelectedUserId(userId);
     setModalAction("adjust");
+    setIsModalOpen(true);
+  };
+
   const filteredStaff = strikesData?.strikes.filter(staff => 
     `${staff.userFirstName} ${staff.userLastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
   const totalActiveStrikes = strikesData?.strikes.reduce((sum, s) => sum + s.activeStrikes, 0) || 0;
   const atRiskStaff = strikesData?.strikes.filter(s => s.totalPoints >= 4).length || 0;
   const recentNoShows = strikesData?.strikes.filter(s => {
@@ -78,16 +96,21 @@ export default function OwnerStrikesPage() {
     yesterday.setDate(yesterday.getDate() - 1);
     return lastIssued >= yesterday;
   }).length || 0;
+
   const getPointsColor = (points: number) => {
     if (points === 0) return "text-green-600";
     if (points <= 2) return "text-yellow-600";
     if (points <= 4) return "text-orange-600";
     return "text-red-600";
+  };
+
   const getPointsBadgeColor = (points: number) => {
     if (points === 0) return "bg-green-100 text-green-800";
     if (points <= 2) return "bg-yellow-100 text-yellow-800";
     if (points <= 4) return "bg-orange-100 text-orange-800";
     return "bg-red-100 text-red-800";
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 space-y-4">
@@ -97,7 +120,10 @@ export default function OwnerStrikesPage() {
       </div>
     );
   }
+
   if (error) {
+    return (
+      <div className="p-4 space-y-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-red-600">
@@ -107,11 +133,17 @@ export default function OwnerStrikesPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Compliance & Strikes</h1>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-2 border-blue-200">
@@ -119,20 +151,41 @@ export default function OwnerStrikesPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-blue-800">Total Active Strikes</CardTitle>
               <Shield className="h-6 w-6 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{totalActiveStrikes}</div>
             <p className="text-sm text-gray-600">Across all staff</p>
+          </CardContent>
+        </Card>
+
         <Card className="border-2 border-orange-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-orange-800">At Risk Staff</CardTitle>
               <AlertTriangle className="h-6 w-6 text-orange-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
             <div className="text-3xl font-bold text-orange-600">{atRiskStaff}</div>
             <p className="text-sm text-gray-600">≥4 strike points</p>
+          </CardContent>
+        </Card>
+
         <Card className="border-2 border-red-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-red-800">Recent No-Shows</CardTitle>
               <Clock className="h-6 w-6 text-red-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
             <div className="text-3xl font-bold text-red-600">{recentNoShows}</div>
             <p className="text-sm text-gray-600">Last 24 hours</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Search and Filter */}
       <Card>
         <CardHeader>
@@ -148,14 +201,18 @@ export default function OwnerStrikesPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+            </div>
             <div className="text-sm text-gray-600">
               {filteredStaff.length} of {strikesData?.strikes.length || 0} staff
+            </div>
           </div>
+
           {filteredStaff.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Users className="h-12 w-12 mx-auto mb-4" />
               <p className="text-lg font-medium">No staff found</p>
               <p className="text-sm">Try adjusting your search criteria</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {/* Desktop Table */}
@@ -187,22 +244,32 @@ export default function OwnerStrikesPage() {
                                 {staff.totalPoints >= 5 && (
                                   <p className="text-xs text-red-600">⛔ Actions Blocked</p>
                                 )}
+                              </div>
                             </div>
                           </td>
+                          <td className="py-3 px-3 text-sm">
                             <Badge className={getPointsBadgeColor(staff.totalPoints)}>
                               {staff.totalPoints} / 5 pts
                             </Badge>
+                          </td>
+                          <td className="py-3 px-3 text-sm">
                             <span className={`font-medium ${getPointsColor(staff.totalPoints)}`}>
                               {staff.activeStrikes}
                             </span>
+                          </td>
+                          <td className="py-3 px-3 text-sm">
                             {staff.lastIssued ? (
+                              <div>
                                 <p>{new Date(staff.lastIssued).toLocaleDateString()}</p>
                                 <p className="text-xs text-gray-500">
                                   {new Date(staff.lastIssued).toLocaleTimeString()}
                                 </p>
+                              </div>
                             ) : (
                               <span className="text-gray-400">Never</span>
                             )}
+                          </td>
+                          <td className="py-3 px-3 text-sm">
                             <div className="flex space-x-2">
                               <Button
                                 variant="outline"
@@ -212,18 +279,31 @@ export default function OwnerStrikesPage() {
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
                               </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleManualStrike(staff.userId)}
+                              >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Add Strike
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleAdjustStrike(staff.userId)}
+                              >
                                 <Edit className="h-4 w-4 mr-1" />
                                 Adjust
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+
               {/* Mobile Cards */}
               <div className="md:hidden space-y-3">
                 {filteredStaff.map((staff) => (
@@ -237,11 +317,13 @@ export default function OwnerStrikesPage() {
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
                               {staff.userFirstName.charAt(0)}{staff.userLastName.charAt(0)}
+                            </div>
                             <div>
                               <p className="font-medium">{staff.userFirstName} {staff.userLastName}</p>
                               {staff.totalPoints >= 5 && (
                                 <p className="text-xs text-red-600">⛔ Actions Blocked</p>
                               )}
+                            </div>
                           </div>
                           <Badge className={getPointsBadgeColor(staff.totalPoints)}>
                             {staff.totalPoints} / 5
@@ -252,10 +334,17 @@ export default function OwnerStrikesPage() {
                           <div>
                             <p className="font-medium text-gray-700">Active Strikes:</p>
                             <p className={`font-medium ${getPointsColor(staff.totalPoints)}`}>
+                              {staff.activeStrikes}
                             </p>
+                          </div>
+                          <div>
                             <p className="font-medium text-gray-700">Last Strike:</p>
                             <p className="text-gray-600">
                               {staff.lastIssued ? new Date(staff.lastIssued).toLocaleDateString() : 'Never'}
+                            </p>
+                          </div>
+                        </div>
+
                         <div className="flex space-x-2 pt-2">
                           <Button
                             variant="outline"
@@ -266,19 +355,35 @@ export default function OwnerStrikesPage() {
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleManualStrike(staff.userId)}
+                            className="flex-1"
+                          >
                             <Plus className="h-4 w-4 mr-1" />
                             Add
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleAdjustStrike(staff.userId)}
+                            className="flex-1"
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Adjust
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
+
       {/* Strike History Modal */}
       <StrikeHistoryModal
         isOpen={isModalOpen}
@@ -303,3 +408,4 @@ export default function OwnerStrikesPage() {
       />
     </div>
   );
+}

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useRole } from "@/hooks/useRole";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { 
   Calendar,
   Clock,
   Users,
@@ -41,6 +41,7 @@ import { apiRequest } from "@/lib/queryClient";
   Trash2,
   Edit
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
 import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
@@ -57,7 +58,9 @@ const shiftFormSchema = z.object({
   assignedTo: z.string().optional(),
   notes: z.string().optional(),
 });
+
 type ShiftFormData = z.infer<typeof shiftFormSchema>;
+
 // Define enhanced template schema with slots
 const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
   slots: z.array(z.object({
@@ -65,15 +68,20 @@ const enhancedTemplateSchema = insertScheduleTemplateSchema.extend({
     quantity: z.number().min(1),
     staffIds: z.array(z.number()).default([])
   })).optional().default([])
+});
+
 type EnhancedTemplateData = z.infer<typeof enhancedTemplateSchema>;
+
 export default function Scheduling() {
-  const { user, tenantId } = useRole();
+  const { user, tenantId } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
   // Template modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
   const [templateSubmitting, setTemplateSubmitting] = useState(false);
+
   // Shift CRUD functionality
   const {
     data: shifts = [],
@@ -94,6 +102,7 @@ export default function Scheduling() {
     queryKey: [`/api/shifts?tenantId=${tenantId}`],
     endpoint: `/api/shifts?tenantId=${tenantId}`,
   });
+
   // Shift form with default values
   const shiftForm = useForm<ShiftFormData>({
     resolver: zodResolver(shiftFormSchema),
@@ -107,6 +116,8 @@ export default function Scheduling() {
       assignedTo: "",
       notes: "",
     }
+  });
+
   // Reset form when editing changes
   React.useEffect(() => {
     if (editingShift) {
@@ -121,6 +132,7 @@ export default function Scheduling() {
         notes: editingShift.notes || "",
       });
     } else {
+      shiftForm.reset({
         date: "",
         startTime: "",
         endTime: "",
@@ -129,17 +141,31 @@ export default function Scheduling() {
         location: "",
         assignedTo: "",
         notes: "",
+      });
+    }
   }, [editingShift, shiftForm]);
+
   // Additional data queries for shift form dropdowns
   const { data: templates = [], isLoading: templatesLoading } = useQuery({
     queryKey: [`/api/schedule-templates?tenantId=${tenantId}`],
     enabled: !!tenantId
+  });
+
   const { data: jobRoles = [] } = useQuery({
     queryKey: [`/api/job-roles?tenantId=${tenantId}`],
+    enabled: !!tenantId
+  });
+
   const { data: staff = [] } = useQuery({
     queryKey: [`/api/staff?tenantId=${tenantId}`],
+    enabled: !!tenantId
+  });
+
   const { data: locations = [] } = useQuery({
     queryKey: [`/api/locations?tenantId=${tenantId}`],
+    enabled: !!tenantId
+  });
+
   // Handle shift form submission
   const onShiftSubmit = async (formData: ShiftFormData) => {
     try {
@@ -155,15 +181,20 @@ export default function Scheduling() {
         createdBy: Number(user?.id) || 1,
         notes: formData.notes || null,
       };
+
       await handleShiftSubmit(shiftData);
     } catch (error) {
       console.error("Error submitting shift:", error);
+    }
   };
+
   // Initialize template form with slots support
   const templateForm = useForm<EnhancedTemplateData>({
     resolver: zodResolver(enhancedTemplateSchema),
+    defaultValues: {
       tenantId: tenantId,
       name: "",
+      description: "",
       positions: [],
       assignmentType: "assigned",
       requiredStaffPerPosition: 1,
@@ -171,23 +202,46 @@ export default function Scheduling() {
       isActive: true,
       createdBy: Number(user?.id) || 1,
       slots: [{ role: "", quantity: 1, staffIds: [] }]
+    }
+  });
+
   // Template management functions
   const openTemplateModal = () => {
     setEditingTemplate(null);
     templateForm.reset({
+      tenantId: tenantId,
+      name: "",
+      description: "",
+      positions: [],
+      assignmentType: "assigned",
+      requiredStaffPerPosition: 1,
+      recurrence: "weekly",
+      isActive: true,
+      createdBy: Number(user?.id) || 1,
+      slots: [{ role: "", quantity: 1, staffIds: [] }]
     });
     setTemplateModalOpen(true);
+  };
+
   const closeTemplateModal = () => {
     setTemplateModalOpen(false);
+    setEditingTemplate(null);
+  };
+
   const handleTemplateSubmit = async (formData: EnhancedTemplateData) => {
+    try {
       setTemplateSubmitting(true);
       
       // Clean up slots data
       const cleanedSlots = formData.slots?.filter(slot => slot.role && slot.quantity > 0) || [];
+      
       const templateData = {
+        ...formData,
         slots: cleanedSlots,
         // Keep positions for backward compatibility
         positions: cleanedSlots.map(slot => slot.role)
+      };
+
       if (editingTemplate) {
         const response = await fetch(`/api/schedule-templates/${editingTemplate.id}`, {
           method: "PUT",
@@ -199,17 +253,26 @@ export default function Scheduling() {
       } else {
         const response = await fetch("/api/schedule-templates", {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(templateData)
+        });
         if (!response.ok) throw new Error("Failed to create template");
         toast({ title: "Template created successfully" });
       }
+
       queryClient.invalidateQueries({ queryKey: ["/api/schedule-templates"] });
       closeTemplateModal();
+    } catch (error) {
       toast({ 
         title: "Error", 
         description: "Failed to save template",
         variant: "destructive" 
+      });
     } finally {
       setTemplateSubmitting(false);
+    }
+  };
+
   // Use template to generate shifts
   const useTemplateMutation = useMutation({
     mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
@@ -218,33 +281,51 @@ export default function Scheduling() {
         body: JSON.stringify({ startDate, endDate })
       }),
     onSuccess: (result: any) => {
+      toast({ 
         title: "Shifts Generated",
         description: `Created shifts from template successfully`
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
     },
     onError: () => {
+      toast({ 
+        title: "Error", 
         description: "Failed to generate shifts from template",
         variant: "destructive"
+      });
+    }
+  });
+
   const handleUseTemplate = (templateId: number) => {
     // For demo purposes, use current date and next 7 days
     const startDate = new Date().toISOString().split('T')[0];
     const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
     useTemplateMutation.mutate({ templateId, startDate, endDate });
+  };
+
   const shiftColumns: Column<Shift>[] = [
     { 
       key: "date",
       header: "Date", 
       cell: (shift) => shift.date 
+    },
+    { 
       key: "role",
       header: "Role", 
       cell: (shift) => shift.role 
+    },
+    { 
       key: "time",
       header: "Time", 
       cell: (shift) => `${shift.startTime} - ${shift.endTime}` 
+    },
+    { 
       key: "location",
       header: "Location", 
       cell: (shift) => shift.location 
+    },
+    { 
       key: "status",
       header: "Status", 
       cell: (shift) => (
@@ -252,9 +333,11 @@ export default function Scheduling() {
           {shift.status}
         </Badge>
       )
+    },
     {
       key: "actions",
       header: "Actions",
+      cell: (shift) => (
         <div className="flex items-center space-x-2">
           <Button
             size="sm"
@@ -263,17 +346,30 @@ export default function Scheduling() {
           >
             <Edit className="h-4 w-4" />
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handleShiftDelete(shift)}
+          >
             <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
+      )
+    }
   ];
+
   const templateColumns: Column<ScheduleTemplate>[] = [
+    { 
       key: "name",
       header: "Name", 
       cell: (template) => template.name 
+    },
+    { 
       key: "recurrence",
       header: "Recurrence", 
       cell: (template) => template.recurrence 
+    },
+    { 
       key: "roles",
       header: "Roles", 
       cell: (template) => {
@@ -281,14 +377,33 @@ export default function Scheduling() {
           return template.slots.map((slot: any) => slot.role).join(", ");
         }
         return template.positions?.join(", ") || "";
+      }
+    },
+    { 
+      key: "status",
+      header: "Status", 
       cell: (template) => 
         template.isActive ? 
           <Badge variant="default">Active</Badge> : 
           <Badge variant="secondary">Inactive</Badge>
+    },
+    {
+      key: "actions",
+      header: "Actions",
       cell: (template) => (
+        <div className="flex items-center space-x-2">
+          <Button
+            size="sm"
             onClick={() => handleUseTemplate(template.id)}
             disabled={useTemplateMutation.isPending}
+          >
             {useTemplateMutation.isPending ? "Using..." : "Use"}
+          </Button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -302,13 +417,17 @@ export default function Scheduling() {
             <Button onClick={openTemplateModal} variant="outline" className="flex items-center space-x-2">
               <Copy className="h-4 w-4" />
               <span>Create Template</span>
+            </Button>
           </div>
+        </div>
+
         <Tabs defaultValue="shifts" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="shifts">Shifts</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
+
           <TabsContent value="shifts" className="space-y-4">
             <Card>
               <CardHeader>
@@ -324,8 +443,13 @@ export default function Scheduling() {
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="calendar" className="space-y-4">
+            <Card>
+              <CardHeader>
                 <CardTitle>Calendar View</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <CalendarView 
                   shifts={shifts} 
                   onDateClick={(date) => console.log("Date clicked:", date)}
@@ -334,13 +458,28 @@ export default function Scheduling() {
                   onDuplicateShift={() => {}}
                   onDeleteShift={handleShiftDelete}
                   userRole={user?.role || "staff"}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="templates" className="space-y-4">
+            <Card>
+              <CardHeader>
                 <CardTitle>Schedule Templates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DataTable 
                   data={templates} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
       {/* Shift CRUD Modal */}
       <Dialog open={shiftModalOpen} onOpenChange={closeShiftModal}>
         <DialogContent className="max-w-lg">
@@ -363,6 +502,7 @@ export default function Scheduling() {
                   </FormItem>
                 )}
               />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={shiftForm.control}
@@ -376,15 +516,35 @@ export default function Scheduling() {
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+
+                <FormField
+                  control={shiftForm.control}
                   name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
                       <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+
+              <FormField
+                control={shiftForm.control}
                 name="role"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Role</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
                         {Array.isArray(jobRoles) && jobRoles.map((role: any) => (
                           <SelectItem key={role.id} value={role.title}>
@@ -393,29 +553,94 @@ export default function Scheduling() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={shiftForm.control}
                 name="location"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Location</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
                           <SelectValue placeholder="Select a location" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
                         {Array.isArray(locations) && locations.map((location: any) => (
                           <SelectItem key={location.id} value={location.name}>
                             {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={shiftForm.control}
                 name="assignedTo"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Assign to Staff (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
                           <SelectValue placeholder="Select staff member" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
                         <SelectItem value="unassigned">Unassigned</SelectItem>
                         {Array.isArray(staff) && staff.map((member: any) => (
                           <SelectItem key={member.id} value={member.id.toString()}>
                             {member.firstName} {member.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={shiftForm.control}
                 name="description"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Description</FormLabel>
+                    <FormControl>
                       <Input placeholder="Shift description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={shiftForm.control}
                 name="notes"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
                       <Textarea 
                         placeholder="Additional notes"
                         {...field} 
                         value={field.value || ""}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeShiftModal}>
                   Cancel
@@ -428,11 +653,14 @@ export default function Scheduling() {
                     </>
                   ) : (
                     editingShift ? "Update Shift" : "Create Shift"
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
         isOpen={shiftDeleteDialogOpen}
@@ -441,15 +669,21 @@ export default function Scheduling() {
         title="Delete Shift"
         description="Are you sure you want to delete this shift? This action cannot be undone."
       />
+
       {/* Template Modal - Simplified for now */}
       <Dialog open={templateModalOpen} onOpenChange={setTemplateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
             <DialogTitle>Template Creation</DialogTitle>
             <DialogDescription>
               Template functionality is being developed. Coming soon!
             </DialogDescription>
+          </DialogHeader>
           <DialogFooter>
             <Button onClick={closeTemplateModal}>Close</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

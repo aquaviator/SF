@@ -15,6 +15,7 @@ interface NotImplementedModalProps {
   feature: string;
   description?: string;
 }
+
 export function NotImplementedModal({
   isOpen,
   onClose,
@@ -46,3 +47,4 @@ export function NotImplementedModal({
       </DialogContent>
     </Dialog>
   );
+}

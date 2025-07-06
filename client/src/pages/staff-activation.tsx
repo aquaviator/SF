@@ -18,13 +18,16 @@ const activationSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
+
 type ActivationForm = z.infer<typeof activationSchema>;
+
 export default function StaffActivation() {
   const [location] = useLocation();
   const [token, setToken] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [activationStatus, setActivationStatus] = useState<'loading' | 'ready' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+
   const form = useForm<ActivationForm>({
     resolver: zodResolver(activationSchema),
     defaultValues: {
@@ -32,6 +35,7 @@ export default function StaffActivation() {
       confirmPassword: '',
     },
   });
+
   // Extract token from URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -45,6 +49,7 @@ export default function StaffActivation() {
       setErrorMessage('No activation token provided');
     }
   }, [location]);
+
   const validateToken = async (tokenParam: string) => {
     try {
       const response = await fetch(`/api/auth/verify-token?token=${encodeURIComponent(tokenParam)}`);
@@ -58,18 +63,31 @@ export default function StaffActivation() {
         setErrorMessage(data.message || 'Invalid or expired token');
       }
     } catch (error) {
+      setActivationStatus('error');
       setErrorMessage('Failed to validate token');
+    }
   };
+
   const onSubmit = async (data: ActivationForm) => {
     if (!token) return;
+
+    try {
       const response = await apiRequest('POST', '/api/auth/activate', {
         token,
         password: data.password,
       });
+
+      if (response.ok) {
         setActivationStatus('success');
+      } else {
         const errorData = await response.json();
         setErrorMessage(errorData.message || 'Activation failed');
+      }
+    } catch (error) {
       setErrorMessage('Failed to activate account');
+    }
+  };
+
   if (activationStatus === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -82,7 +100,11 @@ export default function StaffActivation() {
       </div>
     );
   }
+
   if (activationStatus === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <CardTitle>Activation Failed</CardTitle>
@@ -92,18 +114,36 @@ export default function StaffActivation() {
             <p className="text-sm text-gray-600 text-center">
               Please contact your administrator for a new invitation link.
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (activationStatus === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <CardTitle>Account Activated!</CardTitle>
             <CardDescription>
               Your account has been successfully activated. You can now sign in to ShiftFlo.
             </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Button 
               className="w-full" 
               onClick={() => window.location.href = `/login?email=${encodeURIComponent(userInfo?.email || '')}`}
             >
               Go to Sign In
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
@@ -125,28 +165,44 @@ export default function StaffActivation() {
                 className="bg-gray-50"
               />
             </div>
+
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
                 type="password"
                 {...form.register('password')}
                 placeholder="Enter your password"
+              />
               {form.formState.errors.password && (
                 <p className="text-sm text-red-600">{form.formState.errors.password.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
                 id="confirmPassword"
+                type="password"
                 {...form.register('confirmPassword')}
                 placeholder="Confirm your password"
+              />
               {form.formState.errors.confirmPassword && (
                 <p className="text-sm text-red-600">{form.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+
             {errorMessage && (
               <Alert variant="destructive">
                 <AlertDescription>{errorMessage}</AlertDescription>
               </Alert>
             )}
+
+            <Button 
               type="submit" 
               className="w-full"
               disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -154,6 +210,8 @@ export default function StaffActivation() {
                 </>
               ) : (
                 'Activate Account'
+              )}
+            </Button>
           </form>
         </CardContent>
       </Card>

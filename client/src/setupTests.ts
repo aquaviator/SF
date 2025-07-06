@@ -3,10 +3,13 @@ import { vi, beforeEach, afterEach } from 'vitest';
 
 // Make vitest functions available globally
 global.afterEach = afterEach;
+
 // Mock global fetch
 global.fetch = vi.fn();
+
 // Mock window.confirm
 global.confirm = vi.fn(() => true);
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -21,12 +24,14 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 });
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
+
 // Setup default mocks
 beforeEach(() => {
   vi.clearAllMocks();
@@ -36,3 +41,4 @@ beforeEach(() => {
     ok: true,
     json: vi.fn().mockResolvedValue({}),
   });
+});

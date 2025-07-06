@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { useRole } from "@/hooks/useRole";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 import type { HolidayRequest } from "@shared/schema";
 
 const holidayRequestFormSchema = z.object({
@@ -21,9 +21,11 @@ const holidayRequestFormSchema = z.object({
   type: z.enum(["vacation", "sick", "personal", "emergency", "bereavement", "maternity", "paternity", "study", "other"]).default("vacation"),
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
 });
+
 type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
+
 export default function HolidayRequests() {
-  const { tenantId, user } = useRole();
+  const { tenantId, user } = useAuth();
   
   // Memoized query function to fetch holiday requests with user names
   const fetchHolidayRequests = useCallback(async () => {
@@ -43,12 +45,14 @@ export default function HolidayRequests() {
       };
     });
   }, [tenantId]);
+
   // Custom query for holiday requests with user names
   const { data: holidayRequests = [], isLoading } = useQuery({
     queryKey: ["/api/holiday-requests", tenantId],
     queryFn: fetchHolidayRequests,
     enabled: !!tenantId,
   });
+
   // Use the remaining crud functionality from useCrud hook
   const {
     isModalOpen,
@@ -60,7 +64,10 @@ export default function HolidayRequests() {
     handleSubmit,
     handleDelete,
   } = useCrud<HolidayRequest>({
+    queryKey: ["/api/holiday-requests", tenantId],
     endpoint: `/api/holiday-requests?tenantId=${tenantId}`,
+  });
+
   const form = useForm<HolidayRequestFormData>({
     resolver: zodResolver(holidayRequestFormSchema),
     defaultValues: {
@@ -70,6 +77,8 @@ export default function HolidayRequests() {
       type: "vacation",
       priority: "normal",
     },
+  });
+
   // Reset form when modal opens/closes
   React.useEffect(() => {
     if (isModalOpen) {
@@ -82,14 +91,17 @@ export default function HolidayRequests() {
           priority: editingItem.priority || "normal",
         });
       } else {
+        form.reset({
           startDate: "",
           endDate: "",
           reason: "",
           type: "vacation",
           priority: "normal",
+        });
       }
     }
   }, [isModalOpen, editingItem, form]);
+
   const onSubmit = (data: HolidayRequestFormData) => {
     const submitData = {
       ...data,
@@ -101,27 +113,36 @@ export default function HolidayRequests() {
       reviewNotes: null,
       reason: data.reason || null,
     };
+
     if (editingItem) {
       handleSubmit({ ...submitData, id: editingItem.id, createdAt: editingItem.createdAt } as HolidayRequest);
     } else {
       handleSubmit({ ...submitData, createdAt: new Date() });
+    }
   };
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: "bg-yellow-100 text-yellow-800",
       approved: "bg-green-100 text-green-800",
       rejected: "bg-red-100 text-red-800",
+    };
+    
     return (
       <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
+  };
+
   const calculateDays = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const timeDiff = end.getTime() - start.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
     return daysDiff;
+  };
+
   const columns: Column<any>[] = [
     {
       key: "requesterId",
@@ -131,37 +152,64 @@ export default function HolidayRequests() {
           {request.displayName || request.name || `User #${request.requesterId}`}
         </div>
       ),
+    },
+    {
       key: "startDate",
       header: "Dates",
+      cell: (request) => (
         <div>
           <div className="text-sm font-medium text-gray-900">
             {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
           </div>
           <div className="text-sm text-gray-500">
             {calculateDays(request.startDate, request.endDate)} days
+          </div>
+        </div>
+      ),
+    },
+    {
       key: "reason",
       header: "Reason",
+      cell: (request) => (
         <div className="text-sm text-gray-600 max-w-xs truncate">
           {request.reason || "No reason provided"}
+        </div>
+      ),
+    },
+    {
       key: "status",
       header: "Status",
       cell: (request) => getStatusBadge(request.status),
+    },
+    {
       key: "reviewedBy",
       header: "Reviewer",
+      cell: (request) => (
         <div className="text-sm text-gray-600">
           {request.status === 'approved' ? 'Dave Clarke (Owner)' : 
            request.status === 'rejected' ? 'Dave Clarke (Owner)' : 
            'Awaiting Review'}
+        </div>
+      ),
+    },
+    {
       key: "createdAt",
       header: "Requested",
+      cell: (request) => (
+        <div className="text-sm text-gray-600">
           {new Date(request.createdAt).toLocaleDateString()}
+        </div>
+      ),
+    },
   ];
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Holiday Requests</h2>
         <p className="text-gray-600">Manage time-off requests and vacation scheduling</p>
       </div>
+
       <DataTable
         data={holidayRequests}
         columns={columns}
@@ -175,8 +223,10 @@ export default function HolidayRequests() {
           <div className="text-center py-8">
             <p className="text-gray-500">No holiday requests</p>
             <p className="text-sm text-gray-400">Submit a request to plan your time off</p>
+          </div>
         }
       />
+
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -200,9 +250,26 @@ export default function HolidayRequests() {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
             name="endDate"
+            render={({ field }) => (
+              <FormItem>
                 <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="type"
+            render={({ field }) => (
+              <FormItem>
                 <FormLabel>Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
@@ -222,16 +289,49 @@ export default function HolidayRequests() {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="priority"
+            render={({ field }) => (
+              <FormItem>
                 <FormLabel>Priority</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
                       <SelectValue placeholder="Select priority level" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="high">High</SelectItem>
                     <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="reason"
+            render={({ field }) => (
+              <FormItem>
                 <FormLabel>Reason (Optional)</FormLabel>
+                <FormControl>
                   <Textarea placeholder="Additional details or specific reason..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </ModalForm>
     </div>
   );

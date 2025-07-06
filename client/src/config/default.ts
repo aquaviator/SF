@@ -19,11 +19,15 @@ export const configSchema = z.object({
     name: z.string().default("Agent Shifts"),
     version: z.string().default("1.0.0"),
     environment: z.string().default("development"),
+  }),
   api: z.object({
     baseUrl: z.string().default("/api"),
     timeout: z.number().default(10000),
+  }),
 });
+
 export type Config = z.infer<typeof configSchema>;
+
 export const defaultConfig: Config = {
   firebase: {
     apiKey: process.env.FIREBASE_API_KEY || "default-api-key",
@@ -43,7 +47,9 @@ export const defaultConfig: Config = {
     name: "Agent Shifts",
     version: "1.0.0",
     environment: "development",
+  },
   api: {
     baseUrl: "/api",
     timeout: 10000,
+  },
 };

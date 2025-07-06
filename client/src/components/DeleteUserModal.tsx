@@ -16,9 +16,11 @@ interface DeleteUserModalProps {
   onClose: () => void;
   onDeleted: (response: { userDeleted: boolean }) => void;
 }
+
 export function DeleteUserModal({ user, isOpen, onClose, onDeleted }: DeleteUserModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
   const handleDelete = async () => {
     setIsLoading(true);
     
@@ -29,20 +31,26 @@ export function DeleteUserModal({ user, isOpen, onClose, onDeleted }: DeleteUser
       if (!response.ok) {
         throw new Error(result.message || 'Failed to delete user');
       }
+      
       toast({
         title: "User Permanently Deleted",
         description: `${user.firstName} ${user.lastName} has been permanently removed from the database.`,
       });
+      
       onDeleted(result);
       onClose();
     } catch (error) {
       console.error("Error deleting user:", error);
+      toast({
         title: "Delete Failed",
         description: error instanceof Error ? error.message : "Failed to delete user",
         variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -72,6 +80,9 @@ export function DeleteUserModal({ user, isOpen, onClose, onDeleted }: DeleteUser
               <p className="font-medium">{user.firstName} {user.lastName}</p>
               <p className="text-sm text-gray-600">{user.email}</p>
               <p className="text-xs text-red-600 font-medium mt-1">Status: Inactive (Off-boarded)</p>
+            </div>
+          </div>
+          
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
@@ -81,10 +92,17 @@ export function DeleteUserModal({ user, isOpen, onClose, onDeleted }: DeleteUser
             >
               Cancel
             </Button>
+            <Button
               variant="destructive"
               onClick={handleDelete}
+              disabled={isLoading}
+              className="flex-1"
+            >
               {isLoading ? "Deleting..." : "Permanently Delete"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
+}

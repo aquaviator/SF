@@ -15,6 +15,7 @@ interface PhotoUploadProps {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
+
 export function PhotoUpload({
   currentImage,
   onImageChange,
@@ -27,12 +28,14 @@ export function PhotoUpload({
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
   const sizeConfig = {
     sm: { container: 'w-16 h-16', preview: 'w-16 h-16', icon: 'w-4 h-4', text: 'text-xs' },
     md: { container: 'w-24 h-24', preview: 'w-24 h-24', icon: 'w-5 h-5', text: 'text-sm' },
     lg: { container: 'w-32 h-32', preview: 'w-32 h-32', icon: 'w-6 h-6', text: 'text-base' },
   };
   const config = sizeConfig[size];
+
   const handleFileSelect = async (file: File) => {
     console.log('📁 PHOTO_UPLOAD_FILE_SELECT', {
       fileName: file.name,
@@ -51,10 +54,16 @@ export function PhotoUpload({
     // Validate file size
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: "File too large", description: "Please select an image smaller than 5MB", variant: "destructive" });
+      return;
+    }
+    
     // Raw file flow - if onFileSelect is provided, use it instead of Base64
     if (onFileSelect) {
       console.log('🔄 USING_ON_FILE_SELECT_CALLBACK');
       onFileSelect(file);
+      return;
+    }
+    
     // Fallback: Base64 preview for legacy usage
     console.log('🔄 USING_BASE64_CALLBACK');
     try {
@@ -68,23 +77,33 @@ export function PhotoUpload({
         console.log('🔄 CALLING_ON_IMAGE_CHANGE', {
           hasCallback: !!onImageChange,
           base64Length: base64?.length
+        });
         onImageChange?.(base64);
         toast({ title: "Photo uploaded", description: `${type === 'logo' ? 'Business logo' : 'Profile photo'} updated successfully` });
       };
       reader.onerror = () => {
         console.log('❌ FILE_READER_ERROR');
         toast({ title: "Upload failed", description: "Failed to read the image file", variant: "destructive" });
+      };
       reader.readAsDataURL(file);
     } catch (error) {
       console.log('❌ FILE_READER_EXCEPTION', error);
       toast({ title: "Upload failed", description: "An error occurred while uploading the image", variant: "destructive" });
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFileSelect(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
   const triggerFileInput = () => fileInputRef.current?.click();
+
   return (
     <div className={cn("space-y-2", className)}>
       <Label className={config.text}>{type === 'logo' ? 'Business Logo' : 'Profile Photo'}</Label>
@@ -103,6 +122,8 @@ export function PhotoUpload({
           <Button variant="outline" size="sm" onClick={triggerFileInput} disabled={isLoading} className="w-full">
             {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/>Uploading...</> : <><Upload className="w-4 h-4 mr-2"/>Choose File</>}
           </Button>
+        </div>
       </div>
     </div>
   );
+}

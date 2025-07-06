@@ -21,6 +21,7 @@ interface DeleteConfirmDialogProps {
   isLoading?: boolean;
   itemName?: string;
 }
+
 export function DeleteConfirmDialog({
   isOpen,
   onClose,
@@ -31,6 +32,7 @@ export function DeleteConfirmDialog({
   itemName = "this item",
 }: DeleteConfirmDialogProps) {
   const defaultDescription = `Are you sure you want to delete ${itemName}? This action cannot be undone.`;
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
@@ -58,11 +60,14 @@ export function DeleteConfirmDialog({
                 Deleting...
               </>
             ) : (
+              <>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
+              </>
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
+}

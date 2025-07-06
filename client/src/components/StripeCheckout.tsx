@@ -10,22 +10,28 @@ interface StripeCheckoutProps {
   totalAmount: number;
   onSuccess?: (paymentIntentId: string) => void;
 }
+
 export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeCheckoutProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!stripe || !elements) {
       return;
     }
+
     setIsProcessing(true);
+
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: 'if_required',
       });
+
       if (error) {
         toast({
           title: "Payment Failed",
@@ -33,8 +39,10 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
           variant: "destructive",
         });
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        toast({
           title: "Payment Successful",
           description: `Successfully added ${seatsToAdd} seats to your subscription`,
+        });
         onSuccess?.(paymentIntent.id);
       }
     } catch (error) {
@@ -42,9 +50,12 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
         title: "Payment Error",
         description: "An unexpected error occurred",
         variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
+    }
   };
+
   return (
     <Card>
       <CardHeader>
@@ -74,3 +85,4 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
       </CardContent>
     </Card>
   );
+}

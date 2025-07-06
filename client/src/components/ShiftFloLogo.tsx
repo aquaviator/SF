@@ -12,6 +12,7 @@ export interface ShiftFloLogoProps {
   /** Secondary tone (header bar / holes) */
   accentColor?: string;
 }
+
 const ShiftFloLogo: React.FC<ShiftFloLogoProps> = ({
   className = "",
   width = 40,
@@ -40,6 +41,7 @@ const ShiftFloLogo: React.FC<ShiftFloLogoProps> = ({
         />
       </filter>
     </defs>
+
     {/* Body of calendar with drop shadow */}
     <rect
       x="2"
@@ -50,12 +52,15 @@ const ShiftFloLogo: React.FC<ShiftFloLogoProps> = ({
       fill="url(#sf-main-grad)"
       filter="url(#sf-drop)"
     />
+
     {/* Top header bar */}
     <rect x="2" y="6" width="36" height="8" rx="4" fill={accentColor} />
+
     {/* Punch-hole circles */}
     <circle cx="10" cy="10" r="2" fill="#fff" />
     <circle cx="20" cy="10" r="2" fill="#fff" />
     <circle cx="30" cy="10" r="2" fill="#fff" />
+
     {/* SF Monogram */}
     <text
       x="20"
@@ -71,4 +76,5 @@ const ShiftFloLogo: React.FC<ShiftFloLogoProps> = ({
     </text>
   </svg>
 );
+
 export default ShiftFloLogo;

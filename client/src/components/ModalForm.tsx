@@ -14,6 +14,7 @@ interface ModalFormProps<T extends FieldValues = FieldValues> {
   submitLabel?: string;
   isLoading?: boolean;
 }
+
 export function ModalForm<T extends FieldValues = FieldValues>({
   isOpen,
   onClose,
@@ -28,6 +29,7 @@ export function ModalForm<T extends FieldValues = FieldValues>({
     console.log("🔧 MODAL_FORM_SUBMIT", { data, formErrors: form.formState.errors });
     onSubmit(data);
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -58,8 +60,11 @@ export function ModalForm<T extends FieldValues = FieldValues>({
                 })}
               >
                 {isLoading ? "Saving..." : submitLabel}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
+}

@@ -18,8 +18,10 @@ export const developmentConfig: Partial<Config> = {
       firestore: 8080,
       functions: 5001,
     },
+  },
   app: {
     name: "Agent Shifts Dev",
     version: "1.0.0-dev",
     environment: "development",
+  },
 };

@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function NotificationBell() {
-  const { role, tenantId } = useRole();
+  const { role, tenantId } = useAuth();
+
   // Fetch pending requests count for owners
   const { data: pendingRequestsCount = 0 } = useQuery({
     queryKey: ["/api/pending-requests-count", tenantId],
@@ -25,17 +26,27 @@ export function NotificationBell() {
         fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => []),
         fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => [])
       ]);
+      
       const pendingHoliday = holidayRequests.filter((req: any) => req.status === "pending").length;
       const pendingSwap = swapRequests.filter((req: any) => req.status === "pending").length;
+      
       return pendingHoliday + pendingSwap;
     },
     enabled: !!tenantId && role === 'owner',
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
   // Get recent notifications for dropdown
   const { data: notifications = [] } = useQuery({
     queryKey: ["/api/notifications", tenantId],
+    queryFn: async () => {
       if (role !== 'owner') return [];
+      
+      const [holidayRequests, swapRequests] = await Promise.all([
+        fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => []),
+        fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => [])
+      ]);
+      
       const pendingHoliday = holidayRequests
         .filter((req: any) => req.status === "pending")
         .slice(0, 3)
@@ -47,16 +58,31 @@ export function NotificationBell() {
           time: new Date(req.createdAt || Date.now()).toLocaleDateString(),
           route: '/owner/requests'
         }));
+      
       const pendingSwap = swapRequests
+        .filter((req: any) => req.status === "pending")
+        .slice(0, 3)
+        .map((req: any) => ({
+          id: req.id,
           type: 'swap',
           title: 'Shift Swap Request',
           message: `${req.requesterName || 'Staff member'} wants to swap shifts`,
+          time: new Date(req.createdAt || Date.now()).toLocaleDateString(),
+          route: '/owner/requests'
+        }));
+      
       return [...pendingHoliday, ...pendingSwap];
+    },
+    enabled: !!tenantId && role === 'owner',
     refetchInterval: 30000,
+  });
+
   const hasNotifications = pendingRequestsCount > 0;
+
   if (role !== 'owner') {
     return null; // Only show notifications for owners
   }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -77,13 +103,18 @@ export function NotificationBell() {
             >
               {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
             </Badge>
+          )}
         </Button>
       </DropdownMenuTrigger>
+      
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
+          {hasNotifications && (
             <Badge variant="outline" className="ml-2">
               {pendingRequestsCount} pending
+            </Badge>
+          )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
@@ -101,6 +132,7 @@ export function NotificationBell() {
               onClick={() => {
                 window.location.href = notification.route;
               }}
+            >
               <div className="flex items-center justify-between w-full">
                 <span className="font-medium text-sm">{notification.title}</span>
                 <span className="text-xs text-muted-foreground">{notification.time}</span>
@@ -111,13 +143,20 @@ export function NotificationBell() {
             </DropdownMenuItem>
           ))
         )}
+        
         {hasNotifications && (
           <>
             <DropdownMenuSeparator />
+            <DropdownMenuItem 
               className="text-center font-medium text-blue-600 hover:text-blue-700"
+              onClick={() => {
                 window.location.href = '/owner/requests';
+              }}
+            >
               View All Requests
+            </DropdownMenuItem>
           </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

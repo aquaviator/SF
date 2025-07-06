@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Loader2, User } from "lucide-react";
@@ -13,12 +13,14 @@ interface UserType {
   email: string;
   photoUrl?: string | null;
 }
+
 export default function ProfileSimple() {
-  const { user } = useRole();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (user?.id) {
       apiRequest('GET', `/api/users/${user.id}`)
@@ -31,15 +33,19 @@ export default function ProfileSimple() {
         })
         .catch(error => {
           console.error('Profile fetch error:', error);
+          setLoading(false);
         });
     }
   }, [user?.id]);
+
   const updatePhoto = async (imageUrl: string) => {
     console.log('🔄 UPDATING_PHOTO', { imageUrl: imageUrl.substring(0, 50) + '...' });
     
     if (!userData || !user?.id) {
       console.log('❌ NO_USER_DATA');
       return;
+    }
+
     try {
       const updateData = {
         firstName: userData.firstName,
@@ -47,23 +53,30 @@ export default function ProfileSimple() {
         email: userData.email,
         photoUrl: imageUrl
       };
+
       console.log('🚀 SENDING_UPDATE', { hasPhotoUrl: !!updateData.photoUrl });
       
       const response = await apiRequest('PUT', `/api/users/${user.id}`, updateData);
       const result = await response.json();
+      
       console.log('✅ UPDATE_SUCCESS', result);
       setPhotoUrl(imageUrl);
       setUserData(prev => prev ? { ...prev, photoUrl: imageUrl } : null);
+      
       toast({ 
         title: "Success", 
         description: "Profile photo updated successfully" 
       });
     } catch (error) {
       console.error('❌ UPDATE_ERROR', error);
+      toast({ 
         title: "Error", 
         description: "Failed to update profile photo", 
         variant: "destructive" 
+      });
+    }
   };
+
   if (loading) {
     return (
       <div className="container mx-auto py-8 flex justify-center">
@@ -71,6 +84,7 @@ export default function ProfileSimple() {
       </div>
     );
   }
+
   return (
     <div className="container mx-auto py-8">
       <Card>
@@ -96,3 +110,4 @@ export default function ProfileSimple() {
       </Card>
     </div>
   );
+}

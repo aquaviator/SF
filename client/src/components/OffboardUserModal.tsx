@@ -16,9 +16,11 @@ interface OffboardUserModalProps {
   onClose: () => void;
   onOffboarded: (response: { shiftsUpdated: number; userDeactivated: boolean }) => void;
 }
+
 export function OffboardUserModal({ user, isOpen, onClose, onOffboarded }: OffboardUserModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
   const handleOffboard = async () => {
     setIsLoading(true);
     
@@ -29,20 +31,26 @@ export function OffboardUserModal({ user, isOpen, onClose, onOffboarded }: Offbo
       if (!response.ok) {
         throw new Error(result.message || 'Failed to off-board user');
       }
+      
       toast({
         title: "User Off-boarded",
         description: `${user.firstName} ${user.lastName} has been successfully off-boarded. ${result.shiftsUpdated} upcoming shifts were unassigned.`,
       });
+      
       onOffboarded(result);
       onClose();
     } catch (error) {
       console.error("Error off-boarding user:", error);
+      toast({
         title: "Off-boarding Failed",
         description: error instanceof Error ? error.message : "Failed to off-board user",
         variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -71,6 +79,9 @@ export function OffboardUserModal({ user, isOpen, onClose, onOffboarded }: Offbo
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="font-medium">{user.firstName} {user.lastName}</p>
               <p className="text-sm text-gray-600">{user.email}</p>
+            </div>
+          </div>
+          
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
@@ -80,10 +91,17 @@ export function OffboardUserModal({ user, isOpen, onClose, onOffboarded }: Offbo
             >
               Cancel
             </Button>
+            <Button
               variant="destructive"
               onClick={handleOffboard}
+              disabled={isLoading}
+              className="flex-1"
+            >
               {isLoading ? "Off-boarding..." : "Confirm Off-board"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
+}

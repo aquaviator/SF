@@ -1,10 +1,13 @@
 import React from "react";
+import { useRoleColors } from "@/hooks/useRoleColors";
 
 interface CalendarLegendProps {
   className?: string;
 }
+
 export function CalendarLegend({ className = "" }: CalendarLegendProps) {
   const { jobRoles, isLoading, getRoleLegendColorByTitle, getRoleLabelByTitle } = useRoleColors();
+
   if (isLoading) {
     return (
       <div className={`p-4 bg-slate-50 rounded-lg shadow-sm border border-slate-200 ${className}`}>
@@ -12,8 +15,15 @@ export function CalendarLegend({ className = "" }: CalendarLegendProps) {
       </div>
     );
   }
+
   if (jobRoles.length === 0) {
+    return (
+      <div className={`p-4 bg-slate-50 rounded-lg shadow-sm border border-slate-200 ${className}`}>
         <div className="text-sm text-slate-500">No roles configured</div>
+      </div>
+    );
+  }
+
   return (
     <div className={`p-4 bg-slate-50 rounded-lg shadow-sm border border-slate-200 ${className}`}>
       <div className="flex flex-wrap items-center gap-4">
@@ -28,5 +38,7 @@ export function CalendarLegend({ className = "" }: CalendarLegendProps) {
             </div>
           );
         })}
+      </div>
     </div>
   );
+}

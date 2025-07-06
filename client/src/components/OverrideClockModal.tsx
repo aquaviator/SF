@@ -17,10 +17,13 @@ interface TimeEntry {
   tenantId: string;
   status: string;
 }
+
 interface OverrideClockModalProps {
   entry: TimeEntry;
   onClose: () => void;
   onSaved: (updatedEntry: TimeEntry) => void;
+}
+
 export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -31,21 +34,34 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     const date = new Date(timestamp);
     return date.toISOString().split('T')[0];
   };
+
   // Format time for input type="time" - convert UTC to local time
   const formatTime = (timestamp: string | Date | null): string => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
     // Convert to local time format for time input
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
+  };
+
   // Get default values from actualIn/actualOut or fall back to scheduled times
   const getDefaultInDate = () => {
     return formatDate(entry.clockInTime || entry.scheduledStartTime);
+  };
+
   const getDefaultInTime = () => {
     return formatTime(entry.clockInTime || entry.scheduledStartTime);
+  };
+
   const getDefaultOutDate = () => {
     return formatDate(entry.clockOutTime || entry.scheduledEndTime);
+  };
+
   const getDefaultOutTime = () => {
     return formatTime(entry.clockOutTime || entry.scheduledEndTime);
+  };
+
   const [formData, setFormData] = useState({
     inDate: getDefaultInDate(),
     inTime: getDefaultInTime(),
@@ -54,12 +70,15 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     reason: "",
     otherNote: ""
   });
+
   // Editing state for each field
   const [editing, setEditing] = useState({
     inDate: false,
     inTime: false,
     outDate: false,
     outTime: false
+  });
+
   const reasonOptions = [
     "Staff was on time",
     "Late arrival",
@@ -67,6 +86,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     "Forgot to clock out",
     "Other"
   ];
+
   const isFormValid = () => {
     const hasRequiredFields = formData.inDate && formData.inTime && formData.reason;
     const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
@@ -74,6 +94,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     // For completed entries, require clock-out. For active entries, clock-out is optional
     const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
     const hasValidClockOut = isActiveEntry || (formData.outDate && formData.outTime);
+    
     // If both clock-in and clock-out are provided, validate that clock-out is after clock-in
     let hasValidTimeOrder = true;
     if (formData.outDate && formData.outTime && formData.inDate && formData.inTime) {
@@ -81,13 +102,21 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
       const clockOutDateTime = new Date(`${formData.outDate}T${formData.outTime}:00`);
       hasValidTimeOrder = clockOutDateTime > clockInDateTime;
     }
+    
     return hasRequiredFields && hasValidReason && hasValidClockOut && hasValidTimeOrder;
+  };
+
   const handleFieldEdit = (field: keyof typeof editing) => {
     setEditing(prev => ({ ...prev, [field]: true }));
+  };
+
   const handleFieldBlur = (field: keyof typeof editing) => {
     setEditing(prev => ({ ...prev, [field]: false }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!isFormValid()) {
       // Check for specific validation errors
       let errorMessage = "Please fill in all required fields";
@@ -99,22 +128,28 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           errorMessage = "Clock out time must be after clock in time";
         }
       }
+      
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive"
       });
       return;
+    }
+
     // Combine date and time into ISO format
     const inDateTime = `${formData.inDate}T${formData.inTime}:00`;
     const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break";
+    
     // For active entries, clock-out is optional
     let payload: any = {
       in: inDateTime,
       note: formData.reason === "Other" ? formData.otherNote : formData.reason
     };
+
     if (!isActiveEntry || (formData.outDate && formData.outTime)) {
       const outDateTime = `${formData.outDate}T${formData.outTime}:00`;
+      
       // Only validate clock-out time if it's provided
       if (new Date(inDateTime) >= new Date(outDateTime)) {
         toast({
@@ -123,8 +158,13 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           variant: "destructive"
         });
         return;
+      }
+      
       payload.out = outDateTime;
+    }
+
     setIsLoading(true);
+
     try {
       const response = await fetch(`/api/time-entries/${entry.id}/override`, {
         method: "PATCH",
@@ -132,18 +172,33 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
           "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
+      });
+
       if (!response.ok) {
         throw new Error("Failed to override time entry");
+      }
+
       const updatedEntry = await response.json();
+      
+      toast({
         title: "Success",
         description: "Time entry has been overridden"
+      });
+
       onSaved(updatedEntry);
       onClose();
     } catch (error) {
       console.error("Override time entry error:", error);
+      toast({
+        title: "Error",
         description: "Failed to override time entry",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -183,37 +238,84 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
               )}
               
               {editing.inTime ? (
+                <Input
                   type="time"
                   value={formData.inTime}
                   onChange={(e) => setFormData(prev => ({ ...prev, inTime: e.target.value }))}
                   onBlur={() => handleFieldBlur('inTime')}
+                  autoFocus
+                  required
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
                   onClick={() => handleFieldEdit('inTime')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
                   aria-label="Click to edit clock in time"
                   title="Click to edit time"
+                >
                   {formData.inTime || "Select time"}
+                </span>
+              )}
             </div>
           </div>
+
           {/* Clock Out Date & Time */}
+          <div className="space-y-2">
             <Label>
               Clock Out
               {(entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late") && (
                 <span className="text-sm text-muted-foreground ml-2">(optional for active shifts)</span>
+              )}
             </Label>
+            <div className="flex gap-2">
               {editing.outDate ? (
+                <Input
+                  type="date"
                   value={formData.outDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, outDate: e.target.value }))}
                   onBlur={() => handleFieldBlur('outDate')}
+                  autoFocus
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
                   onClick={() => handleFieldEdit('outDate')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
                   aria-label="Click to edit clock out date"
+                  title="Click to edit date"
+                >
                   {formData.outDate || "Select date"}
+                </span>
+              )}
+              
               {editing.outTime ? (
+                <Input
+                  type="time"
                   value={formData.outTime}
                   onChange={(e) => setFormData(prev => ({ ...prev, outTime: e.target.value }))}
                   onBlur={() => handleFieldBlur('outTime')}
+                  autoFocus
+                  className="flex-1"
+                />
+              ) : (
+                <span
+                  role="button"
                   onClick={() => handleFieldEdit('outTime')}
+                  className="flex-1 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted transition-colors"
                   aria-label="Click to edit clock out time"
+                  title="Click to edit time"
+                >
                   {formData.outTime || "Select time"}
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Reason Selector */}
+          <div className="space-y-2">
             <Label>Reason</Label>
             <Select value={formData.reason} onValueChange={(value) => setFormData(prev => ({ ...prev, reason: value }))}>
               <SelectTrigger>
@@ -227,6 +329,8 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
           {/* Other Note (shown when "Other" is selected) */}
           {formData.reason === "Other" && (
             <div className="space-y-2">
@@ -239,14 +343,19 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
                 required
                 rows={3}
               />
+            </div>
           )}
+
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !isFormValid()}>
               {isLoading ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
+}

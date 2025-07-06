@@ -580,14 +580,6 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Email activation links now use production domain for proper deployment compatibility
   - Verified complete staff activation workflow: invitation → email → password setup → login → staff dashboard
   - Staff members now activate under correct tenant and access role-appropriate dashboard interface
-- July 06, 2025. Completed final useAuth to useRole conversion sweep eliminating all authentication inconsistencies:
-  - Fixed staff profile page 404 error by adding /staff/profile route and updating menu configuration
-  - Modified Profile component to show role-appropriate interface (business+personal tabs for owners, personal only for staff)
-  - Systematically converted all remaining useAuth references across 20+ components to useRole pattern
-  - Maintained special dual-import pattern for logout functionality in SidebarNav and MoreDrawer components
-  - Fixed PhotoUpload component props and TypeScript errors ensuring consistent API usage
-  - All authentication hooks now use unified useRole pattern with zero tolerance for inconsistency achieved
-  - Staff profile page fully operational with proper role-based access and photo upload functionality
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

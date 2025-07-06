@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRole } from "@/hooks/useRole";
 import { getRoleColorFromLegend, getRoleDotColorFromLegend, getRoleLegendColorFromLegend } from "@/utils/roleColors";
 
 interface DatabaseRole {
@@ -9,7 +10,9 @@ interface DatabaseRole {
   legendColor?: string | null;
   legendIcon?: string | null;
 }
+
 export function useRoleColors() {
+  const { tenantId } = useRole();
   
   // Fetch job roles with legend data
   const { data: jobRoles = [], isLoading } = useQuery<DatabaseRole[]>({
@@ -21,6 +24,7 @@ export function useRoleColors() {
     },
     enabled: !!tenantId,
   });
+
   // Create role-to-color mapping
   const roleColorMap = jobRoles.reduce((map, role) => {
     const legendColor = role.legendColor || 'slate';
@@ -33,18 +37,28 @@ export function useRoleColors() {
     };
     return map;
   }, {} as Record<string, { badge: string; dot: string; legend: string; label: string; initial: string }>);
+
   // Helper functions that use the database mapping
   const getRoleColorByTitle = (roleTitle: string): string => {
     return roleColorMap[roleTitle]?.badge || getRoleColorFromLegend('slate');
   };
+
   const getRoleDotColorByTitle = (roleTitle: string): string => {
     return roleColorMap[roleTitle]?.dot || getRoleDotColorFromLegend('slate');
+  };
+
   const getRoleLegendColorByTitle = (roleTitle: string): string => {
     return roleColorMap[roleTitle]?.legend || getRoleLegendColorFromLegend('slate');
+  };
+
   const getRoleLabelByTitle = (roleTitle: string): string => {
     return roleColorMap[roleTitle]?.label || roleTitle;
+  };
+
   const getRoleInitialByTitle = (roleTitle: string): string => {
     return roleColorMap[roleTitle]?.initial || roleTitle.charAt(0).toUpperCase();
+  };
+
   return {
     jobRoles,
     roleColorMap,
@@ -54,3 +68,5 @@ export function useRoleColors() {
     getRoleLegendColorByTitle,
     getRoleLabelByTitle,
     getRoleInitialByTitle
+  };
+}
