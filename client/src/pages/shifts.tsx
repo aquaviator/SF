@@ -1,4 +1,5 @@
 import React from "react";
+import { useRole } from "@/hooks/useRole";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
 import type { Shift } from "@shared/schema";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
@@ -24,11 +24,9 @@ const shiftFormSchema = z.object({
   assignedTo: z.string().optional(),
   notes: z.string().optional(),
 });
-
 type ShiftFormData = z.infer<typeof shiftFormSchema>;
-
 export default function Shifts() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   const {
     data: shifts,
@@ -49,7 +47,6 @@ export default function Shifts() {
     queryKey: ["/api/shifts", tenantId],
     endpoint: `/api/shifts?tenantId=${tenantId}`,
   });
-
   const form = useForm<ShiftFormData>({
     resolver: zodResolver(shiftFormSchema),
     defaultValues: {
@@ -62,8 +59,6 @@ export default function Shifts() {
       assignedTo: "unassigned",
       notes: "",
     },
-  });
-
   // Reset form when modal opens/closes
   React.useEffect(() => {
     if (isModalOpen) {
@@ -77,18 +72,15 @@ export default function Shifts() {
           notes: editingItem.notes || "",
         });
       } else {
-        form.reset({
           date: "",
           startTime: "",
           endTime: "",
           role: "",
           assignedTo: "unassigned",
           notes: "",
-        });
       }
     }
   }, [isModalOpen, editingItem, form]);
-
   const onSubmit = (data: ShiftFormData) => {
     const submitData = {
       ...data,
@@ -98,29 +90,23 @@ export default function Shifts() {
       createdBy: 1, // Stubbed user ID
       notes: data.notes || null,
     };
-
     if (editingItem) {
       handleSubmit({ ...submitData, id: editingItem.id } as Shift);
     } else {
       handleSubmit(submitData);
-    }
   };
-
   const getStatusBadge = (status: string) => {
     const variants = {
       open: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
       confirmed: "bg-green-100 text-green-800",
       conflict: "bg-red-100 text-red-800",
-    };
     
     return (
       <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
-  };
-
   const columns: Column<Shift>[] = [
     {
       key: "date",
@@ -132,37 +118,24 @@ export default function Shifts() {
           </div>
           <div className="text-sm text-gray-500">
             {shift.startTime} - {shift.endTime}
-          </div>
         </div>
       ),
-    },
-    {
       key: "role",
       header: "Role",
-    },
-    {
       key: "assignedTo",
       header: "Assigned To",
-      cell: (shift) => (
         <div className="text-sm text-gray-900">
           {shift.assignedTo ? `Staff Member ${shift.assignedTo}` : "Unassigned"}
-        </div>
-      ),
-    },
-    {
       key: "status",
       header: "Status",
       cell: (shift) => getStatusBadge(shift.status),
-    },
   ];
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Shift Management</h2>
         <p className="text-gray-600">Manage and assign shifts for your team</p>
       </div>
-
       <DataTable
         data={shifts}
         columns={columns}
@@ -176,10 +149,8 @@ export default function Shifts() {
           <div className="text-center py-8">
             <p className="text-gray-500">No shifts scheduled</p>
             <p className="text-sm text-gray-400">Create your first shift to get started</p>
-          </div>
         }
       />
-
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -203,7 +174,6 @@ export default function Shifts() {
               </FormItem>
             )}
           />
-
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -218,34 +188,14 @@ export default function Shifts() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
               name="endTime"
-              render={({ field }) => (
-                <FormItem>
                   <FormLabel>End Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
             name="role"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Role</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
-                  </FormControl>
                   <SelectContent>
                     <SelectItem value="Customer Service">Customer Service</SelectItem>
                     <SelectItem value="Security">Security</SelectItem>
@@ -253,80 +203,24 @@ export default function Shifts() {
                     <SelectItem value="Maintenance">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="description"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Description</FormLabel>
-                <FormControl>
                   <Input placeholder="Brief description of shift duties" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="location"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Location</FormLabel>
-                <FormControl>
                   <Input placeholder="Shift location" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="assignedTo"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Assign To</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
                       <SelectValue placeholder="Leave unassigned" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
                     <SelectItem value="unassigned">Leave Unassigned</SelectItem>
                     <SelectItem value="1">Sarah Anderson</SelectItem>
                     <SelectItem value="2">Mike Johnson</SelectItem>
                     <SelectItem value="3">Emily Davis</SelectItem>
                     <SelectItem value="4">David Wilson</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="notes"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Notes</FormLabel>
-                <FormControl>
                   <Textarea placeholder="Optional notes..." {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
       </ModalForm>
-
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
         isOpen={deleteDialogOpen}
@@ -334,7 +228,6 @@ export default function Shifts() {
         onConfirm={confirmDelete}
         title="Delete Shift"
         itemName={itemToDelete ? `shift for ${itemToDelete.date}` : "this shift"}
-      />
     </div>
   );
 }

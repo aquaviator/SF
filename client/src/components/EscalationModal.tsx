@@ -15,18 +15,14 @@ interface EscalationItem {
   urgency: 'critical' | 'high' | 'medium' | 'low';
   createdAt: string;
 }
-
 interface EscalationModalProps {
   isOpen: boolean;
   onClose: () => void;
   escalations: EscalationItem[];
   tenantId: string;
-}
-
 export function EscalationModal({ isOpen, onClose, escalations, tenantId }: EscalationModalProps) {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const { toast } = useToast();
-
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'critical': return 'destructive';
@@ -35,12 +31,10 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
       default: return 'outline';
     }
   };
-
   const handleSystemWideAlert = async (escalationId: number) => {
     console.log("📢 ESCALATION_SYSTEM_WIDE_ALERT", { escalationId, tenantId, timestamp: new Date() });
     
     setProcessingId(escalationId);
-    
     try {
       // Send urgent system-wide notification to ALL staff members
       const response = await apiRequest("POST", `/api/escalations/${escalationId}/system-alert`, {
@@ -48,7 +42,6 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
         action: "urgent_broadcast",
         priority: "critical"
       });
-
       if (response.ok) {
         toast({
           title: "System-Wide Alert Sent",
@@ -65,14 +58,8 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
         title: "Error",
         description: "Failed to send system-wide alert. Please try again.",
         variant: "destructive"
-      });
     } finally {
       setProcessingId(null);
-    }
-  };
-
-
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -85,7 +72,6 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
             Handle urgent operational issues that require immediate attention
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-4">
           {escalations.length === 0 ? (
             <div className="text-center py-8">
@@ -113,17 +99,13 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       {new Date(escalation.createdAt).toLocaleString()}
-                    </div>
                   </div>
                   <CardTitle className="text-lg">{escalation.description}</CardTitle>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Users className="h-4 w-4" />
                       {escalation.affectedShifts} shift{escalation.affectedShifts !== 1 ? 's' : ''} affected
-                    </div>
                     
                     <div className="flex flex-col gap-2">
                       {escalation.type === "assignment_declined" && (
@@ -142,20 +124,15 @@ export function EscalationModal({ isOpen, onClose, escalations, tenantId }: Esca
                         <Users className="h-4 w-4 mr-2" />
                         {processingId === escalation.id ? "Broadcasting..." : "Send System-Wide Alert"}
                       </Button>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
-
         <div className="flex justify-end pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
-}

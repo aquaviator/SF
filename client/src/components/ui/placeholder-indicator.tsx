@@ -8,7 +8,6 @@ interface PlaceholderIndicatorProps {
   description?: string;
   className?: string;
 }
-
 export function PlaceholderIndicator({ 
   children, 
   type = 'placeholder', 
@@ -21,14 +20,11 @@ export function PlaceholderIndicator({
     todo: '(TODO)',
     'not-implemented': '(not implemented)'
   };
-
   const typeColors = {
     placeholder: 'text-gray-500',
     test: 'text-blue-500',
     todo: 'text-orange-500',
     'not-implemented': 'text-red-500'
-  };
-
   return (
     <TooltipProvider>
       <div className={cn("inline-flex items-center gap-2", className)}>
@@ -47,4 +43,3 @@ export function PlaceholderIndicator({
       </div>
     </TooltipProvider>
   );
-}

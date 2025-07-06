@@ -18,10 +18,8 @@ export const productionConfig: Partial<Config> = {
       firestore: 8080,
       functions: 5001,
     },
-  },
   app: {
     name: "Agent Shifts",
     version: "1.0.0",
     environment: "production",
-  },
 };

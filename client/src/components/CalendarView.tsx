@@ -3,7 +3,6 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Shift } from "@shared/schema";
-import { useRoleColors } from "@/hooks/useRoleColors";
 import { DayShiftsModal } from "./DayShiftsModal";
 
 interface CalendarViewProps {
@@ -13,10 +12,8 @@ interface CalendarViewProps {
   onEditShift: (shift: Shift) => void;
   onDuplicateShift: (shift: Shift) => void;
   onDeleteShift: (shiftId: number) => void;
-
   userRole: "owner" | "staff";
 }
-
 export function CalendarView({ 
   shifts, 
   onDateClick,
@@ -30,7 +27,6 @@ export function CalendarView({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayModalOpen, setDayModalOpen] = useState(false);
-
   // Generate calendar days
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -38,30 +34,22 @@ export function CalendarView({
   const lastDayOfMonth = new Date(year, month + 1, 0);
   const firstDayOfWeek = firstDayOfMonth.getDay();
   const daysInMonth = lastDayOfMonth.getDate();
-
   const calendarDays = [];
   
   // Add empty cells for days before the first day of the month
   for (let i = 0; i < firstDayOfWeek; i++) {
     calendarDays.push(null);
   }
-  
   // Add all days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     calendarDays.push(day);
-  }
-
   const formatDate = (day: number) => {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
-
   const getShiftsForDate = (day: number) => {
     const dateStr = formatDate(day);
     return shifts.filter(shift => shift.date === dateStr);
-  };
-
   const handleDayClick = (day: number) => {
-    const dateStr = formatDate(day);
     const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     
     if (onDateClick) {
@@ -70,8 +58,6 @@ export function CalendarView({
       setSelectedDate(dateStr);
       setDayModalOpen(true);
     }
-  };
-
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -82,8 +68,6 @@ export function CalendarView({
       }
       return newDate;
     });
-  };
-
   const getStatusColor = (status: Shift['status']) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -96,11 +80,6 @@ export function CalendarView({
       case 'declined': return 'bg-red-100 text-red-800 border-red-200';
       case 'cancelled': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-
-
   return (
     <div className="space-y-4">
       {/* Calendar Header */}
@@ -115,13 +94,10 @@ export function CalendarView({
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
             <ChevronRight className="w-4 h-4" />
-          </Button>
           <Button onClick={() => setCurrentDate(new Date())}>
             Today
-          </Button>
         </div>
       </div>
-
       {/* Calendar Grid */}
       <Card>
         <CardContent className="p-4">
@@ -133,20 +109,17 @@ export function CalendarView({
               </div>
             ))}
           </div>
-
           {/* Calendar Days */}
           <div className="grid grid-cols-7 gap-2">
             {calendarDays.map((day, index) => {
               if (day === null) {
                 return <div key={`empty-${index}`} className="h-24" />;
               }
-
               const dayShifts = getShiftsForDate(day);
               const today = new Date();
               const isToday = year === today.getFullYear() && 
                             month === today.getMonth() && 
                             day === today.getDate();
-
               return (
                 <div
                   key={`day-${year}-${month}-${day}`}
@@ -171,28 +144,20 @@ export function CalendarView({
                         >
                           {getRoleInitialByTitle(shift.role)}
                         </span>
-
                         {/* Mobile: colored dot only */}
-                        <span
                           className={`inline-block md:hidden w-3 h-3 rounded-full ${getRoleDotColorByTitle(shift.role)}`}
-                          title={`${getRoleLabelByTitle(shift.role)}`}
                         />
                       </div>
                     ))}
                     {dayShifts.length > 2 && (
                       <div className="text-xs text-gray-500 text-center">
                         +{dayShifts.length - 2} more
-                      </div>
                     )}
-                  </div>
                 </div>
               );
             })}
-          </div>
         </CardContent>
       </Card>
-
-
       {/* Day Shifts Modal */}
       <DayShiftsModal 
         date={selectedDate}
@@ -205,4 +170,3 @@ export function CalendarView({
       />
     </div>
   );
-}

@@ -16,17 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 function useSubdomainCheck(subdomain: string) {
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [message, setMessage] = useState('');
-
   useEffect(() => {
     if (!subdomain || subdomain.length < 3) {
       setStatus('idle');
       setMessage('');
       return;
     }
-
     setStatus('checking');
     setMessage('Checking availability...');
-
     const timer = setTimeout(async () => {
       try {
         const response = await fetch(`/api/check-subdomain/${subdomain}`);
@@ -44,13 +41,10 @@ function useSubdomainCheck(subdomain: string) {
         setMessage('Error checking availability');
       }
     }, 500); // Debounce for 500ms
-
     return () => clearTimeout(timer);
   }, [subdomain]);
-
   return { status, message };
 }
-
 // Registration form schema
 const registrationSchema = z.object({
   // Business Information
@@ -76,18 +70,12 @@ const registrationSchema = z.object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
-  }),
 });
-
 type RegistrationData = z.infer<typeof registrationSchema>;
-
-
-
 export default function BusinessRegistration() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
   const form = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
@@ -103,20 +91,16 @@ export default function BusinessRegistration() {
         firstName: "",
         lastName: "",
         email: "",
-      },
     },
   });
-
   // Watch subdomain field for real-time availability checking
   const subdomainValue = form.watch("business.subdomain");
   const subdomainCheck = useSubdomainCheck(subdomainValue);
-
   // Calculate pricing based on staff count
   const calculateMonthlyPrice = (staffCount: number) => {
     const pricePerSeat = 3.00; // £3.00 per seat per month
     return staffCount * pricePerSeat;
   };
-
   // Step validation function
   const validateStep = async (stepNumber: number) => {
     const values = form.getValues();
@@ -138,12 +122,8 @@ export default function BusinessRegistration() {
         "owner.firstName", 
         "owner.lastName", 
         "owner.email"
-      ]);
       return ownerValidation;
-    }
     return true;
-  };
-
   // Handle next step with validation
   const handleNextStep = async () => {
     const isValid = await validateStep(step);
@@ -155,29 +135,20 @@ export default function BusinessRegistration() {
         description: "Complete all required fields before proceeding.",
         variant: "destructive",
       });
-    }
-  };
-
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
       const response = await apiRequest("POST", "/api/register-business", data);
       const result = await response.json();
       
-      toast({
         title: "Registration Successful!",
         description: `Welcome to ShiftFlo! Check your email for activation instructions.`,
-      });
-
       // Redirect to success page
       window.location.href = "/registration-success";
-      
     } catch (error: any) {
       console.error("Registration error:", error);
-      
       // Parse error message from apiRequest format: "400: {json}"
       let errorMessage = "Something went wrong. Please try again.";
-      
       if (error.message) {
         try {
           // Extract JSON from error message format "400: {json}"
@@ -188,19 +159,10 @@ export default function BusinessRegistration() {
           }
         } catch {
           errorMessage = error.message;
-        }
-      }
-      
-      toast({
         title: "Registration Failed",
         description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
-    }
-  };
-
   const businessTypes = [
     "Restaurant & Food Service",
     "Retail & Commerce", 
@@ -213,18 +175,12 @@ export default function BusinessRegistration() {
     "Professional Services",
     "Other",
   ];
-
-
-
   const getStepTitle = () => {
     switch (step) {
       case 1: return "Business Information";
       case 2: return "Owner Account";
       case 3: return "Subscription Summary";
       default: return "Registration";
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
       <div className="container mx-auto px-4">
@@ -239,7 +195,6 @@ export default function BusinessRegistration() {
               Get your team organized with smart scheduling and workforce management
             </p>
           </div>
-
           {/* Progress Indicators */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center space-x-4">
@@ -262,9 +217,6 @@ export default function BusinessRegistration() {
                   )}
                 </div>
               ))}
-            </div>
-          </div>
-
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <Card>
@@ -298,14 +250,8 @@ export default function BusinessRegistration() {
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
                         name="business.subdomain"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Subdomain *</FormLabel>
-                            <FormControl>
                               <div className="flex">
                                 <Input 
                                   autoComplete="off"
@@ -316,7 +262,6 @@ export default function BusinessRegistration() {
                                   .shiftflo.com
                                 </span>
                               </div>
-                            </FormControl>
                             {/* Real-time availability feedback */}
                             {subdomainValue && subdomainValue.length >= 3 && (
                               <div className="flex items-center gap-2 mt-2">
@@ -327,29 +272,13 @@ export default function BusinessRegistration() {
                                   </>
                                 )}
                                 {subdomainCheck.status === 'available' && (
-                                  <>
                                     <Check className="h-4 w-4 text-green-500" />
                                     <span className="text-sm text-green-600 font-medium">{subdomainCheck.message}</span>
-                                  </>
-                                )}
                                 {subdomainCheck.status === 'taken' && (
-                                  <>
                                     <X className="h-4 w-4 text-red-500" />
                                     <span className="text-sm text-red-600 font-medium">{subdomainCheck.message}</span>
-                                  </>
-                                )}
-                              </div>
                             )}
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="business.businessType"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Business Type *</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
@@ -365,47 +294,19 @@ export default function BusinessRegistration() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="business.phone"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Phone Number *</FormLabel>
-                            <FormControl>
-                              <Input 
                                 type="tel" 
                                 inputMode="tel"
                                 autoComplete="tel"
                                 placeholder="+44 20 1234 5678" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="business.website"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Website</FormLabel>
-                            <FormControl>
-                              <Input 
                                 type="url" 
                                 inputMode="url"
                                 autoComplete="url"
                                 list="website-domains"
                                 placeholder="https://acmerestaurant.com" 
-                                {...field} 
-                              />
-                            </FormControl>
                             <datalist id="website-domains">
                               <option value="https://www." />
                               <option value="https://" />
@@ -413,76 +314,27 @@ export default function BusinessRegistration() {
                               <option value=".co.uk" />
                               <option value=".org" />
                             </datalist>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="business.staffCount"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Number of Staff Members *</FormLabel>
-                            <FormControl>
-                              <Input 
                                 type="number" 
                                 min="1" 
                                 max="1000"
                                 placeholder="5" 
-                                {...field} 
                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                              />
-                            </FormControl>
-                            <FormMessage />
                             <p className="text-sm text-gray-500">
                               How many staff members will you be scheduling? £3.00 per staff member per month.
                             </p>
-                          </FormItem>
-                        )}
-                      />
                     </div>
-                  )}
-
                   {/* Step 2: Owner Information */}
                   {step === 2 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
                         name="owner.firstName"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>First Name *</FormLabel>
-                            <FormControl>
-                              <Input 
                                 autoComplete="given-name"
                                 placeholder="John" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="owner.lastName"
-                        render={({ field }) => (
-                          <FormItem>
                             <FormLabel>Last Name *</FormLabel>
-                            <FormControl>
-                              <Input 
                                 autoComplete="family-name"
                                 placeholder="Smith" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
                       <div className="md:col-span-2">
                         <FormField
                           control={form.control}
@@ -490,16 +342,11 @@ export default function BusinessRegistration() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Email Address *</FormLabel>
-                              <FormControl>
-                                <Input 
                                   type="email" 
                                   inputMode="email"
                                   autoComplete="email"
                                   list="email-domains"
                                   placeholder="john@acmerestaurant.com" 
-                                  {...field} 
-                                />
-                              </FormControl>
                               <datalist id="email-domains">
                                 <option value="@gmail.com" />
                                 <option value="@yahoo.com" />
@@ -512,19 +359,12 @@ export default function BusinessRegistration() {
                           )}
                         />
                       </div>
-
-
-                    </div>
-                  )}
-
                   {/* Step 3: Pricing Summary */}
                   {step === 3 && (
                     <div className="space-y-6">
                       <div className="text-center">
                         <h3 className="text-2xl font-bold text-gray-900 mb-4">Your Subscription Summary</h3>
                         <p className="text-gray-600 mb-6">Review your pricing details below</p>
-                      </div>
-
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center">
@@ -536,27 +376,19 @@ export default function BusinessRegistration() {
                           </div>
                           <div className="text-2xl font-bold text-blue-600">
                             {form.watch("business.staffCount") || 1}
-                          </div>
                         </div>
-
                         <div className="border-t border-blue-200 pt-4">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">Price per staff member</span>
                             <span className="font-medium">£3.00/month</span>
-                          </div>
                           <div className="flex justify-between items-center mb-4">
                             <span className="text-gray-600">Staff members</span>
                             <span className="font-medium">× {form.watch("business.staffCount") || 1}</span>
-                          </div>
                           <div className="flex justify-between items-center text-lg font-bold border-t border-blue-200 pt-2">
                             <span>Monthly Total</span>
                             <span className="text-blue-600">
                               £{calculateMonthlyPrice(form.watch("business.staffCount") || 1).toFixed(2)}
                             </span>
-                          </div>
-                        </div>
-                      </div>
-
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h4 className="font-semibold text-gray-900 mb-3">What's Included:</h4>
                         <ul className="space-y-2">
@@ -564,37 +396,15 @@ export default function BusinessRegistration() {
                             <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Complete shift scheduling system
                           </li>
-                          <li className="flex items-center text-sm">
-                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Staff time tracking and management
-                          </li>
-                          <li className="flex items-center text-sm">
-                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Holiday and swap request management
-                          </li>
-                          <li className="flex items-center text-sm">
-                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Live operations dashboard
-                          </li>
-                          <li className="flex items-center text-sm">
-                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Mobile-friendly interface
-                          </li>
-                          <li className="flex items-center text-sm">
-                            <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                             Email support and onboarding
-                          </li>
                         </ul>
-                      </div>
-
                       <div className="text-center text-sm text-gray-500">
                         <p>Your first 30 days are free! No setup fees or hidden costs.</p>
-                      </div>
-                    </div>
-                  )}
-
                   <Separator />
-
                   {/* Navigation Buttons */}
                   <div className="flex justify-between">
                     <Button
@@ -605,7 +415,6 @@ export default function BusinessRegistration() {
                     >
                       Previous
                     </Button>
-
                     {step < 3 ? (
                       <Button
                         type="button"
@@ -622,10 +431,7 @@ export default function BusinessRegistration() {
                           </>
                         ) : (
                           "Complete Registration"
-                        )}
-                      </Button>
                     )}
-                  </div>
                 </CardContent>
               </Card>
             </form>
@@ -634,4 +440,3 @@ export default function BusinessRegistration() {
       </div>
     </div>
   );
-}

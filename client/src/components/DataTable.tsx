@@ -11,14 +11,12 @@ import { Button } from "@/components/ui/button";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Filter, Edit, Trash2 } from "lucide-react";
-
 export interface Column<T> {
   key: keyof T | string;
   header: string;
   cell?: (item: T) => React.ReactNode;
   sortable?: boolean;
 }
-
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -29,8 +27,6 @@ interface DataTableProps<T> {
   addLabel?: string;
   isLoading?: boolean;
   emptyState?: React.ReactNode;
-}
-
 export function DataTable<T extends { id: string | number }>({
   data,
   columns,
@@ -50,17 +46,13 @@ export function DataTable<T extends { id: string | number }>({
     const value = item[column.key as keyof T];
     if (typeof value === "string" || typeof value === "number") {
       return value;
-    }
-    
     return String(value || "");
   };
-
   const defaultEmptyState = (
     <div className="text-center py-8">
       <p className="text-gray-500">No data available</p>
     </div>
   );
-
   return (
     <Card>
       <CardHeader>
@@ -86,7 +78,6 @@ export function DataTable<T extends { id: string | number }>({
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
             ))}
-          </div>
         ) : data.length === 0 ? (
           emptyState || defaultEmptyState
         ) : (
@@ -124,37 +115,25 @@ export function DataTable<T extends { id: string | number }>({
                               </Button>
                             )}
                             {onDelete && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
                                 onClick={() => onDelete(item)}
-                                className="min-h-[44px] min-w-[44px]"
-                              >
                                 <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
                           </div>
-                        </TableCell>
                       )}
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">
               {data && Array.isArray(data) && data.map((item) => (
                 <Card key={item.id} className="p-4 border border-gray-200">
                   <div className="space-y-3">
-                    {columns.map((column, index) => (
                       <div key={index} className="flex flex-col space-y-1">
                         <span className="text-sm font-medium text-gray-600">{column.header}</span>
                         <div className="text-sm text-gray-900">
-                          {getCellValue(item, column)}
                         </div>
                       </div>
-                    ))}
                     {(onEdit || onDelete) && (
                       <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                         {onEdit && (
@@ -169,25 +148,14 @@ export function DataTable<T extends { id: string | number }>({
                           </Button>
                         )}
                         {onDelete && (
-                          <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => onDelete(item)}
-                            className="flex-1 min-h-[44px]"
-                          >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
-                          </Button>
-                        )}
-                      </div>
                     )}
                   </div>
                 </Card>
               ))}
-            </div>
           </>
         )}
       </CardContent>
     </Card>
-  );
-}

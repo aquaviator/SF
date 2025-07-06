@@ -1,6 +1,6 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRole } from "@/hooks/useRole";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -18,29 +18,19 @@ interface AnalyticsMetric {
   metricDate: Date;
   createdAt: Date;
 }
-
 interface AnalyticsReport {
-  id: number;
-  tenantId: string;
   name: string;
   type: string;
   status: "ready" | "processing" | "failed";
   generatedAt: Date;
   downloadUrl?: string;
-}
-
 interface ActivityLog {
-  id: number;
-  tenantId: string;
   userId: number;
   action: string;
   details: string;
   timestamp: Date;
-}
-
 export default function Analytics() {
   const { tenantId } = useRole();
-
   // Fetch analytics metrics from database
   const { data: analyticsMetrics = [], isLoading: metricsLoading } = useQuery({
     queryKey: ["/api/analytics/metrics", tenantId],
@@ -50,27 +40,18 @@ export default function Analytics() {
       return response.json() as Promise<AnalyticsMetric[]>;
     },
   });
-
   // Fetch analytics reports from database
   const { data: analyticsReports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/analytics/reports", tenantId],
-    queryFn: async () => {
       const response = await fetch(`/api/analytics/reports?tenantId=${tenantId}`);
       if (!response.ok) throw new Error("Failed to fetch analytics reports");
       return response.json() as Promise<AnalyticsReport[]>;
-    },
-  });
-
   // Fetch activity logs from database
   const { data: activityLogs = [], isLoading: logsLoading } = useQuery({
     queryKey: ["/api/activity-logs", tenantId],
-    queryFn: async () => {
       const response = await fetch(`/api/activity-logs?tenantId=${tenantId}`);
       if (!response.ok) throw new Error("Failed to fetch activity logs");
       return response.json() as Promise<ActivityLog[]>;
-    },
-  });
-
   // Calculate labor cost data from metrics
   const laborCostData = React.useMemo(() => {
     const lastSixMonths = [];
@@ -87,80 +68,54 @@ export default function Analytics() {
                metricDate.getFullYear() === date.getFullYear() &&
                metric.metricType === 'labor_cost';
       });
-      
       const totalCost = monthlyMetrics.reduce((sum, metric) => sum + metric.metricValue, 0);
-      
       lastSixMonths.push({
         month: monthKey,
         cost: totalCost,
         budget: 0, // Budget data would come from business settings
-      });
     }
-    
     return lastSixMonths;
   }, [analyticsMetrics]);
-
   // Calculate fill rate data from metrics
   const fillRateData = React.useMemo(() => {
     const departments = ['Kitchen', 'Service', 'Management', 'Cleaning'];
-    
     return departments.map(dept => {
       const fillRateMetrics = analyticsMetrics.filter(metric => 
         metric.metricType === 'fill_rate' && 
         metric.metricDate.toString().includes(dept.toLowerCase())
       );
-      
       const avgFillRate = fillRateMetrics.length > 0 
         ? fillRateMetrics.reduce((sum, metric) => sum + metric.metricValue, 0) / fillRateMetrics.length 
         : 0;
-      
       return {
         department: dept,
         fillRate: Math.round(avgFillRate),
         target: 85, // Target would come from business policies
       };
     });
-  }, [analyticsMetrics]);
-
   // Calculate time spend data from metrics
   const timeSpendData = React.useMemo(() => {
     const lastFourWeeks = [];
-    const now = new Date();
-    
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now.getTime() - (i * 7 * 24 * 60 * 60 * 1000));
       const weekLabel = `Week ${4 - i}`;
-      
       // Find time tracking metrics for this week
       const weeklyMetrics = analyticsMetrics.filter(metric => {
-        const metricDate = new Date(metric.metricDate);
         const weekEnd = new Date(weekStart.getTime() + (6 * 24 * 60 * 60 * 1000));
         return metricDate >= weekStart && metricDate <= weekEnd;
-      });
-      
       const scheduledHours = weeklyMetrics
         .filter(m => m.metricType === 'scheduled_hours')
         .reduce((sum, metric) => sum + metric.metricValue, 0);
-      
       const actualHours = weeklyMetrics
         .filter(m => m.metricType === 'actual_hours')
-        .reduce((sum, metric) => sum + metric.metricValue, 0);
-      
       const overtimeHours = weeklyMetrics
         .filter(m => m.metricType === 'overtime_hours')
-        .reduce((sum, metric) => sum + metric.metricValue, 0);
-      
       lastFourWeeks.push({
         week: weekLabel,
         scheduled: scheduledHours,
         actual: actualHours,
         overtime: overtimeHours,
-      });
-    }
-    
     return lastFourWeeks;
-  }, [analyticsMetrics]);
-
   const getStatusBadge = (status: AnalyticsReport["status"]) => {
     const variants = {
       ready: "bg-green-100 text-green-800",
@@ -173,15 +128,11 @@ export default function Analytics() {
       </Badge>
     );
   };
-
   if (metricsLoading || reportsLoading || logsLoading) {
-    return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
-    );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto p-4 space-y-6">
@@ -196,13 +147,9 @@ export default function Analytics() {
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
               Export
-            </Button>
-          </div>
         </div>
-
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
@@ -216,42 +163,18 @@ export default function Analytics() {
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Average Fill Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
               <div className="text-2xl font-bold">0%</div>
               <p className="text-xs text-muted-foreground">0% from target</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
               <div className="text-2xl font-bold">0.0h</div>
               <p className="text-xs text-muted-foreground">0.0h overtime</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Reports</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
               <div className="text-2xl font-bold">{analyticsReports.length}</div>
               <p className="text-xs text-muted-foreground">
                 {analyticsReports.filter(r => r.status === 'processing').length} processing
               </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Charts Section */}
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
@@ -259,7 +182,6 @@ export default function Analytics() {
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
-          
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Labor Cost Chart */}
@@ -281,50 +203,27 @@ export default function Analytics() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
               {/* Fill Rate Chart */}
-              <Card>
-                <CardHeader>
                   <CardTitle>Department Fill Rates</CardTitle>
                   <CardDescription>Current vs target fill rates</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={fillRateData}>
-                      <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="department" />
-                      <YAxis />
                       <Tooltip formatter={(value) => [`${value}%`, '']} />
                       <Bar dataKey="fillRate" fill="#10b981" name="Current" />
                       <Bar dataKey="target" fill="#e5e7eb" name="Target" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
               {/* Time Tracking Chart */}
               <Card className="lg:col-span-2">
-                <CardHeader>
                   <CardTitle>Time Tracking Overview</CardTitle>
                   <CardDescription>Scheduled vs actual hours worked</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={timeSpendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="week" />
-                      <YAxis />
                       <Tooltip formatter={(value) => [`${value}h`, '']} />
                       <Line type="monotone" dataKey="scheduled" stroke="#3b82f6" name="Scheduled" />
                       <Line type="monotone" dataKey="actual" stroke="#10b981" name="Actual" />
                       <Line type="monotone" dataKey="overtime" stroke="#f59e0b" name="Overtime" />
                     </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
-
           <TabsContent value="reports" className="space-y-4">
             <Card>
               <CardHeader>
@@ -354,47 +253,22 @@ export default function Analytics() {
                               <Download className="w-4 h-4" />
                             </Button>
                           )}
-                        </div>
                       </div>
                     ))}
-                  </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
           <TabsContent value="activity" className="space-y-4">
-            <Card>
-              <CardHeader>
                 <CardTitle>Activity Log</CardTitle>
                 <CardDescription>Recent system activity and user actions</CardDescription>
-              </CardHeader>
-              <CardContent>
                 {activityLogs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
                     No activity recorded yet. Activity will appear here as users interact with the system.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
                     {activityLogs.map((log) => (
                       <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg">
                         <Activity className="w-4 h-4 mt-1 text-blue-500" />
-                        <div className="flex-1">
                           <p className="font-medium">{log.action}</p>
                           <p className="text-sm text-gray-600">{log.details}</p>
-                          <p className="text-xs text-gray-500">
                             {new Date(log.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
-      </div>
     </div>
   );
-}

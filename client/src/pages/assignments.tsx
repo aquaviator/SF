@@ -1,4 +1,5 @@
 import React from "react";
+import { useRole } from "@/hooks/useRole";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +10,6 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
 import type { Assignment } from "@shared/schema";
 
 const assignmentFormSchema = z.object({
@@ -18,11 +18,9 @@ const assignmentFormSchema = z.object({
   status: z.literal("pending"),
   notes: z.string().optional(),
 });
-
 type AssignmentFormData = z.infer<typeof assignmentFormSchema>;
-
 export default function Assignments() {
-  const { tenantId, user } = useAuth();
+  const { tenantId, user } = useRole();
   
   const {
     data: assignments,
@@ -39,7 +37,6 @@ export default function Assignments() {
     queryKey: ["/api/assignments", tenantId],
     endpoint: `/api/assignments?tenantId=${tenantId}`,
   });
-
   const form = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
@@ -48,8 +45,6 @@ export default function Assignments() {
       status: "pending",
       notes: "",
     },
-  });
-
   // Reset form when modal opens/closes
   React.useEffect(() => {
     if (isModalOpen) {
@@ -61,48 +56,37 @@ export default function Assignments() {
           notes: editingItem.notes || "",
         });
       } else {
-        form.reset({
           shiftId: "",
           assignedTo: "",
-          status: "pending",
           notes: "",
-        });
       }
     }
   }, [isModalOpen, editingItem, form]);
-
   const onSubmit = (data: AssignmentFormData) => {
     const submitData = {
       tenantId,
       shiftId: parseInt(data.shiftId),
       assignedTo: parseInt(data.assignedTo),
       assignedBy: parseInt(user?.id || "1"),
-      status: "pending",
       notes: data.notes || null,
     };
-
     if (editingItem) {
       handleSubmit({ ...editingItem, ...submitData });
     } else {
       // For new items, we add a placeholder assignedAt that will be overridden by the server
       handleSubmit({ ...submitData, assignedAt: new Date() });
-    }
   };
-
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: "bg-yellow-100 text-yellow-800",
       accepted: "bg-green-100 text-green-800",
       declined: "bg-red-100 text-red-800",
-    };
     
     return (
       <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
-  };
-
   const columns: Column<Assignment>[] = [
     {
       key: "shiftId",
@@ -112,57 +96,30 @@ export default function Assignments() {
           Shift #{assignment.shiftId}
         </div>
       ),
-    },
-    {
       key: "assignedTo",
       header: "Assigned To",
-      cell: (assignment) => (
-        <div className="text-sm text-gray-900">
           User #{assignment.assignedTo}
-        </div>
-      ),
-    },
-    {
       key: "assignedBy",
       header: "Assigned By",
-      cell: (assignment) => (
         <div className="text-sm text-gray-600">
           User #{assignment.assignedBy}
-        </div>
-      ),
-    },
-    {
       key: "status",
       header: "Status",
       cell: (assignment) => getStatusBadge(assignment.status),
-    },
-    {
       key: "assignedAt",
       header: "Assigned At",
-      cell: (assignment) => (
-        <div className="text-sm text-gray-600">
           {new Date(assignment.assignedAt).toLocaleDateString()}
-        </div>
-      ),
-    },
-    {
       key: "notes",
       header: "Notes",
-      cell: (assignment) => (
         <div className="text-sm text-gray-600 max-w-xs truncate">
           {assignment.notes || "No notes"}
-        </div>
-      ),
-    },
   ];
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Shift Assignments</h2>
         <p className="text-gray-600">Manage shift assignments and track acceptance status</p>
       </div>
-
       <DataTable
         data={assignments}
         columns={columns}
@@ -179,7 +136,6 @@ export default function Assignments() {
           </div>
         }
       />
-
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -213,45 +169,18 @@ export default function Assignments() {
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
             name="assignedTo"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Assign To</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
                       <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
                     <SelectItem value="1">Sarah Anderson</SelectItem>
                     <SelectItem value="2">Mike Johnson</SelectItem>
                     <SelectItem value="3">Emily Davis</SelectItem>
                     <SelectItem value="4">David Wilson</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="notes"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Notes (Optional)</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Assignment notes or special instructions..." {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
       </ModalForm>
     </div>
   );

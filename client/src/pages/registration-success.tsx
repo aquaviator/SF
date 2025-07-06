@@ -6,7 +6,6 @@ export default function RegistrationSuccess() {
   const handleGoToLogin = () => {
     window.location.href = "/login";
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12">
       <div className="container mx-auto px-4">
@@ -38,9 +37,6 @@ export default function RegistrationSuccess() {
                   <p className="text-sm text-yellow-800">
                     <strong>Note:</strong> The activation link will expire in 24 hours. If you don't see the email, check your spam folder.
                   </p>
-                </div>
-              </div>
-
               <div className="space-y-3">
                 <Button 
                   onClick={handleGoToLogin}
@@ -60,10 +56,6 @@ export default function RegistrationSuccess() {
                     >
                       Sign in here
                     </button>
-                  </p>
-                </div>
-              </div>
-
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">What happens next?</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
@@ -72,7 +64,6 @@ export default function RegistrationSuccess() {
                   <li>• Invite your first team members</li>
                   <li>• Start creating schedules</li>
                 </ul>
-              </div>
             </CardContent>
           </Card>
         </div>

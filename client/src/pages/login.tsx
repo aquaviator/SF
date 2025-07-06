@@ -16,7 +16,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [, setLocation] = useLocation();
-
   // Populate email from URL parameters (e.g., from activation redirect)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,12 +24,10 @@ export default function Login() {
       setEmail(emailParam);
     }
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       const response = await apiRequest("POST", "/api/auth/login", {
         email,
@@ -39,16 +36,13 @@ export default function Login() {
       
       // Login successful, get user data and refresh auth context
       const userData = await response.json();
-      
       // Force page reload to refresh authentication state
       window.location.href = userData.role === 'owner' ? '/owner/dashboard' : '/dashboard';
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
-    }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -57,7 +51,6 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">ShiftFlo</h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Sign in to your account</p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle>Welcome Back</CardTitle>
@@ -82,20 +75,12 @@ export default function Login() {
                   disabled={isLoading}
                 />
               </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
@@ -107,7 +92,6 @@ export default function Login() {
                 )}
               </Button>
             </form>
-
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Don't have an account?
@@ -120,12 +104,10 @@ export default function Login() {
             </div>
           </CardContent>
         </Card>
-
         <div className="mt-8 text-center">
           <Link href="/">
             <Button variant="ghost">← Back to Home</Button>
           </Link>
-        </div>
       </div>
     </div>
   );

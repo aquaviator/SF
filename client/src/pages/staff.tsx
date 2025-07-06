@@ -1,4 +1,5 @@
 import React from "react";
+import { useRole } from "@/hooks/useRole";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +10,6 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
 import type { User } from "@shared/schema";
 
 const staffFormSchema = z.object({
@@ -21,11 +21,9 @@ const staffFormSchema = z.object({
   role: z.literal("staff"),
   isActive: z.boolean(),
 });
-
 type StaffFormData = z.infer<typeof staffFormSchema>;
-
 export default function Staff() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   const {
     data: staff,
@@ -46,7 +44,6 @@ export default function Staff() {
     queryKey: ["/api/staff", tenantId],
     endpoint: `/api/staff?tenantId=${tenantId}`,
   });
-
   const form = useForm<StaffFormData>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
@@ -58,8 +55,6 @@ export default function Staff() {
       role: "staff",
       isActive: true,
     },
-  });
-
   // Reset form when modal opens/closes
   React.useEffect(() => {
     if (isModalOpen) {
@@ -74,32 +69,25 @@ export default function Staff() {
           isActive: editingItem.isActive,
         });
       } else {
-        form.reset({
           username: "",
           firstName: "",
           lastName: "",
           email: "",
           password: "",
-          role: "staff",
           isActive: true,
-        });
       }
     }
   }, [isModalOpen, editingItem, form]);
-
   const onSubmit = (data: StaffFormData) => {
     const submitData = {
       ...data,
       tenantId,
     };
-
     if (editingItem) {
       handleSubmit({ ...submitData, id: editingItem.id } as User);
     } else {
       handleSubmit(submitData);
-    }
   };
-
   const columns: Column<User>[] = [
     {
       key: "firstName",
@@ -116,32 +104,22 @@ export default function Staff() {
               {user.firstName} {user.lastName}
             </div>
             <div className="text-sm text-gray-500">@{user.username}</div>
-          </div>
         </div>
       ),
-    },
-    {
       key: "email",
       header: "Email",
-    },
-    {
       key: "isActive",
       header: "Status",
-      cell: (user) => (
         <Badge variant={user.isActive ? "default" : "secondary"}>
           {user.isActive ? "Active" : "Inactive"}
         </Badge>
-      ),
-    },
   ];
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Staff Management</h2>
         <p className="text-gray-600">Manage your team members and their access</p>
       </div>
-
       <DataTable
         data={staff}
         columns={columns}
@@ -155,10 +133,8 @@ export default function Staff() {
           <div className="text-center py-8">
             <p className="text-gray-500">No staff members added</p>
             <p className="text-sm text-gray-400">Add your first team member to get started</p>
-          </div>
         }
       />
-
       <ModalForm
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -183,22 +159,8 @@ export default function Staff() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
               name="lastName"
-              render={({ field }) => (
-                <FormItem>
                   <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
           <FormField
             control={form.control}
             name="username"
@@ -212,57 +174,23 @@ export default function Staff() {
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
             name="email"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Email</FormLabel>
-                <FormControl>
                   <Input type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="password"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Password</FormLabel>
-                <FormControl>
                   <Input type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="isActive"
-            render={({ field }) => (
-              <FormItem>
                 <FormLabel>Status</FormLabel>
                 <Select onValueChange={(value) => field.onChange(value === "true")} value={field.value.toString()}>
-                  <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                  </FormControl>
                   <SelectContent>
                     <SelectItem value="true">Active</SelectItem>
                     <SelectItem value="false">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
       </ModalForm>
     </div>
   );

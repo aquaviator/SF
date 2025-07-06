@@ -1,30 +1,25 @@
 import { Menu } from "lucide-react";
-import { Link, useLocation } from "wouter";
 import { useRole } from "@/hooks/useRole";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { getMenuForRole } from "@/config/menus";
 
 interface BottomTabBarProps {
   onMoreClick: () => void;
 }
-
 export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
   const { role } = useRole();
   const [location] = useLocation();
   
   const menuItems = getMenuForRole(role);
-
   const isActiveTab = (route: string) => {
     // Handle special cases for route matching
     if (route === "/my-shifts" && (location === "/my-shifts" || location === "/staff/my-shifts")) {
       return true;
     }
     if (route === "/owner/dashboard" && location === "/owner-dashboard") {
-      return true;
-    }
     return location === route || location.startsWith(route + "/");
   };
-
   return (
     <nav 
       role="navigation" 
@@ -73,4 +68,3 @@ export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
       </div>
     </nav>
   );
-}

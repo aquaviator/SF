@@ -6,7 +6,6 @@ async function throwIfResNotOk(res: Response) {
     throw new Error(`${res.status}: ${text}`);
   }
 }
-
 export async function apiRequest(
   method: string,
   url: string,
@@ -21,11 +20,8 @@ export async function apiRequest(
     body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
     credentials: "include",
   });
-
   await throwIfResNotOk(res);
   return res;
-}
-
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
@@ -35,15 +31,12 @@ export const getQueryFn: <T>(options: {
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
     });
-
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
     }
-
     await throwIfResNotOk(res);
     return await res.json();
   };
-
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -54,7 +47,5 @@ export const queryClient = new QueryClient({
       retry: false,
     },
     mutations: {
-      retry: false,
-    },
   },
 });

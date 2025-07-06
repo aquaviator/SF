@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Edit, User, Mail, Loader2, Save } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -24,9 +24,7 @@ const personalProfileSchema = z.object({
   bio: z.string().optional(),
   photoUrl: z.string().optional(),
 });
-
 type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
-
 interface UserType {
   id: number;
   firstName: string;
@@ -39,14 +37,12 @@ interface UserType {
   role: string;
   tenantId: string;
 }
-
 export default function PersonalProfile() {
-  const { user } = useAuth();
+  const { user } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
-
   const form = useForm<PersonalProfileFormData>({
     resolver: zodResolver(personalProfileSchema),
     defaultValues: {
@@ -59,7 +55,6 @@ export default function PersonalProfile() {
       photoUrl: "",
     },
   });
-
   useEffect(() => {
     if (user?.id) {
       apiRequest('GET', `/api/users/${user.id}`)
@@ -80,29 +75,21 @@ export default function PersonalProfile() {
         })
         .catch(error => {
           console.error('Profile fetch error:', error);
-          setLoading(false);
         });
     }
   }, [user?.id, form]);
-
   const updateMutation = useMutation({
     mutationFn: async (data: PersonalProfileFormData) => {
       const response = await apiRequest('PUT', `/api/users/${user?.id}`, data);
       return response.json();
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
       toast({ title: "Success", description: "Personal profile updated successfully" });
-    },
     onError: () => {
       toast({ title: "Error", description: "Failed to update profile", variant: "destructive" });
-    }
-  });
-
   const onSubmit = (data: PersonalProfileFormData) => {
     updateMutation.mutate(data);
   };
-
   if (loading) {
     return (
       <div className="container mx-auto py-8 flex justify-center">
@@ -110,7 +97,6 @@ export default function PersonalProfile() {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -120,8 +106,6 @@ export default function PersonalProfile() {
             Manage your personal information and account settings
           </p>
         </div>
-      </div>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
@@ -146,7 +130,6 @@ export default function PersonalProfile() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -161,22 +144,9 @@ export default function PersonalProfile() {
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
                     name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
                         <FormLabel>Last Name</FormLabel>
-                        <FormControl>
                           <Input {...field} placeholder="Enter last name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -190,72 +160,27 @@ export default function PersonalProfile() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
                   name="phone"
-                  render={({ field }) => (
-                    <FormItem>
                       <FormLabel>Phone</FormLabel>
-                      <FormControl>
                         <Input {...field} placeholder="Enter phone number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </CardContent>
             </Card>
-
             {/* Additional Information Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
                   <Mail className="w-5 h-5 mr-2" />
                   Additional Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
                   name="address"
-                  render={({ field }) => (
-                    <FormItem>
                       <FormLabel>Address</FormLabel>
-                      <FormControl>
                         <Textarea {...field} placeholder="Enter your address" rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="bio"
-                  render={({ field }) => (
-                    <FormItem>
                       <FormLabel>Bio</FormLabel>
-                      <FormControl>
                         <Textarea {...field} placeholder="Tell us about yourself" rows={4} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <div className="pt-4">
                   <div className="flex items-center space-x-2">
                     <Badge variant="secondary">{userData?.role}</Badge>
                     <span className="text-sm text-muted-foreground">
                       Current Role
                     </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
-
           <div className="flex justify-end">
             <Button type="submit" disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
@@ -264,15 +189,11 @@ export default function PersonalProfile() {
                   Saving...
                 </>
               ) : (
-                <>
                   <Save className="w-4 h-4 mr-2" />
                   Save Profile
-                </>
               )}
             </Button>
-          </div>
         </form>
       </Form>
     </div>
   );
-}

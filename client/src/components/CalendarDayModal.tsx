@@ -29,7 +29,6 @@ interface CalendarDayModalProps {
   onCreateShift: (date: Date) => void;
   isDeleting?: boolean;
 }
-
 export function CalendarDayModal({
   date,
   isOpen,
@@ -43,26 +42,20 @@ export function CalendarDayModal({
 }: CalendarDayModalProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState<Shift | null>(null);
-
   if (!date) return null;
-
   const dayShifts = shifts.filter(shift => 
     format(new Date(shift.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
   );
-
   const handleDeleteClick = (shift: Shift) => {
     setShiftToDelete(shift);
     setDeleteDialogOpen(true);
   };
-
   const handleConfirmDelete = () => {
     if (shiftToDelete) {
       onDeleteShift(shiftToDelete.id);
       setDeleteDialogOpen(false);
       setShiftToDelete(null);
     }
-  };
-
   const getStatusBadge = (status: string) => {
     const variants = {
       "assigned": "bg-blue-100 text-blue-800",
@@ -72,14 +65,11 @@ export function CalendarDayModal({
       "declined": "bg-red-100 text-red-800",
       "conflict": "bg-red-100 text-red-800",
     };
-
     return (
       <Badge className={variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800"}>
         {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
       </Badge>
     );
-  };
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -90,7 +80,6 @@ export function CalendarDayModal({
               Shifts for {format(date, 'EEEE, MMMM d, yyyy')}
             </DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             {/* Create New Shift Button */}
             <Button 
@@ -101,7 +90,6 @@ export function CalendarDayModal({
               <Plus className="w-4 h-4 mr-2" />
               Create New Shift for This Day
             </Button>
-
             {/* Shifts List */}
             {dayShifts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -128,19 +116,14 @@ export function CalendarDayModal({
                               </div>
                             )}
                             {shift.role && (
-                              <div className="flex items-center gap-1">
                                 <User className="w-3 h-3" />
                                 {shift.role}
-                              </div>
-                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(shift.status)}
-                        </div>
                       </div>
                     </CardHeader>
-
                     <CardContent className="pt-0">
                       <div className="flex items-center gap-2">
                         <Button
@@ -152,52 +135,32 @@ export function CalendarDayModal({
                           Edit
                         </Button>
                         
-                        <Button
-                          size="sm"
-                          variant="outline"
                           onClick={() => onDuplicateShift(shift)}
-                        >
                           <Copy className="w-3 h-3 mr-1" />
                           Duplicate
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
                           onClick={() => handleDeleteClick(shift)}
                           disabled={isDeleting}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
                           <Trash2 className="w-3 h-3 mr-1" />
                           Delete
-                        </Button>
-                      </div>
-
                       {shift.assignmentType === 'assigned' && shift.assignedTo && (
                         <div className="mt-2 p-2 bg-blue-50 rounded-md">
                           <p className="text-sm text-blue-700">
                             <User className="w-3 h-3 inline mr-1" />
                             Assigned to staff member
                           </p>
-                        </div>
                       )}
-
                       {shift.assignmentType === 'opportunity' && (
                         <div className="mt-2 p-2 bg-green-50 rounded-md">
                           <p className="text-sm text-green-700">
                             Open opportunity - available for staff to claim
-                          </p>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
-              </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
-
       <DeleteConfirmDialog
         isOpen={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -206,5 +169,3 @@ export function CalendarDayModal({
         description={`Are you sure you want to delete this shift? This action cannot be undone.`}
       />
     </>
-  );
-}

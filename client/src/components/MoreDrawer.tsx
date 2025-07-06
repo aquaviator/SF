@@ -1,8 +1,8 @@
 import { X, HelpCircle, LogOut } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 // Mobile cache refresh: 2025-07-06 10:33
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,14 +14,12 @@ interface MoreDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
   const { logout } = useAuth();
   const { role, tenantId, user } = useRole();
   const drawerRef = useRef<HTMLDivElement>(null);
   
   const moreMenuItems = getMoreMenuForRole(role);
-
   // Fetch pending requests count for owners
   const { data: pendingRequestsCount = 0 } = useQuery({
     queryKey: ["/api/pending-requests-count", tenantId],
@@ -32,30 +30,23 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
         fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => []),
         fetch(`/api/swap-requests?tenantId=${tenantId}`).then(res => res.json()).catch(() => [])
       ]);
-      
       const pendingHoliday = holidayRequests.filter((req: any) => req.status === "pending").length;
       const pendingSwap = swapRequests.filter((req: any) => req.status === "pending").length;
-      
       return pendingHoliday + pendingSwap;
     },
     enabled: !!tenantId && role === 'owner',
     refetchInterval: 30000, // Refresh every 30 seconds
   });
-
   // Fetch business profile for real business name
   const { data: businessProfile } = useQuery({
     queryKey: ["/api/business-profile", tenantId],
     queryFn: () => fetch(`/api/business-profile?tenantId=${tenantId}`).then(res => res.json()),
     enabled: !!tenantId,
-  });
-
   // Fetch complete user profile with photo
   const { data: userProfile } = useQuery({
     queryKey: ["/api/users", user?.id],
     queryFn: () => fetch(`/api/users/${user?.id}`).then(res => res.json()),
     enabled: !!user?.id,
-  });
-
   // Generate user initials for avatar
   const getUserInitials = () => {
     if (!user) return "U";
@@ -63,55 +54,39 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
     const lastInitial = user.lastName?.[0] || "";
     return (firstInitial + lastInitial).toUpperCase() || user.email?.[0]?.toUpperCase() || "U";
   };
-
   const getUserDisplayName = () => {
     if (!user) return "User";
     if (user.firstName && user.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
     return user.email?.split('@')[0] || "User";
-  };
-
   // Handle logout
   const handleLogout = async () => {
     await logout();
     onClose();
     window.location.href = '/login';
-  };
-
   // Focus trap and escape key handling
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
       }
     };
-
     const handleClickOutside = (event: MouseEvent) => {
       if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mousedown", handleClickOutside);
-
     // Focus the first focusable element
     const firstFocusable = drawerRef.current?.querySelector(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     ) as HTMLElement;
     firstFocusable?.focus();
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, [isOpen, onClose]);
-
   if (!isOpen) return null;
-
   return (
     <div 
       className="fixed inset-0 z-50 md:hidden"
@@ -121,7 +96,6 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
     >
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
       {/* Drawer */}
       <div 
         ref={drawerRef}
@@ -147,7 +121,6 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
             <X className="w-5 h-5" />
           </Button>
         </div>
-
         {/* User Profile Section */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -182,17 +155,13 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
                     : "bg-green-100 text-green-800"
                 )}>
                   {role === 'owner' ? 'Owner' : 'Staff'}
-                </span>
                 {(businessProfile?.name || tenantId) && (
                   <span className="text-xs text-gray-500 truncate">
                     {businessProfile?.name || tenantId?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 )}
               </div>
-            </div>
           </div>
-        </div>
-
         {/* Content */}
         <nav className="p-4 space-y-2" role="navigation" aria-label="More options navigation">
           {/* Menu Items from config */}
@@ -210,7 +179,6 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
                   "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
                   "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
                   "min-h-[48px]"
-                )}
                 aria-label={`Navigate to ${item.description || item.label}`}
               >
                 <Icon className="w-5 h-5 text-gray-500" />
@@ -218,21 +186,14 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
                 {item.label === "Requests" && role === "owner" && pendingRequestsCount > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {pendingRequestsCount}
-                  </span>
-                )}
               </Link>
             );
           })}
-
-
-
           {/* Separator before help */}
           <Separator className="my-4" />
-
           {/* Help & Support */}
           <Link
             href="/help"
-            onClick={onClose}
             className={cn(
               "flex items-center gap-3 p-3 rounded-lg transition-colors",
               "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
@@ -240,24 +201,17 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
               "min-h-[48px]"
             )}
             aria-label="Navigate to help and support"
-          >
             <HelpCircle className="w-5 h-5 text-gray-500" />
             <span className="font-medium">Help & Support</span>
           </Link>
-
           {/* Logout Button */}
-          <Separator className="my-4" />
           
           <button
             onClick={handleLogout}
-            className={cn(
               "flex items-center gap-3 p-3 rounded-lg transition-colors w-full",
               "text-red-600 hover:text-red-700 hover:bg-red-50",
               "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
-              "min-h-[48px]"
-            )}
             aria-label="Log out of account"
-          >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Log Out</span>
           </button>
@@ -265,4 +219,3 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
       </div>
     </div>
   );
-}
