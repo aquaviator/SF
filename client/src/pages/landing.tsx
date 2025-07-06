@@ -72,7 +72,7 @@ export default function Landing() {
     },
     {
       question: "Can I manage multiple locations?",
-      answer: "Yes, ShiftFlo supports unlimited locations within a single account. Set up different job roles, operating hours, and policies for each location."
+      answer: "Yes, ShiftFlo supports unlimited locations within a single account. Each location can have different job roles and staff assignments, with shared operating hours and policies across all locations."
     },
     {
       question: "How does the strike system work?",
@@ -296,7 +296,7 @@ export default function Landing() {
                 <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                    GPS-enabled clock-in/out with time tracking
+                    Policy-driven clock-in/out with automated time tracking
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
@@ -380,7 +380,7 @@ export default function Landing() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                    <span>24/7 support included</span>
+                    <span>Email support included</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
@@ -462,8 +462,8 @@ export default function Landing() {
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Headphones className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">24/7 Support</h3>
-              <p className="text-gray-600 dark:text-gray-300">Always available when you need assistance</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Email Support</h3>
+              <p className="text-gray-600 dark:text-gray-300">Responsive email support and onboarding assistance</p>
             </div>
             
             <div className="text-center">
