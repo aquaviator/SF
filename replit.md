@@ -561,6 +561,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Added missing /profile route to App.tsx connecting Profile page to navigation system
   - Profile page accessible via More menu for owners and provides complete business and personal profile management
   - Business infrastructure properly established for tenant "dialabeer" with all required default data
+- July 06, 2025. Fixed Profile page routing consistency with owner URL pattern:
+  - Updated Profile route from `/profile` to `/owner/profile` to match other owner pages pattern
+  - Updated navigation menu configuration to point to `/owner/profile` route
+  - Fixed duplicate route definitions in App.tsx
+  - Profile page now follows consistent URL structure: /owner/dashboard, /owner/operations, /owner/scheduling, /owner/profile
+  - Login credentials confirmed: leatfield+dialabeer@gmail.com for Andy Clarke (owner) at tenant "dialabeer"
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
