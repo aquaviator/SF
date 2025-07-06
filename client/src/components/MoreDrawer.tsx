@@ -15,8 +15,13 @@ interface MoreDrawerProps {
 }
 
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
-  const { role, user, tenantId, switchRole, logout } = useAuth();
+  const { user, logout } = useAuth();
   const drawerRef = useRef<HTMLDivElement>(null);
+  
+  // Extract role and tenantId from user object
+  const role = user?.role || 'staff';
+  const tenantId = user?.tenantId;
+  
   const moreMenuItems = getMoreMenuForRole(role);
 
   // Fetch pending requests count for owners
