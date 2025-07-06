@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, pricingPlans, promoCodes } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -10,6 +10,9 @@ import Stripe from "stripe";
 import crypto from "crypto";
 import { sendActivationEmail } from "./utils/mailer";
 import session from "express-session";
+import { setupAdminAuthRoutes } from "./routes/admin/auth";
+import { setup2FARoutes } from "./routes/admin/2fa";
+import { adminAuth, requireRole } from "./middleware/adminAuth";
 
 declare module 'express-session' {
   interface SessionData {
@@ -119,6 +122,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   }));
+
+  // Setup admin authentication and 2FA routes
+  setupAdminAuthRoutes(app);
+  setup2FARoutes(app);
 
   // Authentication endpoints
   app.post('/api/auth/login', async (req, res) => {
@@ -4206,6 +4213,340 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Get seat pricing error:", error);
       res.status(500).json({ message: "Failed to get pricing: " + error.message });
+    }
+  });
+
+  // ==== ADMIN PORTAL MANAGEMENT ENDPOINTS ====
+
+  // GET /api/admin/dashboard - Super admin dashboard statistics
+  app.get('/api/admin/dashboard', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      console.log('📊 ADMIN_DASHBOARD_FETCH', { timestamp: new Date() });
+
+      // Get total statistics
+      const [tenantCount] = await db.select({ count: sql<number>`count(*)` }).from(tenants);
+      const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const [recentRegistrations] = await db.select({ count: sql<number>`count(*)` })
+        .from(tenants)
+        .where(gt(tenants.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+
+      // Get subscription statistics  
+      const activeSubscriptions = await db.select()
+        .from(subscriptions)
+        .where(eq(subscriptions.status, 'active'));
+
+      const trialSubscriptions = await db.select()
+        .from(subscriptions)
+        .where(eq(subscriptions.status, 'trial'));
+
+      const totalRevenue = activeSubscriptions.reduce((sum, sub) => 
+        sum + (sub.pricePerSeat * sub.seatsIncluded), 0);
+
+      // Get recent support tickets
+      const recentTickets = await db.select()
+        .from(supportTickets)
+        .orderBy(sql`created_at DESC`)
+        .limit(10);
+
+      const openTickets = await db.select({ count: sql<number>`count(*)` })
+        .from(supportTickets)
+        .where(eq(supportTickets.status, 'open'));
+
+      res.json({
+        platform: {
+          totalTenants: tenantCount.count,
+          totalUsers: userCount.count,
+          recentRegistrations: recentRegistrations.count,
+          openTickets: openTickets[0].count
+        },
+        subscriptions: {
+          active: activeSubscriptions.length,
+          trial: trialSubscriptions.length,
+          totalRevenue
+        },
+        recentTickets
+      });
+
+      console.log('✅ ADMIN_DASHBOARD_SUCCESS', { timestamp: new Date() });
+    } catch (error) {
+      console.error('❌ ADMIN_DASHBOARD_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch dashboard data' });
+    }
+  });
+
+  // GET /api/admin/tenants - List all tenants with filtering
+  app.get('/api/admin/tenants', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+    try {
+      const { search, status } = req.query;
+      
+      let query = db.select().from(tenants);
+      
+      if (search) {
+        query = query.where(or(
+          sql`${tenants.name} ILIKE ${`%${search}%`}`,
+          sql`${tenants.id} ILIKE ${`%${search}%`}`
+        ));
+      }
+
+      const tenantList = await query.orderBy(sql`created_at DESC`);
+
+      res.json(tenantList);
+    } catch (error) {
+      console.error('❌ ADMIN_TENANTS_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch tenants' });
+    }
+  });
+
+  // GET /api/admin/landing-pages - Page Builder system
+  app.get('/api/admin/landing-pages', adminAuth, requireRole(['super_admin', 'marketing']), async (req, res) => {
+    try {
+      const { tenant_id } = req.query;
+      
+      let query = db.select().from(landingPages);
+      
+      if (tenant_id) {
+        query = query.where(eq(landingPages.tenantId, tenant_id as string));
+      }
+      
+      const pages = await query;
+      res.json(pages);
+    } catch (error) {
+      console.error('❌ ADMIN_LANDING_PAGES_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch landing pages' });
+    }
+  });
+
+  // PUT /api/admin/landing-pages/:tenantId - Update landing page layout
+  app.put('/api/admin/landing-pages/:tenantId', adminAuth, requireRole(['super_admin', 'marketing']), async (req, res) => {
+    try {
+      const { tenantId } = req.params;
+      const { layout, isActive } = req.body;
+
+      const [updatedPage] = await db.insert(landingPages)
+        .values({
+          tenantId,
+          layout: layout || [],
+          isActive: isActive !== undefined ? isActive : true
+        })
+        .onConflictDoUpdate({
+          target: landingPages.tenantId,
+          set: {
+            layout: layout || [],
+            isActive: isActive !== undefined ? isActive : true,
+            updatedAt: new Date()
+          }
+        })
+        .returning();
+
+      console.log('✅ ADMIN_LANDING_PAGE_UPDATED', {
+        tenantId,
+        layoutComponents: Array.isArray(layout) ? layout.length : 0,
+        timestamp: new Date()
+      });
+
+      res.json(updatedPage);
+    } catch (error) {
+      console.error('❌ ADMIN_LANDING_PAGE_UPDATE_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to update landing page' });
+    }
+  });
+
+  // GET /api/admin/support-tickets - Support ticket management
+  app.get('/api/admin/support-tickets', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+    try {
+      const { status, priority, assigned_to } = req.query;
+      
+      let query = db.select().from(supportTickets);
+      const conditions = [];
+      
+      if (status) conditions.push(eq(supportTickets.status, status as string));
+      if (priority) conditions.push(eq(supportTickets.priority, priority as string));
+      if (assigned_to) conditions.push(eq(supportTickets.assignedAdminId, parseInt(assigned_to as string)));
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const tickets = await query.orderBy(sql`created_at DESC`);
+      res.json(tickets);
+    } catch (error) {
+      console.error('❌ ADMIN_SUPPORT_TICKETS_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch support tickets' });
+    }
+  });
+
+  // PUT /api/admin/support-tickets/:id - Update support ticket
+  app.put('/api/admin/support-tickets/:id', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const { status, assignedAdminId, resolvedAt } = req.body;
+      const adminId = (req as any).admin.id;
+
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (assignedAdminId !== undefined) updateData.assignedAdminId = assignedAdminId;
+      if (resolvedAt) updateData.resolvedAt = new Date(resolvedAt);
+
+      const [updatedTicket] = await db.update(supportTickets)
+        .set(updateData)
+        .where(eq(supportTickets.id, ticketId))
+        .returning();
+
+      console.log('✅ ADMIN_TICKET_UPDATED', {
+        ticketId,
+        status,
+        adminId,
+        timestamp: new Date()
+      });
+
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error('❌ ADMIN_TICKET_UPDATE_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to update ticket' });
+    }
+  });
+
+  // GET /api/admin/platform-settings - Platform configuration
+  app.get('/api/admin/platform-settings', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const settings = await db.select().from(platformSettings);
+      res.json(settings);
+    } catch (error) {
+      console.error('❌ ADMIN_PLATFORM_SETTINGS_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch platform settings' });
+    }
+  });
+
+  // PUT /api/admin/platform-settings/:key - Update platform setting
+  app.put('/api/admin/platform-settings/:key', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value, description } = req.body;
+      const adminId = (req as any).admin.id;
+
+      const [updatedSetting] = await db.insert(platformSettings)
+        .values({
+          key,
+          value,
+          description,
+          updatedBy: adminId
+        })
+        .onConflictDoUpdate({
+          target: platformSettings.key,
+          set: {
+            value,
+            description,
+            updatedBy: adminId,
+            updatedAt: new Date()
+          }
+        })
+        .returning();
+
+      console.log('✅ ADMIN_SETTING_UPDATED', {
+        key,
+        adminId,
+        timestamp: new Date()
+      });
+
+      res.json(updatedSetting);
+    } catch (error) {
+      console.error('❌ ADMIN_SETTING_UPDATE_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to update setting' });
+    }
+  });
+
+  // GET /api/admin/pricing-plans - Pricing plan management
+  app.get('/api/admin/pricing-plans', adminAuth, requireRole(['super_admin', 'finance']), async (req, res) => {
+    try {
+      const plans = await db.select().from(pricingPlans).orderBy(sql`price_per_seat ASC`);
+      res.json(plans);
+    } catch (error) {
+      console.error('❌ ADMIN_PRICING_PLANS_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch pricing plans' });
+    }
+  });
+
+  // POST /api/admin/pricing-plans - Create pricing plan
+  app.post('/api/admin/pricing-plans', adminAuth, requireRole(['super_admin', 'finance']), async (req, res) => {
+    try {
+      const { name, pricePerSeat, features } = req.body;
+
+      const [newPlan] = await db.insert(pricingPlans)
+        .values({
+          name,
+          pricePerSeat,
+          features: features || [],
+          isActive: true
+        })
+        .returning();
+
+      console.log('✅ ADMIN_PRICING_PLAN_CREATED', {
+        planId: newPlan.id,
+        name,
+        pricePerSeat,
+        timestamp: new Date()
+      });
+
+      res.json(newPlan);
+    } catch (error) {
+      console.error('❌ ADMIN_PRICING_PLAN_CREATE_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to create pricing plan' });
+    }
+  });
+
+  // GET /api/admin/mailing-list - Mailing list management
+  app.get('/api/admin/mailing-list', adminAuth, requireRole(['super_admin', 'marketing']), async (req, res) => {
+    try {
+      const { search, tags } = req.query;
+      
+      let query = db.select().from(mailingList);
+      const conditions = [];
+      
+      if (search) {
+        conditions.push(or(
+          sql`${mailingList.email} ILIKE ${`%${search}%`}`,
+          sql`${mailingList.name} ILIKE ${`%${search}%`}`
+        ));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const subscribers = await query.orderBy(sql`created_at DESC`);
+      res.json(subscribers);
+    } catch (error) {
+      console.error('❌ ADMIN_MAILING_LIST_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to fetch mailing list' });
+    }
+  });
+
+  // POST /api/admin/broadcast-email - Send broadcast email
+  app.post('/api/admin/broadcast-email', adminAuth, requireRole(['super_admin', 'marketing']), async (req, res) => {
+    try {
+      const { subject, content, recipientTags, testMode } = req.body;
+      const adminId = (req as any).admin.id;
+
+      // In a real implementation, this would integrate with an email service
+      // For now, we'll just log the broadcast
+      console.log('📧 ADMIN_BROADCAST_EMAIL', {
+        subject,
+        recipientTags,
+        testMode,
+        adminId,
+        timestamp: new Date()
+      });
+
+      // Mock response
+      res.json({
+        success: true,
+        messageId: `broadcast_${Date.now()}`,
+        recipientCount: testMode ? 1 : 100, // Mock count
+        scheduledAt: new Date()
+      });
+    } catch (error) {
+      console.error('❌ ADMIN_BROADCAST_ERROR', { error: error.message });
+      res.status(500).json({ message: 'Failed to send broadcast' });
     }
   });
 

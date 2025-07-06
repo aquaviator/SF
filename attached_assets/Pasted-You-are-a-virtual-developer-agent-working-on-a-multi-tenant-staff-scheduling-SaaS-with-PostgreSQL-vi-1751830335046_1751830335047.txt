@@ -1,0 +1,218 @@
+You are a virtual developer agent working on a multi-tenant staff-scheduling SaaS with PostgreSQL via Drizzle ORM, a Node.js/Express back end, and a React + Tailwind Admin front end featuring a JSON-driven Page Builder.
+
+**Task: Add Landing Page to Page Builder & Implement Admin 2FA**  
+**Goal:**  
+1. Allow Site Admins to manage the public Landing Page via the Page Builder.  
+2. Secure the Site Admin authentication flow with TOTP-based 2FA and recovery codes.
+
+---
+
+### Part A: Landing Page in Page Builder
+
+1. **DB Schema**  
+   - In `shared/schema.ts`, define a new table:
+     ```ts
+     export const landingPages = pgTable('landing_pages', {
+       id: serial('id').primaryKey(),
+       tenantId: varchar('tenant_id').notNull().unique().references(() => tenants.id, { onDelete: 'cascade' }),
+       layout: jsonb('layout').notNull(),
+       createdAt: timestamp('created_at').notNull().defaultNow(),
+       updatedAt: timestamp('updated_at').notNull().defaultNow(),
+     });
+     createIndex('landing_pages_tenant_id_unique', {
+       table: landingPages,
+       columns: [landingPages.tenantId],
+       unique: true,
+     });
+     ```
+
+2. **Admin API Endpoints**  
+   - `src/routes/admin/landing-page.ts`:
+     ```ts
+     // GET /api/admin/landing-page
+     app.get('/api/admin/landing-page', adminAuth, async (req, res) => {
+       const page = await db.select().from(landingPages).where(eq(landingPages.tenantId, req.user.tenantId)).get();
+       res.json(page || { layout: [] });
+     });
+     // PATCH /api/admin/landing-page
+     app.patch('/api/admin/landing-page', adminAuth, async (req, res) => {
+       const { layout } = req.body;
+       const upsert = await db
+         .insert(landingPages)
+         .values({ tenantId: req.user.tenantId, layout })
+         .onConflictDoUpdate({ target: landingPages.tenantId, set: { layout, updatedAt: sql`now()` } });
+       res.json(upsert);
+     });
+     ```
+
+3. **Public API Endpoint**  
+   - `src/routes/public/landing-page.ts`:
+     ```ts
+     // GET /api/landing-page?tenant=:subdomain
+     app.get('/api/landing-page', async (req, res) => {
+       const tenant = await db.select().from(tenants).where(eq(tenants.subdomain, req.query.tenant)).get();
+       const page = tenant
+         ? await db.select().from(landingPages).where(eq(landingPages.tenantId, tenant.id)).get()
+         : null;
+       res.json({ layout: page?.layout || [] });
+     });
+     ```
+
+4. **Admin UI Integration**  
+   - In `client/src/pages/AdminLayout.jsx`, add a Sidebar link:
+     ```jsx
+     <NavItem to="/admin/page-builder/landing">Landing Page</NavItem>
+     ```
+   - Create `client/src/pages/PageBuilderLanding.jsx`:
+     ```jsx
+     import PageBuilder from '@/components/PageBuilder';
+     import { useEffect, useState } from 'react';
+
+     export default function PageBuilderLanding() {
+       const [layout, setLayout] = useState([]);
+       useEffect(() => {
+         fetch('/api/admin/landing-page', { credentials: 'include' })
+           .then(r => r.json())
+           .then(data => setLayout(data.layout));
+       }, []);
+       return <PageBuilder initialLayout={layout} onSave={(layout) => fetch('/api/admin/landing-page', {
+         method: 'PATCH', credentials: 'include',
+         headers: {'Content-Type':'application/json'},
+         body: JSON.stringify({ layout })
+       })} />;
+     }
+     ```
+
+5. **Public Landing Page Renderer**  
+   - Update `client/src/pages/Landing.jsx`:
+     ```jsx
+     import { useEffect, useState } from 'react';
+     import BlockRenderer from '@/components/PageBuilder/BlockRenderer';
+
+     export default function Landing() {
+       const [layout, setLayout] = useState([]);
+       useEffect(() => {
+         const tenant = window.location.host.split('.')[0];
+         fetch(`/api/landing-page?tenant=${tenant}`)
+           .then(r => r.json())
+           .then(data => setLayout(data.layout));
+       }, []);
+       return <div>{layout.map(block => <BlockRenderer key={block.id} block={block} />)}</div>;
+     }
+     ```
+
+---
+
+### Part B: Admin 2FA Integration
+
+1. **Schema Migration**  
+   ```sql
+   ALTER TABLE site_admins
+     ADD COLUMN totp_secret TEXT,
+     ADD COLUMN is_2fa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+     ADD COLUMN recovery_codes TEXT[];
+Dependencies
+
+npm install speakeasy qrcode nanoid
+Back-End Endpoints
+
+Create src/routes/admin/2fa.ts:
+
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+import { nanoid } from 'nanoid';
+// POST /api/admin/2fa/setup
+app.post('/api/admin/2fa/setup', adminAuth, async (req, res) => {
+  const secret = speakeasy.generateSecret({ name: `ShiftFlo (${req.user.username})` });
+  await db.update(siteAdmins).set({ totp_secret: secret.base32 }).where(eq(siteAdmins.id, req.user.id));
+  const qr = await qrcode.toDataURL(secret.otpauth_url);
+  res.json({ otpauth_url: secret.otpauth_url, qr });
+});
+// POST /api/admin/2fa/verify
+app.post('/api/admin/2fa/verify', adminAuth, async (req, res) => {
+  const admin = await db.select().from(siteAdmins).where(eq(siteAdmins.id, req.user.id)).get();
+  const valid = speakeasy.totp.verify({ secret: admin.totp_secret, encoding: 'base32', token: req.body.token, window: 1 });
+  if (!valid) return res.status(400).json({ message: 'Invalid code' });
+  const codes = Array.from({ length: 10 }, () => nanoid(8));
+  await db.update(siteAdmins).set({ is_2fa_enabled: true, recovery_codes: codes }).where(eq(siteAdmins.id, req.user.id));
+  res.json({ recoveryCodes: codes });
+});
+// POST /api/admin/2fa/challenge
+app.post('/api/admin/2fa/challenge', async (req, res) => {
+  const session = req.session; // assume pending_2fa session
+  const admin = await db.select().from(siteAdmins).where(eq(siteAdmins.id, session.userId)).get();
+  const { token } = req.body;
+  const validTotp = speakeasy.totp.verify({ secret: admin.totp_secret, encoding: 'base32', token, window: 1 });
+  let valid = validTotp;
+  if (!valid && admin.recovery_codes.includes(token)) {
+    valid = true;
+    await db.update(siteAdmins)
+      .set({ recovery_codes: sql`${siteAdmins.recovery_codes} - ${token}` })
+      .where(eq(siteAdmins.id, admin.id));
+  }
+  if (!valid) return res.status(400).json({ message: 'Invalid code' });
+  session.is2faVerified = true;
+  res.json({ success: true });
+});
+Auth Middleware Update
+
+In src/middleware/adminAuth.ts, require session.is2faVerified === true after login if is_2fa_enabled.
+
+Front-End Pages
+
+client/src/pages/admin/2fa-setup.jsx:
+
+
+import { useState, useEffect } from 'react';
+export default function TwoFASetup() {
+  const [qr, setQr] = useState('');
+  const [token, setToken] = useState('');
+  const [codes, setCodes] = useState([]);
+  useEffect(() => {
+    fetch('/api/admin/2fa/setup', { method: 'POST', credentials: 'include' })
+      .then(r => r.json()).then(data => setQr(data.qr));
+  }, []);
+  const verify = () => fetch('/api/admin/2fa/verify', {
+    method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token })
+  }).then(r => r.json()).then(d => setCodes(d.recoveryCodes));
+  return (
+    <div>
+      <h2>Set Up 2FA</h2>
+      {qr && <img src={qr} alt="Scan this QR with your Authenticator app" />}
+      <input value={token} onChange={e => setToken(e.target.value)} placeholder="Enter code" />
+      <button onClick={verify}>Enable 2FA</button>
+      {codes.length > 0 && (
+        <div>
+          <h3>Recovery Codes</h3>
+          <ul>{codes.map(c => <li key={c}>{c}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
+client/src/pages/admin/2fa-challenge.jsx:
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+export default function TwoFAChallenge() {
+  const [token, setToken] = useState('');
+  const nav = useNavigate();
+  const submit = () => fetch('/api/admin/2fa/challenge', {
+    method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token })
+  }).then(r => r.ok && nav('/admin'));
+  return (
+    <div>
+      <h2>Enter 2FA Code or Recovery Code</h2>
+      <input value={token} onChange={e => setToken(e.target.value)} placeholder="6-digit code or recovery code" />
+      <button onClick={submit}>Verify</button>
+    </div>
+  );
+}
+Output:
+Reply only with the code diffs and new files your agent would apply for Parts A & B as detailed above.
+
+

@@ -37,6 +37,9 @@ import SimplifiedRegistration from "@/pages/simplified-registration";
 import RegistrationSuccess from "@/pages/registration-success";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
+import AdminLogin from "@/pages/admin-login";
+import AdminDashboard from "@/pages/admin-dashboard";
+import PageBuilder from "@/pages/page-builder";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -106,6 +109,12 @@ function PublicRoutes() {
       <Route path="/register" component={SimplifiedRegistration} />
       <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/activate" component={StaffActivation} />
+      
+      {/* Admin Portal Routes */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/page-builder" component={PageBuilder} />
+      
       <Route component={Landing} />
     </Switch>
   );
