@@ -82,6 +82,35 @@ export default function MyShifts() {
     },
   });
 
+  // Define columns for shifts table
+  const columns: Column<Shift>[] = [
+    {
+      key: "date",
+      header: "Date",
+      cell: (shift) => new Date(shift.date).toLocaleDateString(),
+    },
+    {
+      key: "startTime",
+      header: "Time",
+      cell: (shift) => `${shift.startTime} - ${shift.endTime}`,
+    },
+    {
+      key: "role",
+      header: "Role",
+      cell: (shift) => shift.role,
+    },
+    {
+      key: "location",
+      header: "Location", 
+      cell: (shift) => shift.location,
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (shift) => getStatusBadge(shift.status),
+    },
+  ];
+
   // Clock-in mutation
   const clockInMutation = useMutation({
     mutationFn: async (data: { location?: string; shiftId?: number }) => {
@@ -239,7 +268,7 @@ export default function MyShifts() {
         data={shifts || []}
         columns={columns}
         title="All My Shifts"
-        isLoading={isLoading}
+        isLoading={shiftsLoading}
         emptyState={
           <div className="text-center py-8">
             <p className="text-gray-500">No shifts assigned</p>

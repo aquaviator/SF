@@ -31,7 +31,7 @@ export default function Opportunities() {
       setClaimingIds(prev => new Set(prev).add(opportunityId));
       return apiRequest("POST", `/api/opportunities/${opportunityId}/claim`, {
         tenantId,
-        userId: parseInt(user?.id || "1"),
+        userId: user?.id || 1,
       });
     },
     onSuccess: (_, opportunityId) => {

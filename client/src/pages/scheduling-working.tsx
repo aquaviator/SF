@@ -90,27 +90,42 @@ export default function Scheduling() {
   // Data queries
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery({
     queryKey: ["/api/shifts", tenantId],
-    queryFn: () => apiRequest(`/api/shifts?tenantId=${tenantId}`)
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/shifts?tenantId=${tenantId}`);
+      return response.json();
+    }
   });
 
   const { data: templates = [], isLoading: templatesLoading } = useQuery({
     queryKey: ["/api/schedule-templates", tenantId],
-    queryFn: () => apiRequest(`/api/schedule-templates?tenantId=${tenantId}`)
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/schedule-templates?tenantId=${tenantId}`);
+      return response.json();
+    }
   });
 
   const { data: jobRoles = [] } = useQuery({
     queryKey: ["/api/job-roles", tenantId],
-    queryFn: () => apiRequest(`/api/job-roles?tenantId=${tenantId}`)
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/job-roles?tenantId=${tenantId}`);
+      return response.json();
+    }
   });
 
   const { data: staff = [] } = useQuery({
     queryKey: ["/api/staff", tenantId],
-    queryFn: () => apiRequest(`/api/staff?tenantId=${tenantId}`)
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/staff?tenantId=${tenantId}`);
+      return response.json();
+    }
   });
 
   const { data: locations = [] } = useQuery({
     queryKey: ["/api/locations", tenantId],
-    queryFn: () => apiRequest(`/api/locations?tenantId=${tenantId}`)
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/locations?tenantId=${tenantId}`);
+      return response.json();
+    }
   });
 
   // Template management functions
@@ -151,16 +166,10 @@ export default function Scheduling() {
       };
 
       if (editingTemplate) {
-        await apiRequest(`/api/schedule-templates/${editingTemplate.id}`, {
-          method: "PUT",
-          body: JSON.stringify(templateData)
-        });
+        await apiRequest("PUT", `/api/schedule-templates/${editingTemplate.id}`, templateData);
         toast({ title: "Template updated successfully" });
       } else {
-        await apiRequest("/api/schedule-templates", {
-          method: "POST",
-          body: JSON.stringify(templateData)
-        });
+        await apiRequest("POST", "/api/schedule-templates", templateData);
         toast({ title: "Template created successfully" });
       }
 
@@ -179,11 +188,10 @@ export default function Scheduling() {
 
   // Use template to generate shifts
   const useTemplateMutation = useMutation({
-    mutationFn: ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) =>
-      apiRequest(`/api/schedule-templates/${templateId}/use`, {
-        method: "POST",
-        body: JSON.stringify({ startDate, endDate })
-      }),
+    mutationFn: async ({ templateId, startDate, endDate }: { templateId: number, startDate: string, endDate: string }) => {
+      const response = await apiRequest("POST", `/api/schedule-templates/${templateId}/use`, { startDate, endDate });
+      return response.json();
+    },
     onSuccess: (result) => {
       toast({ 
         title: "Shifts Generated",
@@ -209,20 +217,52 @@ export default function Scheduling() {
   };
 
   const shiftColumns: Column<Shift>[] = [
-    { header: "Date", accessorKey: "date" },
-    { header: "Role", accessorKey: "role" },
-    { header: "Time", accessorKey: "startTime" },
-    { header: "Location", accessorKey: "location" },
-    { header: "Status", accessorKey: "status" },
+    { 
+      key: "date",
+      header: "Date", 
+      cell: (shift) => shift.date 
+    },
+    { 
+      key: "role",
+      header: "Role", 
+      cell: (shift) => shift.role 
+    },
+    { 
+      key: "startTime",
+      header: "Time", 
+      cell: (shift) => `${shift.startTime} - ${shift.endTime}` 
+    },
+    { 
+      key: "location",
+      header: "Location", 
+      cell: (shift) => shift.location 
+    },
+    { 
+      key: "status",
+      header: "Status", 
+      cell: (shift) => (
+        <Badge variant={shift.status === "assigned" ? "default" : "secondary"}>
+          {shift.status}
+        </Badge>
+      )
+    },
   ];
 
   const templateColumns: Column<ScheduleTemplate>[] = [
-    { header: "Name", accessorKey: "name" },
-    { header: "Recurrence", accessorKey: "recurrence" },
     { 
+      key: "name",
+      header: "Name", 
+      cell: (template) => template.name 
+    },
+    { 
+      key: "recurrence",
+      header: "Recurrence", 
+      cell: (template) => template.recurrence 
+    },
+    { 
+      key: "positions",
       header: "Roles", 
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => {
-        const template = row.original;
+      cell: (template) => {
         if (template.slots && Array.isArray(template.slots)) {
           return template.slots.map((slot: any) => slot.role).join(", ");
         }
@@ -230,19 +270,21 @@ export default function Scheduling() {
       }
     },
     { 
+      key: "isActive",
       header: "Status", 
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => 
-        row.original.isActive ? 
+      cell: (template) => 
+        template.isActive ? 
           <Badge variant="default">Active</Badge> : 
           <Badge variant="secondary">Inactive</Badge>
     },
     {
+      key: "id",
       header: "Actions",
-      cell: ({ row }: { row: { original: ScheduleTemplate } }) => (
+      cell: (template) => (
         <div className="flex items-center space-x-2">
           <Button
             size="sm"
-            onClick={() => handleUseTemplate(row.original.id)}
+            onClick={() => handleUseTemplate(template.id)}
             disabled={useTemplateMutation.isPending}
           >
             {useTemplateMutation.isPending ? "Using..." : "Use"}
@@ -251,7 +293,7 @@ export default function Scheduling() {
             size="sm"
             variant="outline"
             onClick={() => {
-              setEditingTemplate(row.original);
+              setEditingTemplate(template);
               setTemplateModalOpen(true);
             }}
           >
@@ -292,6 +334,7 @@ export default function Scheduling() {
                   data={shifts} 
                   columns={shiftColumns}
                   isLoading={shiftsLoading}
+                  title="Shifts"
                 />
               </CardContent>
             </Card>
@@ -306,6 +349,11 @@ export default function Scheduling() {
                 <CalendarView 
                   shifts={shifts} 
                   onDateClick={(date) => console.log("Date clicked:", date)}
+                  onCreateShift={(date) => console.log("Create shift:", date)}
+                  onEditShift={(shift) => console.log("Edit shift:", shift)}
+                  onDuplicateShift={(shift) => console.log("Duplicate shift:", shift)}
+                  onDeleteShift={(shiftId) => console.log("Delete shift:", shiftId)}
+                  userRole="owner"
                 />
               </CardContent>
             </Card>
@@ -321,6 +369,7 @@ export default function Scheduling() {
                   data={templates} 
                   columns={templateColumns}
                   isLoading={templatesLoading}
+                  title="Templates"
                 />
               </CardContent>
             </Card>
@@ -364,7 +413,11 @@ export default function Scheduling() {
                       <FormControl>
                         <Textarea 
                           placeholder="Describe the template purpose..." 
-                          {...field} 
+                          name={field.name}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />

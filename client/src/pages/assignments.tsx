@@ -24,6 +24,10 @@ type AssignmentFormData = z.infer<typeof assignmentFormSchema>;
 export default function Assignments() {
   const { tenantId, user } = useRole();
   
+  if (!tenantId) {
+    return <div>Loading...</div>;
+  }
+  
   const {
     data: assignments,
     isLoading,
@@ -73,10 +77,10 @@ export default function Assignments() {
 
   const onSubmit = (data: AssignmentFormData) => {
     const submitData = {
-      tenantId,
+      tenantId: tenantId!,
       shiftId: parseInt(data.shiftId),
       assignedTo: parseInt(data.assignedTo),
-      assignedBy: parseInt(user?.id || "1"),
+      assignedBy: user?.id || 1,
       status: "pending",
       notes: data.notes || null,
     };
