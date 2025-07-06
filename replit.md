@@ -547,6 +547,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Email integration working with Gmail SMTP delivering activation emails with proper token format
   - System tested with 4/4 test cases passing: subdomain check, duplicate detection, successful registration, field validation
   - Full registration workflow operational from form submission through email activation to account setup
+- July 06, 2025. Streamlined user experience with activation-to-login flow enhancement:
+  - Removed password fields from business registration form for cleaner initial signup process
+  - Updated registration schema and validation to exclude password requirements during registration
+  - Enhanced activation success flow to redirect to login page with email pre-populated from activation
+  - Login page now automatically fills email field from URL parameters for seamless user experience
+  - Complete user journey: Register (no password) → Email activation → Set password → Auto-redirect to login with email filled → Enter password only
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

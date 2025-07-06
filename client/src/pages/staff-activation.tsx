@@ -134,7 +134,7 @@ export default function StaffActivation() {
           <CardContent>
             <Button 
               className="w-full" 
-              onClick={() => window.location.href = '/'}
+              onClick={() => window.location.href = `/login?email=${encodeURIComponent(userInfo?.email || '')}`}
             >
               Go to Sign In
             </Button>
