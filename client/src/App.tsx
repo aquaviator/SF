@@ -106,7 +106,7 @@ function PublicRoutes() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/business-registration" component={BusinessRegistration} />
-      <Route path="/register" component={SimplifiedRegistration} />
+      <Route path="/register" component={BusinessRegistration} />
       <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/activate" component={StaffActivation} />
       

@@ -3579,6 +3579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerLastName, 
         ownerEmail, 
         subdomain,
+        businessType = "General",
         seatsNeeded = 5,
         wantsTrial = true,
         campaignId,
@@ -3592,6 +3593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerLastName, 
         ownerEmail, 
         subdomain,
+        businessType,
         seatsNeeded,
         wantsTrial
       });
@@ -3646,6 +3648,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       console.log("✅ Business profile created");
 
+      console.log("📝 Starting subscription creation...");
+      console.log("📋 Form data values:", { seatsNeeded, wantsTrial, trialDays, pricePerSeat, campaignId });
+      
       // Create default subscription using form data
       const subscriptionData = {
         tenantId,
@@ -3658,6 +3663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pricePerSeat: (pricePerSeat || 3) * 100, // Convert to pence
         monthlyTotal: (seatsNeeded || 5) * (pricePerSeat || 3) * 100, // Total monthly cost in pence
       };
+      
+      console.log("📝 Subscription data created successfully:", subscriptionData);
       
       console.log("📝 Subscription data to insert:", subscriptionData);
       
@@ -3847,7 +3854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activate Account API
   app.post("/api/activate", async (req, res) => {
     try {
-      const { token, password, phone, address, bio } = req.body;
+      const { token, password, phone = null, address = null, bio = null } = req.body;
 
       if (!token || !password) {
         return res.status(400).json({ message: "Token and password are required" });

@@ -161,7 +161,20 @@ export default function BusinessRegistration() {
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/register-business", data);
+      // Transform nested form data to flat structure expected by server
+      const flatData = {
+        businessName: data.business.name,
+        ownerFirstName: data.owner.firstName,
+        ownerLastName: data.owner.lastName,
+        ownerEmail: data.owner.email,
+        subdomain: data.business.subdomain,
+        businessType: data.business.businessType,
+        phone: data.business.phone,
+        website: data.business.website,
+        staffCount: data.business.staffCount,
+      };
+      
+      const response = await apiRequest("POST", "/api/register-business", flatData);
       const result = await response.json();
       
       toast({
