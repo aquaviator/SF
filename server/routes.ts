@@ -123,14 +123,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication endpoints
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { email, password } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
       }
 
-      // Find user by username
-      const user = await storage.getUserByUsername(username);
+      // Find user by email (using getUserByUsername since we store email as username)
+      const user = await storage.getUserByUsername(email);
       
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
