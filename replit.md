@@ -552,7 +552,9 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Updated registration schema and validation to exclude password requirements during registration
   - Enhanced activation success flow to redirect to login page with email pre-populated from activation
   - Login page now automatically fills email field from URL parameters for seamless user experience
-  - Complete user journey: Register (no password) → Email activation → Set password → Auto-redirect to login with email filled → Enter password only
+  - Fixed login API to accept email instead of username for email-based authentication
+  - Fixed login response parsing and redirect to properly access owner dashboard with full navigation
+  - Complete user journey: Register (no password) → Email activation → Set password → Auto-redirect to login with email filled → Enter password only → Access full application UI
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

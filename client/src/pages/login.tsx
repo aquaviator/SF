@@ -37,13 +37,11 @@ export default function Login() {
         password,
       });
       
-      // Login successful, redirect to appropriate dashboard
+      // Login successful, get user data and refresh auth context
       const userData = await response.json();
-      if (userData.role === 'owner') {
-        setLocation("/owner/dashboard");
-      } else {
-        setLocation("/dashboard");
-      }
+      
+      // Force page reload to refresh authentication state
+      window.location.href = userData.role === 'owner' ? '/owner/dashboard' : '/dashboard';
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
