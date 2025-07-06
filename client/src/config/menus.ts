@@ -136,7 +136,7 @@ export const ownerMoreMenu: MenuItem[] = [
   },
   {
     label: "Profile",
-    route: "/profile",
+    route: "/owner/profile",
     icon: User,
     description: "Personal account settings and profile"
   }
