@@ -3,6 +3,7 @@ import { X, HelpCircle, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -15,19 +16,9 @@ interface MoreDrawerProps {
 }
 
 export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { role, tenantId, user } = useRole();
   const drawerRef = useRef<HTMLDivElement>(null);
-  
-  // Extract role and tenantId from user object
-  const role = user?.role || 'staff';
-  const tenantId = user?.tenantId;
-  
-  // Debug logging
-  console.log('MOREDRAWER_ROLE_DEBUG:', { 
-    user: user, 
-    role: role, 
-    userRole: user?.role 
-  });
   
   const moreMenuItems = getMoreMenuForRole(role);
 

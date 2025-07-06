@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import { getMenuForRole, getMoreMenuForRole } from "@/config/menus";
 import { useState, useEffect } from "react";
@@ -8,20 +9,11 @@ import ShiftFloLogo from "@/components/ShiftFloLogo";
 import { LogOut } from "lucide-react";
 
 export function SidebarNav() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { role, tenantId, user } = useRole();
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const [imgErrored, setImgErrored] = useState(false);
-
-  const role = user?.role || 'staff';
-  const tenantId = user?.tenantId;
-  
-  // Debug logging
-  console.log('SIDEBAR_ROLE_DEBUG:', { 
-    user: user, 
-    role: role, 
-    userRole: user?.role 
-  });
   
   const menuItems = getMenuForRole(role);
   const moreMenuItems = getMoreMenuForRole(role);

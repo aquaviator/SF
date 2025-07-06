@@ -1,6 +1,6 @@
 import { Menu } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import { getMenuForRole } from "@/config/menus";
 
@@ -9,7 +9,7 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
-  const { role } = useAuth();
+  const { role } = useRole();
   const [location] = useLocation();
   
   const menuItems = getMenuForRole(role);
