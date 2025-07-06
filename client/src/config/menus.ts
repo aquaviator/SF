@@ -90,7 +90,7 @@ export const staffMenu: MenuItem[] = [
   },
   {
     label: "Account",
-    route: "/profile",
+    route: "/staff/profile",
     icon: User,
     description: "Profile and account settings"
   }

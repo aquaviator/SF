@@ -70,8 +70,7 @@ export default function Profile() {
   const [personalData, setPersonalData] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { role, tenantId, isOwner } = useRole();
+  const { user, isAuthenticated, isLoading: authLoading, role, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -90,7 +89,7 @@ export default function Profile() {
     } : null,
     extractedRole: role,
     extractedTenantId: tenantId,
-    isOwner,
+    isOwner: role === 'owner',
     pageLocation: window.location.pathname,
     personalData: personalData ? { id: personalData.id, firstName: personalData.firstName } : null,
     businessData: businessData ? { id: businessData.id, name: businessData.name } : null,
@@ -278,7 +277,8 @@ export default function Profile() {
           });
         }
       } catch (err) {
-        console.error("💥 PROFILE_DATA_LOADING_ERROR", { error: err, message: err.message });
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error("💥 PROFILE_DATA_LOADING_ERROR", { error: err, message: errorMessage });
         setError("Failed to load profile data");
       } finally {
         setIsLoading(false);
@@ -375,20 +375,23 @@ export default function Profile() {
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-        <p className="text-gray-600 mt-1">Manage your profile and business settings</p>
+        <p className="text-gray-600 mt-1">
+          {role === 'owner' ? 'Manage your profile and business settings' : 'Manage your account settings'}
+        </p>
       </div>
 
-      <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="business" className="flex items-center space-x-2">
-            <Building className="h-4 w-4" />
-            <span>Business Details</span>
-          </TabsTrigger>
-          <TabsTrigger value="personal" className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <span>Owner Details</span>
-          </TabsTrigger>
-        </TabsList>
+      {role === 'owner' ? (
+        <Tabs defaultValue="business" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="business" className="flex items-center space-x-2">
+              <Building className="h-4 w-4" />
+              <span>Business Details</span>
+            </TabsTrigger>
+            <TabsTrigger value="personal" className="flex items-center space-x-2">
+              <User className="h-4 w-4" />
+              <span>Owner Details</span>
+            </TabsTrigger>
+          </TabsList>
 
         <TabsContent value="business">
           <Card>
@@ -403,9 +406,9 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label>Business Logo</Label>
                 <PhotoUpload
-                  currentImageUrl={businessData?.logoUrl}
+                  currentImage={businessData?.logoUrl}
                   onImageChange={handleBusinessLogoChange}
-                  placeholder="Upload business logo"
+                  type="logo"
                 />
               </div>
 
@@ -533,9 +536,9 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label>Profile Photo</Label>
                 <PhotoUpload
-                  currentImageUrl={personalData?.photoUrl}
+                  currentImage={personalData?.photoUrl}
                   onImageChange={handlePersonalPhotoChange}
-                  placeholder="Upload profile photo"
+                  type="avatar"
                 />
               </div>
 
@@ -628,7 +631,116 @@ export default function Profile() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      ) : (
+        /* Staff Profile - Personal Details Only */
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+            <CardDescription>
+              Manage your personal profile and account details
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Profile Photo Upload */}
+            <div className="space-y-2">
+              <Label>Profile Photo</Label>
+              <PhotoUpload
+                currentImage={personalData?.photoUrl}
+                onImageChange={handlePersonalPhotoChange}
+                type="avatar"
+              />
+            </div>
+
+            <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="staff-firstName">First Name *</Label>
+                  <Input
+                    id="staff-firstName"
+                    {...personalForm.register("firstName")}
+                    placeholder="Enter first name"
+                  />
+                  {personalForm.formState.errors.firstName && (
+                    <p className="text-sm text-red-600">
+                      {personalForm.formState.errors.firstName.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="staff-lastName">Last Name *</Label>
+                  <Input
+                    id="staff-lastName"
+                    {...personalForm.register("lastName")}
+                    placeholder="Enter last name"
+                  />
+                  {personalForm.formState.errors.lastName && (
+                    <p className="text-sm text-red-600">
+                      {personalForm.formState.errors.lastName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="staff-email">Email Address *</Label>
+                <Input
+                  id="staff-email"
+                  type="email"
+                  {...personalForm.register("email")}
+                  placeholder="Enter email address"
+                />
+                {personalForm.formState.errors.email && (
+                  <p className="text-sm text-red-600">
+                    {personalForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="staff-phone">Phone</Label>
+                <Input
+                  id="staff-phone"
+                  {...personalForm.register("phone")}
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="staff-address">Address</Label>
+                <Textarea
+                  id="staff-address"
+                  {...personalForm.register("address")}
+                  placeholder="Enter your address"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="staff-bio">Bio</Label>
+                <Textarea
+                  id="staff-bio"
+                  {...personalForm.register("bio")}
+                  placeholder="Tell us about yourself"
+                  rows={3}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={personalMutation.isPending}
+                className="w-full"
+              >
+                {personalMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Update Profile
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

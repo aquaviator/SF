@@ -77,6 +77,7 @@ function ProtectedRoutes() {
               <Route path="/owner/subscription" component={SeatBasedSubscription} />
               <Route path="/staff/strikes" component={StaffStrikes} />
               <Route path="/staff/requests" component={StaffRequests} />
+              <Route path="/staff/profile" component={Profile} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
               <Route component={NotFound} />
