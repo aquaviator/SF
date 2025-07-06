@@ -1793,14 +1793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/subscription/plans", async (req, res) => {
-    try {
-      const plans = await storage.getSubscriptionPlans();
-      res.json(plans);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch subscription plans" });
-    }
-  });
+  // Seat-based billing - no subscription plans endpoint needed
 
   app.post("/api/subscription", async (req, res) => {
     try {

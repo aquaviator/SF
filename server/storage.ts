@@ -154,11 +154,10 @@ export interface IStorage {
   updateSubscription(tenantId: string, subscription: InsertSubscription): Promise<Subscription | undefined>;
   deleteSubscription(tenantId: string): Promise<boolean>;
 
-  getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined>;
-  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
-  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
-  updateSubscriptionPlan(id: string, plan: InsertSubscriptionPlan): Promise<SubscriptionPlan | undefined>;
-  deleteSubscriptionPlan(id: string): Promise<boolean>;
+  // Seat-based billing operations (no subscription plans - pure seat billing)
+  addSeats(tenantId: string, additionalSeats: number): Promise<Subscription | undefined>;
+  removeSeats(tenantId: string, seatsToRemove: number): Promise<Subscription | undefined>;
+  calculateMonthlyCost(tenantId: string): Promise<number>;
 
   // Usage metrics operations
   getUsageMetrics(tenantId: string): Promise<UsageMetric | undefined>;
