@@ -3474,21 +3474,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simplified Business Registration API
   app.post("/api/register-business", async (req, res) => {
     try {
-      console.log("📝 Register business request body:", req.body);
+      console.log("📝 Register business request received");
       
-      const {
-        businessName,
-        ownerFirstName,
-        ownerLastName,
-        ownerEmail,
-        subdomain,
-        seatsNeeded,
-        campaignId,
-        trialDays,
-        pricePerSeat,
-      } = req.body;
+      const { business, owner: ownerData } = req.body;
       
-      console.log("📝 Extracted businessName:", businessName);
+      // Extract values from nested structure
+      const businessName = business?.name;
+      const ownerFirstName = ownerData?.firstName;
+      const ownerLastName = ownerData?.lastName;
+      const ownerEmail = ownerData?.email;
+      const subdomain = business?.subdomain;
+      
+      // Validate required fields
+      if (!businessName || !ownerFirstName || !ownerLastName || !ownerEmail || !subdomain) {
+        console.error("❌ Missing required fields:", { businessName, ownerFirstName, ownerLastName, ownerEmail, subdomain });
+        return res.status(400).json({ message: "Missing required fields" });
+      }
 
       // Create tenant
       const tenantId = subdomain;
@@ -3537,8 +3538,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerId: owner.id,
         loginUrl: `https://${subdomain}.${req.headers.host}/activate?token=${activationToken}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Business registration error:", error);
+      console.error("Error code:", error.code);
+      console.error("Error constraint:", error.constraint);
+      console.error("Error detail:", error.detail);
+      
+      // Handle specific database constraint violations
+      if (error.code === '23505') {
+        if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ 
+            message: "An account with this email already exists",
+            field: "email"
+          });
+        }
+        
+        if (error.detail?.includes('subdomain')) {
+          return res.status(400).json({ 
+            message: "This subdomain is already taken",
+            field: "subdomain"
+          });
+        }
+      }
+      
       res.status(500).json({ message: "Failed to register business" });
     }
   });
