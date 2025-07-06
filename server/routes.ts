@@ -3563,10 +3563,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for JSON parsing
+  app.post("/api/test-json", (req, res) => {
+    console.log("🧪 Test JSON endpoint hit");
+    console.log("🧪 Content-Type:", req.get('Content-Type'));
+    console.log("🧪 Raw body:", JSON.stringify(req.body, null, 2));
+    res.json({ received: req.body, success: true });
+  });
+
   // Simplified Business Registration API
   app.post("/api/register-business", async (req, res) => {
     try {
       console.log("📝 Register business request received");
+      console.log("📋 Content-Type:", req.get('Content-Type'));
+      console.log("📋 Raw request body:", JSON.stringify(req.body, null, 2));
+      console.log("📋 Request body type:", typeof req.body);
+      console.log("📋 Request body keys:", Object.keys(req.body || {}));
       
       // Extract values from flat structure that form sends
       const { 
@@ -3636,8 +3648,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: businessName,
           ownerName: `${ownerFirstName} ${ownerLastName}`,
           email: ownerEmail,
-          phone: phone || null,
-          website: website || null,
+          phone: null,
+          website: null,
           businessType,
         });
       console.log("✅ Business profile created");
