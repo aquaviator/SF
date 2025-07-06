@@ -30,6 +30,11 @@ type ShiftFormData = z.infer<typeof shiftFormSchema>;
 export default function Shifts() {
   const { tenantId } = useRole();
   
+  // Early return if no tenantId
+  if (!tenantId) {
+    return <div>Loading...</div>;
+  }
+  
   const {
     data: shifts,
     isLoading,
@@ -90,13 +95,24 @@ export default function Shifts() {
   }, [isModalOpen, editingItem, form]);
 
   const onSubmit = (data: ShiftFormData) => {
+    // Complete shift schema with all required fields
     const submitData = {
-      ...data,
-      tenantId,
+      tenantId: tenantId!, // Safe after early return check
+      role: data.role,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      description: data.description,
+      location: data.location,
       assignedTo: data.assignedTo && data.assignedTo !== "unassigned" ? parseInt(data.assignedTo) : null,
-      status: (data.assignedTo && data.assignedTo !== "unassigned" ? "assigned" : "open") as "open" | "assigned" | "confirmed" | "conflict",
+      status: (data.assignedTo && data.assignedTo !== "unassigned" ? "assigned" : "open") as "open" | "assigned" | "confirmed",
       createdBy: 1, // Stubbed user ID
       notes: data.notes || null,
+      // Required schema fields with defaults
+      assignmentType: "assigned" as const,
+      requiredStaff: 1,
+      claimedBy: null,
+      templateId: null,
     };
 
     if (editingItem) {
@@ -111,7 +127,7 @@ export default function Shifts() {
       open: "bg-yellow-100 text-yellow-800",
       assigned: "bg-blue-100 text-blue-800",
       confirmed: "bg-green-100 text-green-800",
-      conflict: "bg-red-100 text-red-800",
+      declined: "bg-red-100 text-red-800",
     };
     
     return (

@@ -27,6 +27,11 @@ type StaffFormData = z.infer<typeof staffFormSchema>;
 export default function Staff() {
   const { tenantId } = useRole();
   
+  // Early return if no tenantId
+  if (!tenantId) {
+    return <div>Loading...</div>;
+  }
+  
   const {
     data: staff,
     isLoading,
@@ -88,9 +93,28 @@ export default function Staff() {
   }, [isModalOpen, editingItem, form]);
 
   const onSubmit = (data: StaffFormData) => {
+    // Complete user schema with all required fields
     const submitData = {
-      ...data,
-      tenantId,
+      tenantId: tenantId!, // Safe after early return check
+      username: data.username,
+      role: data.role as "staff",
+      password: data.password,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      isActive: data.isActive,
+      // Required schema fields with defaults (matching schema.ts exactly)
+      phone: null,
+      address: null,
+      bio: null,
+      dateOfBirth: null,
+      hireDate: null,
+      employeeId: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
+      photoUrl: null,
+      activationToken: null,
+      tokenExpiresAt: null,
     };
 
     if (editingItem) {
