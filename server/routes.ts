@@ -3568,18 +3568,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("📝 Register business request received");
       
-      const { business, owner: ownerData } = req.body;
+      // Extract values from flat structure that form sends
+      const { 
+        businessName, 
+        ownerFirstName, 
+        ownerLastName, 
+        ownerEmail, 
+        subdomain,
+        seatsNeeded = 5,
+        wantsTrial = true,
+        campaignId,
+        trialDays,
+        pricePerSeat
+      } = req.body;
       
-      // Extract values from nested structure
-      const businessName = business?.name;
-      const ownerFirstName = ownerData?.firstName;
-      const ownerLastName = ownerData?.lastName;
-      const ownerEmail = ownerData?.email;
-      const subdomain = business?.subdomain;
-      const businessType = business?.businessType || 'Other';
-      const phone = business?.phone;
-      const website = business?.website;
-      const staffCount = business?.staffCount || 5;
+      console.log("📋 Registration data received:", { 
+        businessName, 
+        ownerFirstName, 
+        ownerLastName, 
+        ownerEmail, 
+        subdomain,
+        seatsNeeded,
+        wantsTrial
+      });
       
       // Validate required fields
       if (!businessName || !ownerFirstName || !ownerLastName || !ownerEmail || !subdomain) {
@@ -3631,17 +3642,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       console.log("✅ Business profile created");
 
-      // Create default subscription
+      // Create default subscription using form data
       const subscriptionData = {
         tenantId,
         planId: 'seat_based',
         startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
-        status: 'trial' as const,
-        seatsIncluded: staffCount,
+        endDate: new Date(Date.now() + (trialDays || 14) * 24 * 60 * 60 * 1000), // Trial days from campaign
+        status: wantsTrial ? 'trial' as const : 'active' as const,
+        seatsIncluded: seatsNeeded || 5,
         seatsUsed: 1, // Owner
-        pricePerSeat: 300, // £3.00 in pence
-        monthlyTotal: staffCount * 300, // Total monthly cost
+        pricePerSeat: (pricePerSeat || 3) * 100, // Convert to pence
+        monthlyTotal: (seatsNeeded || 5) * (pricePerSeat || 3) * 100, // Total monthly cost in pence
       };
       
       console.log("📝 Subscription data to insert:", subscriptionData);
@@ -4107,109 +4118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Business Registration API
-  app.post("/api/register-business", async (req, res) => {
-    try {
-      const { business, owner, planId } = req.body;
 
-      // Validate required fields
-      if (!business?.name || !business?.subdomain || !owner?.firstName || !owner?.lastName || !owner?.email || !owner?.password || !planId) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-
-      // Create tenant
-      const [newTenant] = await db.insert(tenants).values({
-        name: business.name,
-        subdomain: business.subdomain,
-      }).returning();
-
-      // Create business profile
-      await db.insert(businessProfiles).values({
-        tenantId: newTenant.subdomain,
-        name: business.name,
-        businessType: business.businessType || "Other",
-        address: business.address,
-        phone: business.phone,
-        website: business.website,
-        logoUrl: business.logoUrl,
-        ownerName: `${owner.firstName} ${owner.lastName}`,
-      });
-
-      // Hash password and create owner user
-      const bcrypt = await import('bcrypt');
-      const hashedPassword = await bcrypt.hash(owner.password, 10);
-      const [newUser] = await db.insert(users).values({
-        tenantId: newTenant.subdomain,
-        username: owner.email, // Use email as username
-        password: hashedPassword,
-        role: 'owner',
-        firstName: owner.firstName,
-        lastName: owner.lastName,
-        email: owner.email,
-        isActive: true,
-      }).returning();
-
-      // Get seat pricing tier based on staff count
-      const staffCount = business.staffCount || 1;
-      const [planDetails] = await db.select().from(seatPricing).where(
-        and(
-          lte(seatPricing.minSeats, staffCount),
-          or(
-            isNull(seatPricing.maxSeats),
-            gte(seatPricing.maxSeats, staffCount)
-          )
-        )
-      ).limit(1);
-      
-      if (!planDetails) {
-        return res.status(400).json({ message: "No pricing tier available for the requested number of seats" });
-      }
-
-      // Create subscription
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30); // 30-day trial
-
-      await db.insert(subscriptions).values({
-        tenantId: newTenant.subdomain,
-        planId: planDetails.tierName.toLowerCase(), // Use tier name as plan ID
-        status: 'trial',
-        startDate: startDate,
-        endDate: endDate,
-        seatsIncluded: staffCount,
-        seatsUsed: 1, // Just the owner initially
-        pricePerSeat: planDetails.pricePerSeat, // Price per seat in pence
-        monthlyTotal: staffCount * planDetails.pricePerSeat,
-        nextBillingDate: endDate,
-        trialStart: startDate,
-        trialEnd: endDate,
-      });
-
-      // Sign JWT (you'll need to implement JWT signing)
-      // const token = jwt.sign({ userId: newUser.id, tenantId: newTenant.subdomain, role: 'owner' }, JWT_SECRET);
-      // res.cookie('auth-token', token, { httpOnly: true });
-
-      res.json({
-        user: {
-          id: newUser.id,
-          firstName: newUser.firstName,
-          role: newUser.role,
-        },
-        tenant: {
-          id: newTenant.id,
-          name: newTenant.name,
-          subdomain: newTenant.subdomain,
-        }
-      });
-
-    } catch (error: any) {
-      console.error("Business registration error:", error);
-      if (error.code === '23505') { // Unique constraint violation
-        return res.status(400).json({ message: "Subdomain already exists" });
-      }
-      res.status(500).json({ message: "Failed to register business: " + error.message });
-    }
-  });
 
   // Get seat pricing endpoint
   app.get("/api/seat-pricing", async (req, res) => {
