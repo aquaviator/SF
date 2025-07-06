@@ -163,8 +163,36 @@ interface OperatingHours {
 }
 
 export default function BusinessSettingsPage() {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId, isLoading } = useAuth();
   const { toast } = useToast();
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+            <p className="text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!user || user.role !== "owner") {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+            <p className="text-muted-foreground text-center">
+              Business Settings is only available to business owners.<br />
+              {user ? `You are currently viewing as: ${user.role}` : 'Please log in to continue.'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const [isRoleModalOpen, setIsRoleModalOpen] = React.useState(false);
   const [editingRole, setEditingRole] = React.useState<JobRole | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false);
@@ -784,26 +812,6 @@ export default function BusinessSettingsPage() {
       cell: (hours) => <span>{hours.notes || "—"}</span>,
     },
   ];
-
-  const { role, switchRole } = useAuth();
-  
-  if (role !== "owner") {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-            <p className="text-muted-foreground text-center">
-              Business Settings is only available to business owners.<br />
-              You are currently viewing as: <Badge variant="secondary">{role}</Badge>
-            </p>
-            <Button onClick={() => switchRole("owner")} variant="outline">
-              Switch to Owner View
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto py-8 space-y-8">
