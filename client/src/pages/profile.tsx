@@ -1,48 +1,41 @@
 import React, { useState, useEffect } from "react";
-// Cache refresh: 2025-07-06 10:20
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PhotoUpload } from "@/components/PhotoUpload";
-import { Building2, User, Mail, Loader2, Save } from "lucide-react";
+import { Loader2, User, Building } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhotoUpload } from "@/components/PhotoUpload";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-// Business Details Schema
-const businessDetailsSchema = z.object({
-  name: z.string().min(1, "Business name is required"),
-  address: z.string().min(1, "Business address is required"),
-  phone: z.string().min(1, "Phone number is required"),
-  email: z.string().email("Valid email is required"),
-  website: z.string().url("Valid website URL is required").optional().or(z.literal("")),
-  businessType: z.string().optional(),
-  description: z.string().optional(),
-  logoUrl: z.string().optional(),
-});
-
-// Personal/Owner Details Schema
+// Validation schemas
 const personalDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
+  email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   address: z.string().optional(),
   bio: z.string().optional(),
-  photoUrl: z.string().optional(),
 });
 
-type BusinessDetailsFormData = z.infer<typeof businessDetailsSchema>;
-type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
+const businessDetailsSchema = z.object({
+  name: z.string().min(1, "Business name is required"),
+  address: z.string().min(1, "Business address is required"),
+  phone: z.string().min(1, "Business phone is required"),
+  email: z.string().email("Invalid email address"),
+  website: z.string().url("Invalid website URL").optional().or(z.literal("")),
+  businessType: z.string().optional(),
+  description: z.string().optional(),
+});
 
+// Interface types
 interface UserType {
   id: number;
   firstName: string;
@@ -69,27 +62,19 @@ interface BusinessProfileType {
   logoUrl?: string;
 }
 
+type BusinessDetailsFormData = z.infer<typeof businessDetailsSchema>;
+type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
+
 export default function Profile() {
-  const { user, role, refreshUserData } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [personalData, setPersonalData] = useState<UserType | null>(null);
+  const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { user, tenantId } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
 
-  // Fetch user profile data
-  const { data: userData, isLoading: userLoading } = useQuery({
-    queryKey: ["/api/users", user?.id],
-    queryFn: () => fetch(`/api/users/${user?.id}`).then((res) => res.json()),
-    enabled: !!user?.id,
-  });
-
-  // Fetch business profile data (for owners only)
-  const { data: businessData, isLoading: businessLoading } = useQuery({
-    queryKey: ["/api/business-profile", user?.tenantId],
-    queryFn: () => fetch(`/api/business-profile?tenantId=${user?.tenantId}`).then((res) => res.json()),
-    enabled: !!user?.tenantId && role === "owner",
-  });
-
-  // Business Details Form
+  // Business details form
   const businessForm = useForm<BusinessDetailsFormData>({
     resolver: zodResolver(businessDetailsSchema),
     defaultValues: {
@@ -100,11 +85,10 @@ export default function Profile() {
       website: "",
       businessType: "",
       description: "",
-      logoUrl: "",
     },
   });
 
-  // Personal Details Form
+  // Personal details form
   const personalForm = useForm<PersonalDetailsFormData>({
     resolver: zodResolver(personalDetailsSchema),
     defaultValues: {
@@ -114,81 +98,103 @@ export default function Profile() {
       phone: "",
       address: "",
       bio: "",
-      photoUrl: "",
     },
   });
 
-  // Load data into forms when available
-  useEffect(() => {
-    if (userData) {
-      console.log('Personal profile data loaded:', userData);
-      personalForm.reset({
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email || "",
-        phone: userData.phone || "",
-        address: userData.address || "",
-        bio: userData.bio || "",
-        photoUrl: userData.photoUrl || "",
-      });
-    }
-  }, [userData, personalForm]);
-
-  useEffect(() => {
-    if (businessData && role === "owner") {
-      console.log('Business profile data loaded:', businessData);
-      businessForm.reset({
-        name: businessData.name || "",
-        address: businessData.address || "",
-        phone: businessData.phone || "",
-        email: businessData.email || "",
-        website: businessData.website || "",
-        businessType: businessData.businessType || "",
-        description: businessData.description || "",
-        logoUrl: businessData.logoUrl || "",
-      });
-    }
-  }, [businessData, businessForm, role]);
-
-  useEffect(() => {
-    if (!userLoading && (!businessLoading || role !== "owner")) {
-      setLoading(false);
-    }
-  }, [userLoading, businessLoading, role]);
-
-  // Business Details Update Mutation
+  // Business mutation
   const businessMutation = useMutation({
     mutationFn: async (data: BusinessDetailsFormData) => {
-      const response = await apiRequest('PUT', `/api/business-profile`, {
-        ...data,
-        tenantId: user?.tenantId,
-      });
+      const response = await apiRequest("PUT", `/api/business-profile?tenantId=${tenantId}`, data);
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Business details updated successfully",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile"] });
-      toast({ title: "Success", description: "Business details updated successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update business details", variant: "destructive" });
-    }
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update business details",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Personal Details Update Mutation
+  // Personal mutation
   const personalMutation = useMutation({
     mutationFn: async (data: PersonalDetailsFormData) => {
-      const response = await apiRequest('PUT', `/api/users/${user?.id}`, data);
+      const response = await apiRequest("PUT", `/api/users/${user?.id}`, data);
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Personal details updated successfully",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
-      refreshUserData(); // Refresh AuthContext user data
-      toast({ title: "Success", description: "Personal details updated successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update personal details", variant: "destructive" });
-    }
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update personal details",
+        variant: "destructive",
+      });
+    },
   });
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user?.id || !tenantId) return;
+
+      try {
+        setIsLoading(true);
+        
+        // Fetch personal data
+        const personalResponse = await fetch(`/api/users/${user.id}`);
+        if (personalResponse.ok) {
+          const personal = await personalResponse.json();
+          console.log("New profile - Personal data loaded:", personal);
+          setPersonalData(personal);
+          personalForm.reset({
+            firstName: personal.firstName || "",
+            lastName: personal.lastName || "",
+            email: personal.email || "",
+            phone: personal.phone || "",
+            address: personal.address || "",
+            bio: personal.bio || "",
+          });
+        }
+
+        // Fetch business data
+        const businessResponse = await fetch(`/api/business-profile?tenantId=${tenantId}`);
+        if (businessResponse.ok) {
+          const business = await businessResponse.json();
+          console.log("New profile - Business data loaded:", business);
+          setBusinessData(business);
+          businessForm.reset({
+            name: business.name || "",
+            address: business.address || "",
+            phone: business.phone || "",
+            email: business.email || "",
+            website: business.website || "",
+            businessType: business.businessType || "",
+            description: business.description || "",
+          });
+        }
+      } catch (err) {
+        console.error("Error loading profile data:", err);
+        setError("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user?.id, tenantId, businessForm, personalForm]);
 
   const onBusinessSubmit = (data: BusinessDetailsFormData) => {
     businessMutation.mutate(data);
@@ -198,461 +204,338 @@ export default function Profile() {
     personalMutation.mutate(data);
   };
 
-  if (loading) {
+  // Handle business logo upload
+  const handleBusinessLogoChange = async (imageDataUrl: string) => {
+    try {
+      const response = await apiRequest("PUT", `/api/business-profile?tenantId=${tenantId}`, {
+        logoUrl: imageDataUrl,
+      });
+      
+      if (response.ok) {
+        const updatedBusiness = await response.json();
+        setBusinessData(updatedBusiness);
+        toast({
+          title: "Success",
+          description: "Business logo updated successfully",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/business-profile"] });
+      }
+    } catch (error) {
+      console.error("Error updating business logo:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update business logo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle personal photo upload
+  const handlePersonalPhotoChange = async (imageDataUrl: string) => {
+    try {
+      const response = await apiRequest("PUT", `/api/users/${user?.id}`, {
+        photoUrl: imageDataUrl,
+      });
+      
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setPersonalData(updatedUser);
+        toast({
+          title: "Success",
+          description: "Profile photo updated successfully",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
+      }
+    } catch (error) {
+      console.error("Error updating profile photo:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile photo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto py-8 flex justify-center">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground">
-            {role === "owner" 
-              ? "Manage your business and personal profile settings"
-              : "Manage your personal profile and account settings"
-            }
-          </p>
-        </div>
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+        <p className="text-gray-600 mt-1">Manage your profile and business settings</p>
       </div>
 
-      {role === "owner" ? (
-        // Owner Profile with Business and Personal tabs
-        <Tabs defaultValue="business" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="business">Business Details</TabsTrigger>
-            <TabsTrigger value="personal">Owner Details</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="business" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="business" className="flex items-center space-x-2">
+            <Building className="h-4 w-4" />
+            <span>Business Details</span>
+          </TabsTrigger>
+          <TabsTrigger value="personal" className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>Owner Details</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="business" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Business Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...businessForm}>
-                  <form onSubmit={businessForm.handleSubmit(onBusinessSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={businessForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter business name" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+        <TabsContent value="business">
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Information</CardTitle>
+              <CardDescription>
+                Manage your business profile and public information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Business Logo Upload */}
+              <div className="space-y-2">
+                <Label>Business Logo</Label>
+                <PhotoUpload
+                  currentImageUrl={businessData?.logoUrl}
+                  onImageChange={handleBusinessLogoChange}
+                  placeholder="Upload business logo"
+                />
+              </div>
 
-                      <FormField
-                        control={businessForm.control}
-                        name="businessType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Type</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="e.g., Restaurant, Retail, Services" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={businessForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="email" placeholder="business@example.com" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={businessForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="(555) 123-4567" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={businessForm.control}
-                        name="website"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Website</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://example.com" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={businessForm.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Address</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} placeholder="Enter complete business address" rows={3} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+              <form onSubmit={businessForm.handleSubmit(onBusinessSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="business-name">Business Name *</Label>
+                    <Input
+                      id="business-name"
+                      {...businessForm.register("name")}
+                      placeholder="Enter business name"
                     />
-
-                    {/* Business Logo */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Business Logo</label>
-                      <div className="mt-2">
-                        <PhotoUpload
-                          type="logo"
-                          currentImage={businessForm.watch("logoUrl")}
-                          onImageChange={(imageUrl) => businessForm.setValue("logoUrl", imageUrl)}
-                          size="lg"
-                        />
-                      </div>
-                    </div>
-
-                    <FormField
-                      control={businessForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} placeholder="Describe your business" rows={4} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex justify-end">
-                      <Button type="submit" disabled={businessMutation.isPending}>
-                        {businessMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Business Details
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="personal" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Owner Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...personalForm}>
-                  <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-6">
-                    {/* Owner Profile Photo */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Owner Photo</label>
-                      <div className="mt-2">
-                        <PhotoUpload
-                          type="avatar"
-                          currentImage={personalForm.watch("photoUrl")}
-                          onImageChange={(imageUrl) => personalForm.setValue("photoUrl", imageUrl)}
-                          size="lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={personalForm.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter first name" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={personalForm.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Enter last name" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={personalForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Personal Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="email" placeholder="personal@example.com" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={personalForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Personal Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="(555) 123-4567" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={personalForm.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Personal Address</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} placeholder="Enter your address" rows={3} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={personalForm.control}
-                      name="bio"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bio</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} placeholder="Tell us about yourself" rows={4} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="pt-4">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary">{userData?.role}</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Current Role
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button type="submit" disabled={personalMutation.isPending}>
-                        {personalMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Owner Details
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      ) : (
-        // Staff Profile - Personal details only
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Personal Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...personalForm}>
-              <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-6">
-                {/* Staff Profile Photo */}
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Profile Photo</label>
-                  <div className="mt-2">
-                    <PhotoUpload
-                      type="avatar"
-                      currentImage={personalForm.watch("photoUrl")}
-                      onImageChange={(imageUrl) => personalForm.setValue("photoUrl", imageUrl)}
-                      size="lg"
-                    />
+                    {businessForm.formState.errors.name && (
+                      <p className="text-sm text-red-600">
+                        {businessForm.formState.errors.name.message}
+                      </p>
+                    )}
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="business-phone">Phone *</Label>
+                    <Input
+                      id="business-phone"
+                      {...businessForm.register("phone")}
+                      placeholder="Enter business phone"
+                    />
+                    {businessForm.formState.errors.phone && (
+                      <p className="text-sm text-red-600">
+                        {businessForm.formState.errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="business-address">Address *</Label>
+                  <Textarea
+                    id="business-address"
+                    {...businessForm.register("address")}
+                    placeholder="Enter business address"
+                    rows={2}
+                  />
+                  {businessForm.formState.errors.address && (
+                    <p className="text-sm text-red-600">
+                      {businessForm.formState.errors.address.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={personalForm.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter first name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="space-y-2">
+                    <Label htmlFor="business-email">Email *</Label>
+                    <Input
+                      id="business-email"
+                      type="email"
+                      {...businessForm.register("email")}
+                      placeholder="Enter business email"
+                    />
+                    {businessForm.formState.errors.email && (
+                      <p className="text-sm text-red-600">
+                        {businessForm.formState.errors.email.message}
+                      </p>
                     )}
-                  />
+                  </div>
 
-                  <FormField
-                    control={personalForm.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter last name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="space-y-2">
+                    <Label htmlFor="business-website">Website</Label>
+                    <Input
+                      id="business-website"
+                      {...businessForm.register("website")}
+                      placeholder="https://yourwebsite.com"
+                    />
+                    {businessForm.formState.errors.website && (
+                      <p className="text-sm text-red-600">
+                        {businessForm.formState.errors.website.message}
+                      </p>
                     )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder="email@example.com" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="(555) 123-4567" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={personalForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} placeholder="Enter your address" rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={personalForm.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} placeholder="Tell us about yourself" rows={4} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="pt-4">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="secondary">{userData?.role}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Current Role
-                    </span>
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={personalMutation.isPending}>
-                    {personalMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Profile
-                      </>
-                    )}
-                  </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="business-type">Business Type</Label>
+                  <Input
+                    id="business-type"
+                    {...businessForm.register("businessType")}
+                    placeholder="e.g., Restaurant, Retail, Healthcare"
+                  />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="business-description">Description</Label>
+                  <Textarea
+                    id="business-description"
+                    {...businessForm.register("description")}
+                    placeholder="Brief description of your business"
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={businessMutation.isPending}
+                  className="w-full"
+                >
+                  {businessMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Update Business Details
+                </Button>
               </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="personal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>
+                Manage your personal profile and account details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Personal Photo Upload */}
+              <div className="space-y-2">
+                <Label>Profile Photo</Label>
+                <PhotoUpload
+                  currentImageUrl={personalData?.photoUrl}
+                  onImageChange={handlePersonalPhotoChange}
+                  placeholder="Upload profile photo"
+                />
+              </div>
+
+              <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first-name">First Name *</Label>
+                    <Input
+                      id="first-name"
+                      {...personalForm.register("firstName")}
+                      placeholder="Enter first name"
+                    />
+                    {personalForm.formState.errors.firstName && (
+                      <p className="text-sm text-red-600">
+                        {personalForm.formState.errors.firstName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="last-name">Last Name *</Label>
+                    <Input
+                      id="last-name"
+                      {...personalForm.register("lastName")}
+                      placeholder="Enter last name"
+                    />
+                    {personalForm.formState.errors.lastName && (
+                      <p className="text-sm text-red-600">
+                        {personalForm.formState.errors.lastName.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...personalForm.register("email")}
+                    placeholder="Enter email address"
+                  />
+                  {personalForm.formState.errors.email && (
+                    <p className="text-sm text-red-600">
+                      {personalForm.formState.errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    {...personalForm.register("phone")}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    {...personalForm.register("address")}
+                    placeholder="Enter your address"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    {...personalForm.register("bio")}
+                    placeholder="Tell us about yourself"
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={personalMutation.isPending}
+                  className="w-full"
+                >
+                  {personalMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Update Personal Details
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
