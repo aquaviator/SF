@@ -574,6 +574,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Authentication system now works consistently with proper role detection and tenant isolation
   - All hooks return standardized role, tenantId, user, isLoading, and isAuthenticated properties
   - Zero tolerance authentication hook inconsistency successfully achieved across entire application
+- July 06, 2025. Refined staff activation flow to match business owner activation pattern:
+  - Fixed staff invitation duplicate email validation preventing database constraint violations
+  - Updated staff invitation API to use database domain configuration instead of localhost URLs
+  - Email activation links now use production domain for proper deployment compatibility
+  - Verified complete staff activation workflow: invitation → email → password setup → login → staff dashboard
+  - Staff members now activate under correct tenant and access role-appropriate dashboard interface
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
