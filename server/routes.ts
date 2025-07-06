@@ -3382,6 +3382,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      // Check if email already exists in the system
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: `A user with email ${email} already exists. Please use a different email address.` 
+        });
+      }
+
       // Generate activation token and expiry (7 days from now)
       const activationToken = crypto.randomBytes(32).toString('hex');
       const tokenExpiresAt = new Date();
@@ -3418,10 +3431,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Send activation email
+      // Send activation email with dynamic domain
       try {
-        await sendActivationEmail(email, firstName, activationToken);
-        console.log(`✅ ACTIVATION_EMAIL_SENT`, { email, timestamp: new Date() });
+        const activeDomain = await getActiveDomain();
+        await sendActivationEmail(email, firstName, activationToken, tenantId, activeDomain);
+        console.log(`✅ ACTIVATION_EMAIL_SENT`, { email, domain: activeDomain, timestamp: new Date() });
       } catch (emailError) {
         console.error(`❌ EMAIL_SEND_FAILED`, { error: emailError.message, email, timestamp: new Date() });
         // Continue without failing the request - user creation was successful
