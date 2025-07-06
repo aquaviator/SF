@@ -3,7 +3,7 @@ import {
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, seatPricing, seatAllocation,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
-  staffStrikes,
+  staffStrikes, mailingList,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -15,7 +15,8 @@ import {
   type SeatPricing, type InsertSeatPricing, type SeatAllocation, type InsertSeatAllocation,
   type UsageMetric, type InsertUsageMetric, type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
-  type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike
+  type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike,
+  type MailingList, type InsertMailingList
 } from "../shared/schema";
 import { db as database } from './db';
 import { eq, and } from 'drizzle-orm';
@@ -224,6 +225,10 @@ export interface IStorage {
   // Assignment tracking methods
   getShiftsByUserAndStatus(tenantId: string, userId: number, status: string): Promise<Shift[]>;
   getAssignmentTrackingData(tenantId: string): Promise<any[]>;
+
+  // Mailing list operations
+  addToMailingList(email: string, source?: string): Promise<MailingList>;
+  getMailingListByEmail(email: string): Promise<MailingList | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -2255,6 +2260,17 @@ export class DatabaseStorage implements IStorage {
         : 'Unassigned',
       staffEmail: row.staffEmail,
     }));
+  }
+
+  // Mailing list operations
+  async addToMailingList(email: string, source: string = "landing_page"): Promise<MailingList> {
+    const result = await database.insert(mailingList).values({ email, source }).returning();
+    return result[0];
+  }
+
+  async getMailingListByEmail(email: string): Promise<MailingList | undefined> {
+    const result = await database.select().from(mailingList).where(eq(mailingList.email, email)).limit(1);
+    return result[0];
   }
 }
 

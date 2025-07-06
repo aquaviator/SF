@@ -2329,6 +2329,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Debug endpoint to clear all data
+  // Mailing list endpoints for landing page
+  app.post("/api/mailing-list", async (req, res) => {
+    try {
+      const { email, source = "landing_page" } = req.body;
+      
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+
+      // Check if email already exists
+      const existing = await storage.getMailingListByEmail(email);
+      if (existing) {
+        return res.status(409).json({ message: "Email already subscribed" });
+      }
+
+      // Add to mailing list
+      const subscription = await storage.addToMailingList(email, source);
+      
+      console.log("📧 MAILING_LIST_SIGNUP", {
+        email,
+        source,
+        subscriptionId: subscription.id,
+        timestamp: new Date()
+      });
+
+      res.status(201).json({
+        message: "Successfully subscribed to mailing list",
+        subscription: {
+          id: subscription.id,
+          email: subscription.email,
+          subscribedAt: subscription.subscribedAt
+        }
+      });
+    } catch (error) {
+      console.error("❌ MAILING_LIST_ERROR", { error: error.message, email: req.body.email });
+      res.status(500).json({ message: "Failed to subscribe to mailing list" });
+    }
+  });
+
   app.delete("/api/debug/clear-all", async (req, res) => {
     try {
       // Clear all data by calling storage clear methods

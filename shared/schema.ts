@@ -707,3 +707,20 @@ export type BillingHistory = typeof billingHistory.$inferSelect;
 export type InsertBillingHistory = z.infer<typeof insertBillingHistorySchema>;
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
+// Mailing list table for landing page email signups
+export const mailingList = pgTable("mailing_list", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull().unique(),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  source: varchar("source").default("landing_page"),
+});
+
+export const insertMailingListSchema = createInsertSchema(mailingList).omit({
+  id: true,
+  subscribedAt: true,
+});
+
+export type MailingList = typeof mailingList.$inferSelect;
+export type InsertMailingList = z.infer<typeof insertMailingListSchema>;
