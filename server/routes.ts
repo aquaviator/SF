@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -3418,6 +3418,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ STAFF_INVITATION_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: "Failed to create staff invitation" });
+    }
+  });
+
+  // Subdomain availability check API
+  app.post("/api/check-subdomain", async (req, res) => {
+    try {
+      const { subdomain } = req.body;
+      
+      if (!subdomain) {
+        return res.status(400).json({ message: "Subdomain is required" });
+      }
+
+      // Check if subdomain already exists in database
+      const [existingTenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.subdomain, subdomain))
+        .limit(1);
+
+      const available = !existingTenant;
+      
+      res.json({ 
+        available,
+        subdomain,
+        message: available ? "Subdomain is available" : "Subdomain is already taken"
+      });
+    } catch (error) {
+      console.error("Error checking subdomain:", error);
+      res.status(500).json({ message: "Failed to check subdomain availability" });
+    }
+  });
+
+  // Campaign Management APIs (for simplified registration)
+  app.get("/api/campaigns/default", async (req, res) => {
+    try {
+      const [defaultCampaign] = await db
+        .select()
+        .from(campaigns)
+        .where(eq(campaigns.isActive, true))
+        .orderBy(campaigns.createdAt)
+        .limit(1);
+
+      if (!defaultCampaign) {
+        return res.status(404).json({ message: "No active campaign found" });
+      }
+
+      res.json(defaultCampaign);
+    } catch (error) {
+      console.error("Error fetching default campaign:", error);
+      res.status(500).json({ message: "Failed to fetch campaign" });
+    }
+  });
+
+  // Simplified Business Registration API
+  app.post("/api/register-business", async (req, res) => {
+    try {
+      const {
+        businessName,
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        subdomain,
+        seatsNeeded,
+        campaignId,
+        trialDays,
+        pricePerSeat,
+      } = req.body;
+
+      // Create tenant
+      const tenantId = subdomain;
+      
+      // Create business owner user
+      const [owner] = await db
+        .insert(users)
+        .values({
+          tenantId,
+          username: ownerEmail,
+          password: 'temp-password', // Will be set via activation
+          role: 'owner',
+          firstName: ownerFirstName,
+          lastName: ownerLastName,
+          email: ownerEmail,
+          isActive: false, // Will be activated via email
+          phone: null,
+          address: null,
+          dateOfBirth: null,
+          emergencyContact: null,
+          profileImageUrl: null,
+          activationToken: require('crypto').randomBytes(32).toString('hex'),
+          tokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        })
+        .returning();
+
+      // Create business profile
+      await db
+        .insert(businessProfiles)
+        .values({
+          tenantId,
+          businessName,
+          ownerName: `${ownerFirstName} ${ownerLastName}`,
+          email: ownerEmail,
+          phone: null,
+          address: null,
+          businessType: 'service',
+          industry: 'hospitality',
+          timezone: 'Europe/London',
+          businessLogoUrl: null,
+        });
+
+      // Create subscription with trial
+      const trialStartDate = new Date();
+      const trialEndDate = new Date(trialStartDate.getTime() + trialDays * 24 * 60 * 60 * 1000);
+      
+      await db
+        .insert(subscriptions)
+        .values({
+          tenantId,
+          planId: 'seat_based',
+          status: 'trial',
+          startDate: trialStartDate,
+          endDate: trialEndDate,
+          trialDaysRemaining: trialDays,
+          seatsIncluded: seatsNeeded,
+          seatsUsed: 1, // Owner counts as 1 seat
+          pricePerSeat,
+          monthlyTotal: seatsNeeded * pricePerSeat,
+          nextBillingDate: trialEndDate,
+          trialStart: trialStartDate,
+          trialEnd: trialEndDate,
+        });
+
+      // Create default location
+      await db
+        .insert(locations)
+        .values({
+          tenantId,
+          name: 'Main Location',
+          address: null,
+          phone: null,
+          isActive: true,
+        });
+
+      // Create default job role
+      await db
+        .insert(jobRoles)
+        .values({
+          tenantId,
+          name: 'Team Member',
+          description: 'General team member role',
+          isActive: true,
+        });
+
+      // Create default shift policies
+      await db
+        .insert(shiftPolicies)
+        .values({
+          tenantId,
+          minNoticeHours: 24,
+          maxAdvanceBookingDays: 30,
+          lateThresholdMinutes: 15,
+          strikePointsLimit: 5,
+          resetPeriodDays: 90,
+          lateGracePeriodMinutes: 10,
+          clockInBufferMinutes: 15,
+          clockOutBufferMinutes: 30,
+        });
+
+      res.json({
+        message: "Business registration successful",
+        tenantId,
+        ownerId: owner.id,
+        trialDays,
+        seatsAllocated: seatsNeeded,
+        loginUrl: `https://${subdomain}.${req.headers.host}/activate?token=${owner.activationToken}`,
+      });
+    } catch (error) {
+      console.error("Business registration error:", error);
+      res.status(500).json({ message: "Failed to register business" });
     }
   });
 

@@ -1,7 +1,7 @@
 import { 
   users, shifts, opportunities, swapRequests, assignments, holidayRequests, scheduleTemplates, 
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
-  analyticsReports, analyticsMetrics, activityLogs, subscriptions, subscriptionPlans,
+  analyticsReports, analyticsMetrics, activityLogs, subscriptions, seatPricing, seatAllocation,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
   staffStrikes,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
@@ -12,8 +12,8 @@ import {
   type OperatingHours, type InsertOperatingHours, type ShiftPolicy, type InsertShiftPolicy,
   type AnalyticsReport, type InsertAnalyticsReport, type AnalyticsMetric, type InsertAnalyticsMetric,
   type ActivityLog, type InsertActivityLog, type Subscription, type InsertSubscription,
-  type SubscriptionPlan, type InsertSubscriptionPlan, type UsageMetric, type InsertUsageMetric,
-  type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
+  type SeatPricing, type InsertSeatPricing, type SeatAllocation, type InsertSeatAllocation,
+  type UsageMetric, type InsertUsageMetric, type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
   type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike
 } from "../shared/schema";

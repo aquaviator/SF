@@ -363,11 +363,11 @@ export const activityLogs = pgTable("activity_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Subscription tables - Seat-based billing
+// Subscription tables - Pure Seat-based billing (no named plans)
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
   tenantId: text("tenant_id").notNull().unique(),
-  planId: text("plan_id").notNull(), // Reference to subscription plan or "custom"
+  planId: text("plan_id").notNull().default("seat_based"), // Always "seat_based" for pure seat billing
   status: text("status").notNull().$type<"active" | "trial" | "expired" | "cancelled" | "past_due">(),
   startDate: timestamp("start_date").notNull(), // Subscription start date
   endDate: timestamp("end_date").notNull(), // Subscription end date
@@ -434,18 +434,17 @@ export const billingHistory = pgTable("billing_history", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const subscriptionPlans = pgTable("subscription_plans", {
-  id: text("id").primaryKey(),
+// Admin Campaign Management (for future site-admin backend)
+export const campaigns = pgTable("campaigns", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull().$type<"starter" | "professional" | "enterprise">(),
-  monthlyPrice: integer("monthly_price").notNull(), // in cents
-  annualPrice: integer("annual_price").notNull(), // in cents
-  features: text("features").array().notNull(),
-  staffLimit: integer("staff_limit").notNull(), // -1 for unlimited
-  shiftsLimit: integer("shifts_limit").notNull(), // -1 for unlimited
-  storageLimit: text("storage_limit").notNull(),
-  isPopular: boolean("is_popular").notNull().default(false),
+  description: text("description"),
+  trialDays: integer("trial_days").notNull().default(14),
+  defaultSeats: integer("default_seats").notNull().default(5),
+  pricePerSeat: integer("price_per_seat").notNull().default(300), // £3.00 in pence
   isActive: boolean("is_active").notNull().default(true),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -584,7 +583,8 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
   updatedAt: true,
 });
 
-export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+export const insertCampaignSchema = createInsertSchema(campaigns).omit({
+  id: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -678,8 +678,8 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type UsageMetric = typeof usageMetrics.$inferSelect;
 export type InsertUsageMetric = z.infer<typeof insertUsageMetricSchema>;
 export type Invoice = typeof invoices.$inferSelect;
