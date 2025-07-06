@@ -735,7 +735,7 @@ export class MemStorage implements IStorage {
     const shift: Shift = { 
       ...insertShift, 
       id,
-      status: insertShift.status as "open" | "assigned" | "confirmed" | "conflict",
+      status: insertShift.status as "declined" | "open" | "claimed" | "assigned" | "confirmed" | "clocked_in" | "clocked_out" | "completed" | "cancelled",
       assignedTo: insertShift.assignedTo ?? null,
       notes: insertShift.notes ?? null,
       description: insertShift.description || "",
@@ -1273,7 +1273,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     const result = await database.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getStaffByTenant(tenantId: string): Promise<User[]> {
@@ -1298,7 +1298,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBusinessProfile(tenantId: string): Promise<boolean> {
     const result = await database.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenantId));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Job role operations
@@ -1323,7 +1323,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJobRole(id: number): Promise<boolean> {
     const result = await database.delete(jobRoles).where(eq(jobRoles.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Location operations
@@ -1348,7 +1348,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLocation(id: number): Promise<boolean> {
     const result = await database.delete(locations).where(eq(locations.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Department operations
@@ -1373,7 +1373,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDepartment(id: number): Promise<boolean> {
     const result = await database.delete(departments).where(eq(departments.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Operating hours operations
@@ -1398,7 +1398,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOperatingHours(id: number): Promise<boolean> {
     const result = await database.delete(operatingHours).where(eq(operatingHours.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Shift operations
@@ -1443,7 +1443,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteShift(id: number): Promise<boolean> {
     const result = await database.delete(shifts).where(eq(shifts.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Opportunity operations
@@ -1468,7 +1468,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOpportunity(id: number): Promise<boolean> {
     const result = await database.delete(opportunities).where(eq(opportunities.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Swap request operations
@@ -1493,7 +1493,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSwapRequest(id: number): Promise<boolean> {
     const result = await database.delete(swapRequests).where(eq(swapRequests.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getSwapRequestsByUser(tenantId: string, userId: number): Promise<SwapRequest[]> {
@@ -1524,7 +1524,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAssignment(id: number): Promise<boolean> {
     const result = await database.delete(assignments).where(eq(assignments.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getAssignmentsByUser(tenantId: string, userId: number): Promise<Assignment[]> {
@@ -1586,7 +1586,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHolidayRequest(id: number): Promise<boolean> {
     const result = await database.delete(holidayRequests).where(eq(holidayRequests.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getHolidayRequestsByUser(tenantId: string, userId: number): Promise<HolidayRequest[]> {
@@ -1645,7 +1645,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteScheduleTemplate(id: number): Promise<boolean> {
     const result = await database.delete(scheduleTemplates).where(eq(scheduleTemplates.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async generateShiftsFromTemplate(templateId: number, startDate: string, endDate: string): Promise<Shift[]> {
@@ -1735,31 +1735,39 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSubscription(tenantId: string): Promise<boolean> {
     const result = await database.delete(subscriptions).where(eq(subscriptions.tenantId, tenantId));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
-    const result = await database.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
-    return result[0];
+  // Seat-based billing operations (no subscription plans)
+  async addSeats(tenantId: string, additionalSeats: number): Promise<Subscription | undefined> {
+    const subscription = await this.getSubscription(tenantId);
+    if (!subscription) return undefined;
+    
+    const updatedSubscription = await this.updateSubscription(tenantId, {
+      ...subscription,
+      seats: subscription.seats + additionalSeats
+    });
+    return updatedSubscription;
   }
 
-  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-    return await database.select().from(subscriptionPlans);
+  async removeSeats(tenantId: string, seatsToRemove: number): Promise<Subscription | undefined> {
+    const subscription = await this.getSubscription(tenantId);
+    if (!subscription) return undefined;
+    
+    const newSeats = Math.max(1, subscription.seats - seatsToRemove); // Minimum 1 seat
+    const updatedSubscription = await this.updateSubscription(tenantId, {
+      ...subscription,
+      seats: newSeats
+    });
+    return updatedSubscription;
   }
 
-  async createSubscriptionPlan(insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
-    const result = await database.insert(subscriptionPlans).values(insertPlan).returning();
-    return result[0];
-  }
-
-  async updateSubscriptionPlan(id: string, insertPlan: InsertSubscriptionPlan): Promise<SubscriptionPlan | undefined> {
-    const result = await database.update(subscriptionPlans).set(insertPlan).where(eq(subscriptionPlans.id, id)).returning();
-    return result[0];
-  }
-
-  async deleteSubscriptionPlan(id: string): Promise<boolean> {
-    const result = await database.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
-    return result.rowCount > 0;
+  async calculateMonthlyCost(tenantId: string): Promise<number> {
+    const subscription = await this.getSubscription(tenantId);
+    if (!subscription) return 0;
+    
+    const pricePerSeat = 300; // £3.00 in pence
+    return subscription.seats * pricePerSeat;
   }
 
   // Analytics operations
@@ -1784,7 +1792,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAnalyticsReport(id: number): Promise<boolean> {
     const result = await database.delete(analyticsReports).where(eq(analyticsReports.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getAnalyticsMetric(id: number): Promise<AnalyticsMetric | undefined> {
@@ -1808,7 +1816,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAnalyticsMetric(id: number): Promise<boolean> {
     const result = await database.delete(analyticsMetrics).where(eq(analyticsMetrics.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Activity log operations
@@ -1881,7 +1889,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTimeEntry(id: number): Promise<boolean> {
     const result = await database.delete(timeEntries).where(eq(timeEntries.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Performance metrics operations
@@ -1910,7 +1918,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePerformanceMetric(id: number): Promise<boolean> {
     const result = await database.delete(performanceMetrics).where(eq(performanceMetrics.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Shift policy operations
@@ -1935,7 +1943,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteShiftPolicy(id: number): Promise<boolean> {
     const result = await database.delete(shiftPolicies).where(eq(shiftPolicies.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getShiftPolicyByTenant(tenantId: string): Promise<ShiftPolicy | undefined> {
@@ -2011,7 +2019,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInvoice(id: number): Promise<boolean> {
     const result = await database.delete(invoices).where(eq(invoices.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Billing info operations
@@ -2032,7 +2040,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBillingInfo(tenantId: string): Promise<boolean> {
     const result = await database.delete(billingInfo).where(eq(billingInfo.tenantId, tenantId));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Holiday entitlement operations
@@ -2114,7 +2122,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHolidayEntitlement(id: number): Promise<boolean> {
     const result = await database.delete(holidayEntitlements).where(eq(holidayEntitlements.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Staff strikes operations
@@ -2162,7 +2170,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStaffStrike(id: number): Promise<boolean> {
     const result = await database.delete(staffStrikes).where(eq(staffStrikes.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async resetExpiredStrikes(tenantId: string): Promise<number> {
