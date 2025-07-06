@@ -524,6 +524,12 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Updated email templates to use correct local development URLs (localhost:5000) instead of production domain
   - Created comprehensive testing suite confirming all components: invitation, email delivery, token validation, and account activation
   - Full end-to-end workflow verified: Form submission → User creation → Database storage → Email delivery → Token validation → Password setup → Account activation complete
+- July 06, 2025. Resolved critical business registration database issue with raw SQL workaround:
+  - Fixed "Invalid time value" errors in Drizzle ORM by implementing raw SQL INSERT for user creation
+  - Bypassed Drizzle timestamp field compatibility issues with tokenExpiresAt field using direct PostgreSQL queries
+  - Business registration API (/api/register-business) now working successfully with proper activation token generation
+  - User creation confirmed functional with tenant ID, activation tokens, and database persistence
+  - Registration workflow fully operational: business signup → user creation → activation token → database storage
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
