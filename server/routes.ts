@@ -5,7 +5,7 @@ import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunit
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, lte, gte, or, isNull } from "drizzle-orm";
 import Stripe from "stripe";
 import crypto from "crypto";
 import { sendActivationEmail } from "./utils/mailer";
@@ -3686,10 +3686,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true,
       }).returning();
 
-      // Get seat pricing details
-      const [planDetails] = await db.select().from(seatPricing).where(eq(seatPricing.id, planId));
+      // Get seat pricing tier based on staff count
+      const staffCount = business.staffCount || 1;
+      const [planDetails] = await db.select().from(seatPricing).where(
+        and(
+          lte(seatPricing.minSeats, staffCount),
+          or(
+            isNull(seatPricing.maxSeats),
+            gte(seatPricing.maxSeats, staffCount)
+          )
+        )
+      ).limit(1);
+      
       if (!planDetails) {
-        return res.status(400).json({ message: "Invalid plan ID" });
+        return res.status(400).json({ message: "No pricing tier available for the requested number of seats" });
       }
 
       // Create subscription
@@ -3699,13 +3709,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await db.insert(subscriptions).values({
         tenantId: newTenant.subdomain,
-        planId: planDetails.id.toString(), // Convert to string as required by schema
+        planId: planDetails.tierName.toLowerCase(), // Use tier name as plan ID
         status: 'trial',
         startDate: startDate,
         endDate: endDate,
-        seatsIncluded: planDetails.minSeats,
-        pricePerSeat: planDetails.pricePerSeat,
-        monthlyTotal: planDetails.minSeats * planDetails.pricePerSeat,
+        seatsIncluded: staffCount,
+        seatsUsed: 1, // Just the owner initially
+        pricePerSeat: planDetails.pricePerSeat, // Price per seat in pence
+        monthlyTotal: staffCount * planDetails.pricePerSeat,
         nextBillingDate: endDate,
         trialStart: startDate,
         trialEnd: endDate,

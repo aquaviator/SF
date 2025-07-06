@@ -170,10 +170,9 @@ export default function BusinessRegistration() {
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
-      // Add planId for the Starter plan (ID 1 from seat_pricing table)
+      // No need to add planId - backend will calculate pricing tier based on staff count
       const requestData = {
-        ...data,
-        planId: 1 // Starter plan ID
+        ...data
       };
       
       const response = await apiRequest("POST", "/api/register-business", requestData);
