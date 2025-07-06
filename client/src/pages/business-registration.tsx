@@ -170,33 +170,39 @@ export default function BusinessRegistration() {
   const onSubmit = async (data: RegistrationData) => {
     setIsLoading(true);
     try {
-      // No need to add planId - backend will calculate pricing tier based on staff count
-      const requestData = {
-        ...data
-      };
-      
-      const response = await apiRequest("POST", "/api/register-business", requestData);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
-      }
-
+      const response = await apiRequest("POST", "/api/register-business", data);
       const result = await response.json();
       
       toast({
         title: "Registration Successful!",
-        description: `Welcome to ShiftFlo, ${result.user.firstName}! Your business ${result.tenant.name} has been created.`,
+        description: `Welcome to ShiftFlo! Check your email for activation instructions.`,
       });
 
-      // Redirect to dashboard or login page
+      // Redirect to landing page
       window.location.href = "/";
       
     } catch (error: any) {
       console.error("Registration error:", error);
+      
+      // Parse error message from apiRequest format: "400: {json}"
+      let errorMessage = "Something went wrong. Please try again.";
+      
+      if (error.message) {
+        try {
+          // Extract JSON from error message format "400: {json}"
+          const match = error.message.match(/^\d+:\s*(.+)$/);
+          if (match) {
+            const errorData = JSON.parse(match[1]);
+            errorMessage = errorData.message || errorMessage;
+          }
+        } catch {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Registration Failed",
-        description: error.message || "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
