@@ -178,8 +178,8 @@ export default function BusinessRegistration() {
         description: `Welcome to ShiftFlo! Check your email for activation instructions.`,
       });
 
-      // Redirect to landing page
-      window.location.href = "/";
+      // Redirect to success page
+      window.location.href = "/registration-success";
       
     } catch (error: any) {
       console.error("Registration error:", error);

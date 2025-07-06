@@ -3672,10 +3672,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const activeDomain = await getActiveDomain();
         const { sendActivationEmail } = await import('./utils/mailer.js');
+        console.log(`📧 Attempting to send activation email to: ${ownerEmail}`);
         await sendActivationEmail(ownerEmail, ownerFirstName, activationToken, tenantId, activeDomain);
-        console.log("✅ Activation email sent");
+        console.log(`✅ Activation email sent successfully to: ${ownerEmail}`);
       } catch (emailError) {
-        console.error("❌ Failed to send activation email:", emailError);
+        console.error(`❌ Failed to send activation email to ${ownerEmail}:`, emailError);
         // Don't fail registration if email fails
       }
 

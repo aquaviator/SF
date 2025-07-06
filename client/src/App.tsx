@@ -33,6 +33,7 @@ import OwnerOperations from "@/pages/owner/operations";
 import StaffActivation from "@/pages/staff-activation";
 import BusinessRegistration from "@/pages/business-registration";
 import SimplifiedRegistration from "@/pages/simplified-registration";
+import RegistrationSuccess from "@/pages/registration-success";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -101,6 +102,7 @@ function PublicRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/business-registration" component={BusinessRegistration} />
       <Route path="/register" component={SimplifiedRegistration} />
+      <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/activate" component={StaffActivation} />
       <Route component={Landing} />
     </Switch>
