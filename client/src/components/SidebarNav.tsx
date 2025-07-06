@@ -7,11 +7,14 @@ import { useState, useEffect } from "react";
 import ShiftFloLogo from "@/components/ShiftFloLogo";
 
 export function SidebarNav() {
-  const { role, user, tenantId, switchRole, switchStaff, currentStaffId } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const [imgErrored, setImgErrored] = useState(false);
 
+  const role = user?.role || 'staff';
+  const tenantId = user?.tenantId;
+  
   const menuItems = getMenuForRole(role);
   const moreMenuItems = getMoreMenuForRole(role);
 
@@ -23,12 +26,7 @@ export function SidebarNav() {
     enabled: !!tenantId,
   });
 
-  // Fetch staff users for dev mode dropdown
-  const { data: staffUsers } = useQuery({
-    queryKey: ["/api/staff", tenantId],
-    queryFn: () => fetch(`/api/staff?tenantId=${tenantId}`).then((res) => res.json()),
-    enabled: role === "staff" && !!tenantId,
-  });
+
 
   // Fetch complete user profile with photo
   const { data: userProfile } = useQuery({
@@ -174,41 +172,7 @@ export function SidebarNav() {
           </div>
         </div>
 
-        {/* Development Role Switcher */}
-        <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-yellow-800">DEV MODE</span>
-            <select
-              value={role}
-              onChange={(e) => switchRole(e.target.value as "owner" | "staff")}
-              className="text-xs bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            >
-              <option value="owner">Owner</option>
-              <option value="staff">Staff</option>
-            </select>
-          </div>
 
-          {role === "staff" && (
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-yellow-800">
-                STAFF USER
-              </span>
-              <select
-                value={currentStaffId}
-                onChange={(e) => switchStaff(parseInt(e.target.value))}
-                className="text-xs bg-white border border-yellow-300 rounded px-2 py-1 text-yellow-800 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-              >
-                {staffUsers
-                  ?.filter((u) => u.role === "staff")
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Navigation */}
