@@ -35,13 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuthStatus = async () => {
     try {
       const response = await apiRequest('GET', '/api/auth/me');
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      }
+      const userData = await response.json();
+      console.log('✅ AUTH_CHECK_SUCCESS', userData);
+      setUser(userData);
     } catch (error) {
       // User not authenticated, which is fine
-      console.log('User not authenticated');
+      console.log('❌ AUTH_CHECK_FAILED', error);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
