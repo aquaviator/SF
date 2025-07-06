@@ -3484,6 +3484,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ownerLastName = ownerData?.lastName;
       const ownerEmail = ownerData?.email;
       const subdomain = business?.subdomain;
+      const businessType = business?.businessType || 'Other';
+      const phone = business?.phone;
+      const website = business?.website;
+      const staffCount = business?.staffCount || 5;
       
       // Validate required fields
       if (!businessName || !ownerFirstName || !ownerLastName || !ownerEmail || !subdomain) {
@@ -3494,30 +3498,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create tenant
       const tenantId = subdomain;
       
-      // Create business owner user
+      // Create business owner user with token expiration (24 hours)
       const activationToken = crypto.randomBytes(32).toString('hex');
+      const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
       console.log("📝 Generated activation token:", activationToken);
       
-      // Try using raw SQL to bypass any Drizzle timestamp issues
-      const result = await db.execute(sql`
+      // Create user with raw SQL to bypass Drizzle timestamp issues
+      const userResult = await db.execute(sql`
         INSERT INTO users (
           tenant_id, username, password, role, first_name, last_name, 
-          email, is_active, activation_token
+          email, is_active, activation_token, token_expires_at
         ) VALUES (
           ${tenantId}, ${ownerEmail}, ${'temp-password'}, ${'owner'}, 
-          ${ownerFirstName}, ${ownerLastName}, ${ownerEmail}, ${false}, ${activationToken}
+          ${ownerFirstName}, ${ownerLastName}, ${ownerEmail}, ${false}, 
+          ${activationToken}, ${tokenExpiresAt.toISOString()}
         ) RETURNING *
       `);
       
-      const owner = result.rows[0];
-      console.log("✅ User created with raw SQL:", owner);
+      const owner = userResult.rows[0];
+      console.log("✅ User created:", owner.id);
 
-      console.log("✅ User created successfully:", owner);
-
-      // TODO: Create business profile, subscription, location, job role, shift policies
-      // Temporarily commented out to isolate the issue
-
-      /*
       // Create business profile
       await db
         .insert(businessProfiles)
@@ -3526,17 +3526,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: businessName,
           ownerName: `${ownerFirstName} ${ownerLastName}`,
           email: ownerEmail,
-          phone: null,
-          address: null,
-          businessType: 'service',
+          phone: phone || null,
+          website: website || null,
+          businessType,
         });
-      */
+      console.log("✅ Business profile created");
+
+      // Create default subscription
+      const subscriptionData = {
+        tenantId,
+        planId: 'seat_based',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+        status: 'trial' as const,
+        seatsIncluded: staffCount,
+        seatsUsed: 1, // Owner
+        pricePerSeat: 300, // £3.00 in pence
+        monthlyTotal: staffCount * 300, // Total monthly cost
+      };
+      
+      console.log("📝 Subscription data to insert:", subscriptionData);
+      
+      await db
+        .insert(subscriptions)
+        .values(subscriptionData);
+      console.log("✅ Subscription created");
+
+      // Create default location
+      await db
+        .insert(locations)
+        .values({
+          tenantId,
+          name: "Main Office",
+          address: "123 Business Street",
+          city: "Business City",
+          state: "Business State",
+          zipCode: "12345",
+          country: "United Kingdom",
+        });
+      console.log("✅ Default location created");
+
+      // Create default job roles
+      const defaultRoles = [
+        { title: "Team Member", description: "General team member role" },
+        { title: "Supervisor", description: "Team supervisor role" },
+        { title: "Manager", description: "Department manager role" },
+      ];
+
+      for (const role of defaultRoles) {
+        await db
+          .insert(jobRoles)
+          .values({
+            tenantId,
+            title: role.title,
+            description: role.description,
+            isActive: true,
+          });
+      }
+      console.log("✅ Default job roles created");
+
+      // Create default shift policies
+      await db
+        .insert(shiftPolicies)
+        .values({
+          tenantId,
+          minNoticeHours: 24,
+          maxAdvanceBookingDays: 30,
+          autoApproveSwaps: false,
+          requireManagerApproval: true,
+          resetPeriodDays: 90,
+          lateGracePeriodMinutes: 10,
+          clockInBufferMinutes: 15,
+          clockOutBufferMinutes: 30,
+        });
+      console.log("✅ Shift policies created");
+
+      // Send activation email
+      try {
+        const { sendActivationEmail } = await import('./utils/mailer.js');
+        await sendActivationEmail(ownerEmail, ownerFirstName, activationToken, tenantId);
+        console.log("✅ Activation email sent");
+      } catch (emailError) {
+        console.error("❌ Failed to send activation email:", emailError);
+        // Don't fail registration if email fails
+      }
 
       res.json({
         message: "Business registration successful",
         tenantId,
         ownerId: owner.id,
-        loginUrl: `https://${subdomain}.${req.headers.host}/activate?token=${activationToken}`,
+        activationLink: `https://${subdomain}.${req.headers.host}/activate?token=${activationToken}`,
       });
     } catch (error: any) {
       console.error("Business registration error:", error);
@@ -3652,6 +3731,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ ACCOUNT_ACTIVATION_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: "Failed to activate account" });
+    }
+  });
+
+  // Login API
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.email, email), eq(users.isActive, true)));
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // In a real app, use bcrypt to compare passwords
+      // For now, compare directly (not secure)
+      if (user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Create session (simplified)
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      
+      // Set secure HTTP-only cookie
+      res.cookie('session_token', sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      console.log(`✅ USER_LOGIN`, { 
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+        timestamp: new Date() 
+      });
+
+      res.json({ 
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          tenantId: user.tenantId,
+        }
+      });
+    } catch (error) {
+      console.error('❌ LOGIN_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Get Current User API
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const sessionToken = req.cookies.session_token;
+
+      if (!sessionToken) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // In a real app, store sessions in database/redis
+      // For now, this is a simplified implementation
+      // You would validate the session token here
+      
+      // For now, just return unauthorized to force login
+      return res.status(401).json({ message: "Session validation not implemented" });
+    } catch (error) {
+      console.error('❌ AUTH_CHECK_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Authentication check failed" });
+    }
+  });
+
+  // Logout API
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      // Clear session cookie
+      res.clearCookie('session_token');
+      
+      console.log(`✅ USER_LOGOUT`, { timestamp: new Date() });
+      
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      console.error('❌ LOGOUT_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Logout failed" });
     }
   });
 

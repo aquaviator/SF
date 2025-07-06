@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
   const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,15 +23,20 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const result = await login(username, password);
+      const response = await apiRequest("POST", "/api/auth/login", {
+        email,
+        password,
+      });
       
-      if (result.success) {
-        setLocation("/dashboard");
+      // Login successful, redirect to appropriate dashboard
+      const userData = response.user;
+      if (userData.role === 'owner') {
+        setLocation("/owner/dashboard");
       } else {
-        setError(result.error || "Login failed");
+        setLocation("/dashboard");
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -60,13 +64,13 @@ export default function Login() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                   required
                   disabled={isLoading}
                 />
