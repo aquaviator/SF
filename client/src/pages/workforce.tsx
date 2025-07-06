@@ -28,7 +28,7 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { User } from "@shared/schema";
 import { OffboardUserModal } from "@/components/OffboardUserModal";
 import { DeleteUserModal } from "@/components/DeleteUserModal";
@@ -65,7 +65,7 @@ interface HolidayEntitlement {
 }
 
 export default function Workforce() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const { toast } = useToast();
   
   const {
@@ -141,6 +141,8 @@ export default function Workforce() {
         tenantId: tenantId
       };
       
+      console.log("🔧 STAFF_INVITATION_PAYLOAD", { payload, tenantId, timestamp: new Date().toISOString() });
+      
       // For new staff, use invitation endpoint
       if (!editingItem) {
         const response = await fetch("/api/admin/staff", {
@@ -151,8 +153,17 @@ export default function Workforce() {
           body: JSON.stringify(payload),
         });
         
+        console.log("📡 STAFF_INVITATION_RESPONSE", { 
+          status: response.status, 
+          ok: response.ok, 
+          statusText: response.statusText,
+          timestamp: new Date().toISOString() 
+        });
+        
         if (!response.ok) {
-          throw new Error("Failed to send invitation");
+          const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+          console.log("❌ STAFF_INVITATION_ERROR", { errorData, timestamp: new Date().toISOString() });
+          throw new Error(errorData.message || "Failed to send invitation");
         }
         
         const result = await response.json();
