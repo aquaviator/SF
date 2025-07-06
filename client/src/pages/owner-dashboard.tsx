@@ -41,7 +41,7 @@ import {
   Loader2,
   ChevronRight
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 
 // Form Schemas
 const createShiftSchema = z.object({
@@ -265,7 +265,7 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
 }
 
 export default function OwnerDashboard() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const { toast } = useToast();
 
   // Modal state management

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { DataTable, Column } from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,7 +64,7 @@ type HolidayRequestFormData = z.infer<typeof holidayRequestFormSchema>;
 type SwapRequestFormData = z.infer<typeof swapRequestFormSchema>;
 
 export default function MyWork() {
-  const { role, tenantId, user } = useAuth();
+  const { role, tenantId, user } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");

@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +37,7 @@ interface UpcomingShift {
 }
 
 export default function Dashboard() {
-  const { role, tenantId, user } = useAuth();
+  const { role, tenantId, user } = useRole();
 
   // Fetch all required data for dashboard calculations
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({

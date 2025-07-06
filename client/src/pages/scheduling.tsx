@@ -46,7 +46,7 @@ import {
   MapPin,
   User
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { Shift, ScheduleTemplate, InsertScheduleTemplate } from "@shared/schema";
 import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";

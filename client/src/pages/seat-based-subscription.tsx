@@ -20,7 +20,7 @@ import {
   CheckCircle2,
   AlertTriangle
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -56,7 +56,7 @@ interface SeatUsage {
 }
 
 export default function SeatBasedSubscription() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const { toast } = useToast();
   const [selectedSeats, setSelectedSeats] = React.useState(5);
   const [clientSecret, setClientSecret] = useState<string | null>(null);

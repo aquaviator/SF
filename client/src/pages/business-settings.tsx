@@ -22,7 +22,7 @@ import {
   Clock, 
   MapPin
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { JobRole, Location, Department } from "@shared/schema";
 
@@ -163,7 +163,7 @@ interface OperatingHours {
 }
 
 export default function BusinessSettingsPage() {
-  const { user, tenantId, isLoading } = useAuth();
+  const { user, tenantId, isLoading } = useRole();
   const { toast } = useToast();
 
   if (isLoading) {

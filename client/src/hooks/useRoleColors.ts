@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { getRoleColorFromLegend, getRoleDotColorFromLegend, getRoleLegendColorFromLegend } from "@/utils/roleColors";
 
 interface DatabaseRole {
@@ -12,7 +12,7 @@ interface DatabaseRole {
 }
 
 export function useRoleColors() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   // Fetch job roles with legend data
   const { data: jobRoles = [], isLoading } = useQuery<DatabaseRole[]>({

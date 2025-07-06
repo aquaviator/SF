@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ interface ActivityLog {
 }
 
 export default function Analytics() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
 
   // Fetch analytics metrics from database
   const { data: analyticsMetrics = [], isLoading: metricsLoading } = useQuery({

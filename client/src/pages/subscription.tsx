@@ -20,7 +20,7 @@ import {
   CheckCircle,
   TrendingUp
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Billing Form Schema
@@ -84,7 +84,7 @@ interface Plan {
 }
 
 export default function Subscription() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const { toast } = useToast();
   const [isBillingModalOpen, setIsBillingModalOpen] = React.useState(false);
 

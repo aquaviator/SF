@@ -9,7 +9,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Save } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 
@@ -47,7 +47,7 @@ interface BusinessPolicy {
 }
 
 export default function Policies() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   const { toast } = useToast();
 
   // Fetch Business Policy
