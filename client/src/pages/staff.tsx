@@ -9,7 +9,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { User } from "@shared/schema";
 
 const staffFormSchema = z.object({
@@ -25,7 +25,7 @@ const staffFormSchema = z.object({
 type StaffFormData = z.infer<typeof staffFormSchema>;
 
 export default function Staff() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   const {
     data: staff,

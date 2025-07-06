@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
 import type { Shift } from "@shared/schema";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
@@ -28,7 +28,7 @@ const shiftFormSchema = z.object({
 type ShiftFormData = z.infer<typeof shiftFormSchema>;
 
 export default function Shifts() {
-  const { tenantId } = useAuth();
+  const { tenantId } = useRole();
   
   const {
     data: shifts,
