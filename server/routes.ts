@@ -3623,14 +3623,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { subdomain } = req.params;
       
-      // Check if subdomain already exists
-      const [existingTenant] = await db
+      // Check if subdomain already exists in business_profiles (used as tenant_id)
+      const [existingBusiness] = await db
         .select()
-        .from(tenants)
-        .where(eq(tenants.subdomain, subdomain))
+        .from(businessProfiles)
+        .where(eq(businessProfiles.tenantId, subdomain))
         .limit(1);
       
-      const isAvailable = !existingTenant;
+      const isAvailable = !existingBusiness;
       
       res.json({ 
         available: isAvailable,
