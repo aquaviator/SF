@@ -16,6 +16,13 @@ export function SidebarNav() {
   const role = user?.role || 'staff';
   const tenantId = user?.tenantId;
   
+  // Debug logging
+  console.log('SIDEBAR_ROLE_DEBUG:', { 
+    user: user, 
+    role: role, 
+    userRole: user?.role 
+  });
+  
   const menuItems = getMenuForRole(role);
   const moreMenuItems = getMoreMenuForRole(role);
 

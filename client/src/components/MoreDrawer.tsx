@@ -22,6 +22,13 @@ export function MoreDrawer({ isOpen, onClose }: MoreDrawerProps) {
   const role = user?.role || 'staff';
   const tenantId = user?.tenantId;
   
+  // Debug logging
+  console.log('MOREDRAWER_ROLE_DEBUG:', { 
+    user: user, 
+    role: role, 
+    userRole: user?.role 
+  });
+  
   const moreMenuItems = getMoreMenuForRole(role);
 
   // Fetch pending requests count for owners
