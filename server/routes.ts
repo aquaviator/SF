@@ -3563,14 +3563,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint for JSON parsing
-  app.post("/api/test-json", (req, res) => {
-    console.log("🧪 Test JSON endpoint hit");
-    console.log("🧪 Content-Type:", req.get('Content-Type'));
-    console.log("🧪 Raw body:", JSON.stringify(req.body, null, 2));
-    res.json({ received: req.body, success: true });
-  });
-
   // Simplified Business Registration API
   app.post("/api/register-business", async (req, res) => {
     try {
