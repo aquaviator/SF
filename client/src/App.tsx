@@ -111,7 +111,9 @@ function PublicRoutes() {
       <Route path="/activate" component={StaffActivation} />
       
       {/* Admin Portal Routes */}
+      <Route path="/admin-login" component={AdminLogin} />
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/page-builder" component={PageBuilder} />
       
