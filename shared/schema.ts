@@ -10,6 +10,15 @@ export const tenants = pgTable('tenants', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Domain Configuration table
+export const domainConfig = pgTable('domain_config', {
+  id: serial('id').primaryKey(),
+  name: varchar('name').notNull().unique(), // 'production', 'development', 'staging'
+  baseUrl: text('base_url').notNull(), // 'https://yourdomain.replit.app', 'http://localhost:5000'
+  isActive: boolean('is_active').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

@@ -529,6 +529,14 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Bypassed Drizzle timestamp field compatibility issues with tokenExpiresAt field using direct PostgreSQL queries
   - Business registration API (/api/register-business) now working successfully with proper activation token generation
   - User creation confirmed functional with tenant ID, activation tokens, and database persistence
+- July 06, 2025. Completed comprehensive business registration enhancement with full infrastructure setup:
+  - Added tenant record creation, default departments (Operations, Administration, Customer Service), and default operating hours (Mon-Fri 9-5)
+  - Implemented domain configuration system with database table for proper email link generation across environments
+  - Fixed email activation links to use configurable domain instead of hardcoded localhost for proper deployment compatibility
+  - Enhanced registration workflow creates complete business infrastructure: tenant records, business profiles, default locations, job roles, departments, operating hours, shift policies, and subscriptions
+  - Added domain_config table with development/production entries and dynamic domain selection for email URLs
+  - All 4 registration tests passing: subdomain validation, duplicate detection, complete registration, and field validation
+  - System now creates comprehensive business setup automatically reducing manual configuration requirements
   - Registration workflow fully operational: business signup → user creation → activation token → database storage
 - July 06, 2025. Successfully completed comprehensive business registration system with full database integration:
   - Fixed critical subscription table field mapping issues resolving "plan_id null constraint" errors

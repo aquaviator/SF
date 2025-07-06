@@ -12,8 +12,9 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendActivationEmail = async (email: string, firstName: string, activationToken: string, tenantId: string) => {
-  const activationUrl = `https://${tenantId}.localhost:5000/activate?token=${activationToken}`;
+export const sendActivationEmail = async (email: string, firstName: string, activationToken: string, tenantId: string, domain?: string) => {
+  const baseDomain = domain || 'http://localhost:5000';
+  const activationUrl = `${baseDomain}/activate?token=${activationToken}`;
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,

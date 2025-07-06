@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -90,6 +90,22 @@ async function updateHolidayEntitlements(
   );
   
   console.log(`ENTITLEMENTS: Updated - Used: ${newUsedDays}, Pending: ${newPendingDays}`);
+}
+
+// Helper function to get active domain configuration
+async function getActiveDomain(): Promise<string> {
+  try {
+    const [config] = await db
+      .select()
+      .from(domainConfig)
+      .where(eq(domainConfig.isActive, true))
+      .limit(1);
+    
+    return config?.baseUrl || 'http://localhost:5000';
+  } catch (error) {
+    console.error('Error fetching domain config:', error);
+    return 'http://localhost:5000';
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3495,8 +3511,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // Create tenant
+      // Create tenant record
       const tenantId = subdomain;
+      await db
+        .insert(tenants)
+        .values({
+          name: businessName,
+          subdomain: tenantId,
+        });
+      console.log("✅ Tenant record created");
       
       // Create business owner user with token expiration (24 hours)
       const activationToken = crypto.randomBytes(32).toString('hex');
@@ -3585,6 +3608,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("✅ Default job roles created");
 
+      // Create default departments
+      const defaultDepartments = [
+        { name: "Operations", description: "Core business operations", managerId: owner.id },
+        { name: "Administration", description: "Administrative functions", managerId: owner.id },
+        { name: "Customer Service", description: "Customer-facing operations", managerId: owner.id },
+      ];
+
+      for (const dept of defaultDepartments) {
+        await db
+          .insert(departments)
+          .values({
+            tenantId,
+            name: dept.name,
+            description: dept.description,
+            managerId: dept.managerId,
+            isActive: true,
+          });
+      }
+      console.log("✅ Default departments created");
+
+      // Create default operating hours (Mon-Fri 9-5, closed weekends)
+      const defaultHours = [
+        { dayOfWeek: "monday", openTime: "09:00", closeTime: "17:00", isOpen: true },
+        { dayOfWeek: "tuesday", openTime: "09:00", closeTime: "17:00", isOpen: true },
+        { dayOfWeek: "wednesday", openTime: "09:00", closeTime: "17:00", isOpen: true },
+        { dayOfWeek: "thursday", openTime: "09:00", closeTime: "17:00", isOpen: true },
+        { dayOfWeek: "friday", openTime: "09:00", closeTime: "17:00", isOpen: true },
+        { dayOfWeek: "saturday", openTime: "09:00", closeTime: "17:00", isOpen: false },
+        { dayOfWeek: "sunday", openTime: "09:00", closeTime: "17:00", isOpen: false },
+      ];
+
+      for (const hours of defaultHours) {
+        await db
+          .insert(operatingHours)
+          .values({
+            tenantId,
+            dayOfWeek: hours.dayOfWeek,
+            openTime: hours.openTime,
+            closeTime: hours.closeTime,
+            isOpen: hours.isOpen,
+          });
+      }
+      console.log("✅ Default operating hours created");
+
       // Create default shift policies
       await db
         .insert(shiftPolicies)
@@ -3601,21 +3668,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       console.log("✅ Shift policies created");
 
-      // Send activation email
+      // Send activation email with dynamic domain
       try {
+        const activeDomain = await getActiveDomain();
         const { sendActivationEmail } = await import('./utils/mailer.js');
-        await sendActivationEmail(ownerEmail, ownerFirstName, activationToken, tenantId);
+        await sendActivationEmail(ownerEmail, ownerFirstName, activationToken, tenantId, activeDomain);
         console.log("✅ Activation email sent");
       } catch (emailError) {
         console.error("❌ Failed to send activation email:", emailError);
         // Don't fail registration if email fails
       }
 
+      const activeDomain = await getActiveDomain();
       res.json({
         message: "Business registration successful",
         tenantId,
         ownerId: owner.id,
-        activationLink: `https://${subdomain}.${req.headers.host}/activate?token=${activationToken}`,
+        activationLink: `${activeDomain}/activate?token=${activationToken}`,
       });
     } catch (error: any) {
       console.error("Business registration error:", error);
