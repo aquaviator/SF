@@ -126,14 +126,14 @@ const publicHelpSections: PublicHelpSection[] = [
     content: [
       {
         title: "Business Setup",
-        description: "Initial configuration for new businesses.",
+        description: "Initial configuration for new businesses with detailed navigation steps.",
         steps: [
-          "Register your business with unique subdomain",
-          "Set up business profile and upload logo",
-          "Configure locations and job roles",
-          "Set operating hours and policies",
-          "Invite staff members via email",
-          "Configure subscription and billing"
+          "Visit /register to complete business registration with company details and owner account setup",
+          "Navigate to Owner > Profile to set up business profile, upload logo, and configure branding",
+          "Go to Owner > Business Settings to create locations (with addresses) and job roles (titles and descriptions)",
+          "Access Owner > Policies to set operating hours (daily schedules) and configure shift/time tracking policies",
+          "Use Owner > Workforce to invite staff by entering email addresses for activation emails",
+          "Visit Owner > Subscription to manage seat-based billing at £3.00 per active staff member per month"
         ]
       },
       {
@@ -260,12 +260,12 @@ const publicHelpSections: PublicHelpSection[] = [
         title: "For New Businesses",
         description: "Steps to get your business up and running on ShiftFlo.",
         steps: [
-          "Visit the business registration page",
-          "Choose a unique subdomain for your business",
-          "Enter business details and manager information",
-          "Verify your email and set password",
-          "Complete business setup with locations and roles",
-          "Invite your first staff members"
+          "Visit /register to access the business registration page",
+          "Enter your business details and manager account information",
+          "Submit registration and check email for activation link",
+          "Click activation link, set your password, and complete account setup",
+          "Navigate through Owner menus to complete business configuration (Profile, Business Settings, Policies)",
+          "Use Owner > Workforce to send invitation emails to your first staff members"
         ]
       },
       {
