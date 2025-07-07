@@ -139,8 +139,21 @@ export default function Profile() {
         ownerProfilePicture: businessData?.ownerProfilePicture || "",
         ...data,
       };
-      const response = await apiRequest("PUT", `/api/business-profile`, completeData);
-      return response.json();
+      
+      // Update business profile first
+      const businessResponse = await apiRequest("PUT", `/api/business-profile`, completeData);
+      const businessResult = await businessResponse.json();
+      
+      // If email changed, also update user profile to keep them synchronized
+      if (data.email && data.email !== businessData?.email && user?.id) {
+        await apiRequest("PUT", `/api/users/${user.id}`, {
+          email: data.email,
+          username: data.email, // Keep username and email synchronized
+        });
+        console.log('✅ EMAIL_SYNC_COMPLETE', { businessEmail: data.email, userId: user.id });
+      }
+      
+      return businessResult;
     },
     onSuccess: () => {
       toast({
@@ -148,24 +161,15 @@ export default function Profile() {
         description: "Business details updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     },
     onError: (error: Error) => {
       console.error("Business update error:", error);
-      
-      // Check if this is an email verification required error
-      if (error.message.includes("EMAIL_VERIFICATION_REQUIRED")) {
-        toast({
-          title: "Email Verification Required",
-          description: "Email changes require verification. Please use a secure email change system.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to update business details",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update business details",
+        variant: "destructive",
+      });
     },
   });
 
@@ -510,27 +514,14 @@ export default function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="business-email">Business Email (Login Email) *</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="business-email"
-                        type="email"
-                        {...businessForm.register("email")}
-                        placeholder="Enter business email"
-                        className="flex-1"
-                        readOnly
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowEmailModal(true)}
-                        className="whitespace-nowrap"
-                      >
-                        Change Email
-                      </Button>
-                    </div>
+                    <Input
+                      id="business-email"
+                      type="email"
+                      {...businessForm.register("email")}
+                      placeholder="Enter business email"
+                    />
                     <p className="text-xs text-gray-500">
-                      Email changes require verification for security. Click "Change Email" to start the secure process.
+                      This email is used for login and automatically syncs with your personal email.
                     </p>
                     {businessForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
