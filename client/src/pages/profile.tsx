@@ -7,13 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Building, Shield } from "lucide-react";
+import { Loader2, User, Building } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { SecureEmailChangeModal } from "@/components/SecureEmailChangeModal";
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -21,7 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 const personalDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address").optional(),
+  email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   address: z.string().optional(),
   bio: z.string().optional(),
@@ -74,9 +72,6 @@ export default function Profile() {
   const [personalData, setPersonalData] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showUserEmailChange, setShowUserEmailChange] = useState(false);
-  const [showBusinessEmailChange, setShowBusinessEmailChange] = useState(false);
   const { user, isAuthenticated, isLoading: authLoading, role, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -142,21 +137,8 @@ export default function Profile() {
         ownerProfilePicture: businessData?.ownerProfilePicture || "",
         ...data,
       };
-      
-      // Update business profile first
-      const businessResponse = await apiRequest("PUT", `/api/business-profile`, completeData);
-      const businessResult = await businessResponse.json();
-      
-      // If email changed, also update user profile to keep them synchronized
-      if (data.email && data.email !== businessData?.email && user?.id) {
-        await apiRequest("PUT", `/api/users/${user.id}`, {
-          email: data.email,
-          username: data.email, // Keep username and email synchronized
-        });
-        console.log('✅ EMAIL_SYNC_COMPLETE', { businessEmail: data.email, userId: user.id });
-      }
-      
-      return businessResult;
+      const response = await apiRequest("PUT", `/api/business-profile`, completeData);
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -164,10 +146,8 @@ export default function Profile() {
         description: "Business details updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     },
     onError: (error: Error) => {
-      console.error("Business update error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update business details",
@@ -190,22 +170,11 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
     },
     onError: (error: Error) => {
-      console.error("Personal update error:", error);
-      
-      // Check if this is an email verification required error
-      if (error.message.includes("EMAIL_VERIFICATION_REQUIRED")) {
-        toast({
-          title: "Email Verification Required",
-          description: "Email changes require verification. Please use a secure email change system.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to update personal details",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update personal details",
+        variant: "destructive",
+      });
     },
   });
 
@@ -516,30 +485,13 @@ export default function Profile() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="business-email">Business Email (Login Email) *</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="business-email"
-                        type="email"
-                        {...businessForm.register("email")}
-                        placeholder="Enter business email"
-                        disabled
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowBusinessEmailChange(true)}
-                        className="shrink-0"
-                      >
-                        <Shield className="h-4 w-4 mr-1" />
-                        Change
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      For security, email changes require verification
-                    </p>
+                    <Label htmlFor="business-email">Email *</Label>
+                    <Input
+                      id="business-email"
+                      type="email"
+                      {...businessForm.register("email")}
+                      placeholder="Enter business email"
+                    />
                     {businessForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
                         {businessForm.formState.errors.email.message}
@@ -647,31 +599,18 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Login Email</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="email"
-                      type="email"
-                      value={businessData?.email || ""}
-                      readOnly
-                      disabled
-                      className="bg-gray-50 text-gray-500 cursor-not-allowed flex-1"
-                      placeholder="Login email"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowUserEmailChange(true)}
-                      className="shrink-0"
-                    >
-                      <Shield className="h-4 w-4 mr-1" />
-                      Change
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    For security, email changes require verification
-                  </p>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...personalForm.register("email")}
+                    placeholder="Enter email address"
+                  />
+                  {personalForm.formState.errors.email && (
+                    <p className="text-sm text-red-600">
+                      {personalForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -770,30 +709,13 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="staff-email">Email Address (Login Email) *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="staff-email"
-                    type="email"
-                    {...personalForm.register("email")}
-                    placeholder="Enter email address"
-                    disabled
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowUserEmailChange(true)}
-                    className="shrink-0"
-                  >
-                    <Shield className="h-4 w-4 mr-1" />
-                    Change
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  For security, email changes require verification
-                </p>
+                <Label htmlFor="staff-email">Email Address *</Label>
+                <Input
+                  id="staff-email"
+                  type="email"
+                  {...personalForm.register("email")}
+                  placeholder="Enter email address"
+                />
                 {personalForm.formState.errors.email && (
                   <p className="text-sm text-red-600">
                     {personalForm.formState.errors.email.message}
@@ -844,23 +766,6 @@ export default function Profile() {
           </CardContent>
         </Card>
       )}
-
-      {/* Secure Email Change Modals */}
-      <SecureEmailChangeModal
-        isOpen={showBusinessEmailChange}
-        onClose={() => setShowBusinessEmailChange(false)}
-        currentEmail={businessData?.email || ""}
-        tenantId={tenantId || ""}
-        type="business"
-      />
-
-      <SecureEmailChangeModal
-        isOpen={showUserEmailChange}
-        onClose={() => setShowUserEmailChange(false)}
-        currentEmail={personalData?.email || user?.email || ""}
-        userId={user?.id}
-        type="user"
-      />
     </div>
   );
 }

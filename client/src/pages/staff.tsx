@@ -244,24 +244,9 @@ export default function Staff() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <div className="flex gap-2 items-center">
-                    <Input 
-                      type="email" 
-                      {...field} 
-                      readOnly={!!editingItem}
-                      className={editingItem ? "bg-gray-50 text-gray-600" : ""}
-                    />
-                    {editingItem && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">Read-only</span>
-                    )}
-                  </div>
+                  <Input type="email" {...field} />
                 </FormControl>
                 <FormMessage />
-                {editingItem && (
-                  <p className="text-sm text-muted-foreground">
-                    Email changes must be requested by the staff member for security
-                  </p>
-                )}
               </FormItem>
             )}
           />

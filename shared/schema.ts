@@ -827,24 +827,3 @@ export type PricingPlan = typeof pricingPlans.$inferSelect;
 export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
 export type PromoCode = typeof promoCodes.$inferSelect;
 export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
-
-// Email change verification tokens
-export const emailChangeTokens = pgTable("email_change_tokens", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
-  tenantId: varchar("tenant_id", { length: 50 }),
-  type: varchar("type", { length: 20 }).notNull(), // 'user' or 'business'
-  currentEmail: varchar("current_email", { length: 255 }).notNull(),
-  newEmail: varchar("new_email", { length: 255 }).notNull(),
-  token: varchar("token", { length: 6 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertEmailChangeTokenSchema = createInsertSchema(emailChangeTokens).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type EmailChangeToken = typeof emailChangeTokens.$inferSelect;
-export type InsertEmailChangeToken = z.infer<typeof insertEmailChangeTokenSchema>;

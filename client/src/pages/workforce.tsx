@@ -825,26 +825,10 @@ export default function Workforce() {
               <FormItem>
                 <FormLabel>Email Address</FormLabel>
                 <FormControl>
-                  <div className="flex gap-2 items-center">
-                    <Input 
-                      type="email" 
-                      placeholder="john.smith@company.com" 
-                      {...field} 
-                      readOnly={!!editingItem}
-                      className={editingItem ? "bg-gray-50 text-gray-600" : ""}
-                    />
-                    {editingItem && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">Read-only</span>
-                    )}
-                  </div>
+                  <Input type="email" placeholder="john.smith@company.com" {...field} />
                 </FormControl>
                 <FormMessage />
-                <p className="text-sm text-muted-foreground">
-                  {editingItem 
-                    ? "Email changes must be requested by the staff member for security" 
-                    : "This will be used as their login username"
-                  }
-                </p>
+                <p className="text-sm text-muted-foreground">This will be used as their login username</p>
               </FormItem>
             )}
           />

@@ -3,7 +3,7 @@ import {
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, seatPricing, seatAllocation,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
-  staffStrikes, mailingList, emailChangeTokens,
+  staffStrikes, mailingList,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -16,10 +16,10 @@ import {
   type UsageMetric, type InsertUsageMetric, type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
   type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike,
-  type MailingList, type InsertMailingList, type EmailChangeToken, type InsertEmailChangeToken
+  type MailingList, type InsertMailingList
 } from "../shared/schema";
 import { db as database } from './db';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export interface IStorage {
   // User operations
@@ -31,12 +31,6 @@ export interface IStorage {
   updateUser(id: number, user: InsertUser): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   getStaffByTenant(tenantId: string): Promise<User[]>;
-
-  // Email change operations
-  createEmailChangeToken(token: InsertEmailChangeToken): Promise<EmailChangeToken>;
-  getEmailChangeToken(token: string): Promise<EmailChangeToken | undefined>;
-  deleteEmailChangeToken(token: string): Promise<void>;
-  cleanupExpiredEmailTokens(): Promise<void>;
 
   // Shift operations
   getShift(id: number): Promise<Shift | undefined>;
@@ -1291,26 +1285,6 @@ export class DatabaseStorage implements IStorage {
     return await database.select().from(users).where(eq(users.tenantId, tenantId));
   }
 
-  // Email change operations
-  // Simple email update - synchronizes username and email
-  async updateUserEmail(userId: number, newEmail: string): Promise<User | undefined> {
-    const result = await database.update(users).set({
-      email: newEmail,
-      username: newEmail, // Username is the login credential
-    }).where(eq(users.id, userId)).returning();
-
-    // For owner users, also update the business profile email
-    if (result[0] && result[0].role === 'owner') {
-      await database.update(businessProfiles).set({
-        email: newEmail
-      }).where(eq(businessProfiles.tenantId, result[0].tenantId));
-    }
-
-    return result[0];
-  }
-
-
-
   // Business profile operations
   async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {
     const result = await database.select().from(businessProfiles).where(eq(businessProfiles.tenantId, tenantId)).limit(1);
@@ -2297,26 +2271,6 @@ export class DatabaseStorage implements IStorage {
   async getMailingListByEmail(email: string): Promise<MailingList | undefined> {
     const result = await database.select().from(mailingList).where(eq(mailingList.email, email)).limit(1);
     return result[0];
-  }
-
-  // Email change token operations
-  async createEmailChangeToken(token: InsertEmailChangeToken): Promise<EmailChangeToken> {
-    const [newToken] = await database.insert(emailChangeTokens).values(token).returning();
-    return newToken;
-  }
-
-  async getEmailChangeToken(token: string): Promise<EmailChangeToken | undefined> {
-    const [foundToken] = await database.select().from(emailChangeTokens).where(eq(emailChangeTokens.token, token));
-    return foundToken;
-  }
-
-  async deleteEmailChangeToken(token: string): Promise<void> {
-    await database.delete(emailChangeTokens).where(eq(emailChangeTokens.token, token));
-  }
-
-  async cleanupExpiredEmailTokens(): Promise<void> {
-    const now = new Date();
-    await database.delete(emailChangeTokens).where(lt(emailChangeTokens.expiresAt, now));
   }
 }
 
