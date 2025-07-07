@@ -34,6 +34,7 @@ import type { User } from "@shared/schema";
 import { OffboardUserModal } from "@/components/OffboardUserModal";
 import { DeleteUserModal } from "@/components/DeleteUserModal";
 import { ReinstateUserModal } from "@/components/ReinstateUserModal";
+import { queryClient } from "@/lib/queryClient";
 
 const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
