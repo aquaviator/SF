@@ -1762,15 +1762,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const subscription = await storage.getSubscriptionByTenantId(tenantId);
       console.log(`🔍 SUBSCRIPTION_LOOKUP: tenantId: ${tenantId}, found: ${!!subscription}`, subscription);
+      
+      // Calculate current seat usage dynamically (same logic as seat-usage endpoint)
+      const tenantUsers = await storage.getStaffByTenant(tenantId);
+      const activeStaff = tenantUsers.filter(u => u.isActive).length;
+      const currentSeatsUsed = activeStaff; // Only active staff count toward paid seats
+      
       if (!subscription) {
         // Return default trial subscription if none exists
         const defaultSubscription = {
           id: 1,
           status: "trial",
           seatsIncluded: 5,
-          seatsUsed: 2,
-          pricePerSeat: 300, // £3.00 in pence
-          monthlyTotal: 1500, // 5 seats × £3.00 = £15.00
+          seatsUsed: currentSeatsUsed,
+          pricePerSeat: 3, // £3.00
+          monthlyTotal: currentSeatsUsed * 3,
           trialDaysRemaining: 14,
           nextBillingDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           features: [
@@ -1785,12 +1791,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(defaultSubscription);
       }
       
-      // Format response for frontend compatibility
+      // Format response with dynamic seat usage calculation
       const formattedSubscription = {
         id: subscription.id,
         status: subscription.status,
         seatsIncluded: subscription.seatsIncluded,
-        seatsUsed: subscription.seatsUsed,
+        seatsUsed: currentSeatsUsed, // Use calculated value instead of static database value
         pricePerSeat: subscription.pricePerSeat / 100, // Convert pence to pounds for display
         monthlyTotal: subscription.monthlyTotal, // Already in pounds in database
         trialDaysRemaining: subscription.trialDaysRemaining,
@@ -1805,6 +1811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       };
       
+      console.log(`📊 SUBSCRIPTION_WITH_DYNAMIC_SEATS: seatsUsed updated from ${subscription.seatsUsed} to ${currentSeatsUsed}`);
       res.json(formattedSubscription);
     } catch (error) {
       console.error("Subscription fetch error:", error);
