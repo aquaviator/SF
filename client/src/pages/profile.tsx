@@ -12,7 +12,7 @@ import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { EmailChangeModal } from "@/components/EmailChangeModal";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -751,27 +751,14 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="staff-email">Email Address (Login Email) *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="staff-email"
-                    type="email"
-                    {...personalForm.register("email")}
-                    placeholder="Enter email address"
-                    className="flex-1"
-                    readOnly
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEmailModal(true)}
-                    className="whitespace-nowrap"
-                  >
-                    Change Email
-                  </Button>
-                </div>
+                <Input
+                  id="staff-email"
+                  type="email"
+                  {...personalForm.register("email")}
+                  placeholder="Enter email address"
+                />
                 <p className="text-xs text-gray-500">
-                  Email changes require verification for security. Click "Change Email" to start the secure process.
+                  This is your login email for the account.
                 </p>
                 {personalForm.formState.errors.email && (
                   <p className="text-sm text-red-600">
@@ -824,13 +811,7 @@ export default function Profile() {
         </Card>
       )}
 
-      {/* Email Change Modal */}
-      <EmailChangeModal
-        isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        currentEmail={personalData?.email || user?.email || ""}
-        userId={user?.id || 0}
-      />
+
     </div>
   );
 }

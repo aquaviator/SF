@@ -1291,66 +1291,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Email change operations
-  async requestEmailChange(userId: number, newEmail: string, token: string, expiresAt: Date): Promise<boolean> {
+  // Simple email update - synchronizes username and email
+  async updateUserEmail(userId: number, newEmail: string): Promise<User | undefined> {
     const result = await database.update(users).set({
-      pendingEmail: newEmail,
-      emailChangeToken: token,
-      emailTokenExpiresAt: expiresAt
-    }).where(eq(users.id, userId)).returning();
-    return result.length > 0;
-  }
-
-  async verifyEmailChange(userId: number, token: string): Promise<User | undefined> {
-    // First verify the token and check expiry
-    const user = await database.select().from(users).where(
-      and(
-        eq(users.id, userId),
-        eq(users.emailChangeToken, token)
-      )
-    ).limit(1);
-
-    if (user.length === 0 || !user[0].emailTokenExpiresAt || !user[0].pendingEmail) {
-      return undefined;
-    }
-
-    // Check if token is expired
-    if (new Date() > user[0].emailTokenExpiresAt) {
-      // Clean up expired token
-      await database.update(users).set({
-        pendingEmail: null,
-        emailChangeToken: null,
-        emailTokenExpiresAt: null
-      }).where(eq(users.id, userId));
-      return undefined;
-    }
-
-    // Update user email and clear pending fields
-    const result = await database.update(users).set({
-      email: user[0].pendingEmail,
-      username: user[0].pendingEmail, // Also update username since it's used for login
-      pendingEmail: null,
-      emailChangeToken: null,
-      emailTokenExpiresAt: null
+      email: newEmail,
+      username: newEmail, // Username is the login credential
     }).where(eq(users.id, userId)).returning();
 
     // For owner users, also update the business profile email
-    if (result[0] && user[0].role === 'owner') {
+    if (result[0] && result[0].role === 'owner') {
       await database.update(businessProfiles).set({
-        email: user[0].pendingEmail
-      }).where(eq(businessProfiles.tenantId, user[0].tenantId));
+        email: newEmail
+      }).where(eq(businessProfiles.tenantId, result[0].tenantId));
     }
 
     return result[0];
   }
 
-  async cancelEmailChange(userId: number): Promise<boolean> {
-    const result = await database.update(users).set({
-      pendingEmail: null,
-      emailChangeToken: null,
-      emailTokenExpiresAt: null
-    }).where(eq(users.id, userId)).returning();
-    return result.length > 0;
-  }
+
 
   // Business profile operations
   async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {

@@ -386,15 +386,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Check if email is being changed
+      // If email is changing, update username and business profile synchronously
       if (validatedData.email && validatedData.email !== currentUser.email) {
-        // For now, require email verification - don't allow direct change
-        return res.status(400).json({ 
-          message: "Email changes require verification. Please use the email change request system.",
-          code: "EMAIL_VERIFICATION_REQUIRED"
-        });
+        // Check if email is already in use by another user
+        const existingUser = await storage.getUserByUsername(validatedData.email);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: "Email address is already in use" });
+        }
+        
+        // Update username to match email for login consistency
+        validatedData.username = validatedData.email;
+        
+        // Update user first
+        const user = await storage.updateUser(id, validatedData);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // For owner users, also update business profile email
+        if (user.role === 'owner') {
+          await storage.updateBusinessProfile(user.tenantId, { email: validatedData.email });
+        }
+        
+        console.log('✅ EMAIL_UPDATE_COMPLETE', { userId: id, newEmail: validatedData.email, role: user.role });
+        return res.json(user);
       }
       
+      // Regular update without email change
       const user = await storage.updateUser(id, validatedData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -404,6 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      console.error('User update error:', error);
       res.status(500).json({ message: "Failed to update user" });
     }
   });

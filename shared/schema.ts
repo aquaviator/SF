@@ -41,9 +41,6 @@ export const users = pgTable("users", {
   bio: text("bio"),
   activationToken: varchar("activation_token", { length: 64 }),
   tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
-  pendingEmail: text("pending_email"), // New email pending verification
-  emailChangeToken: varchar("email_change_token", { length: 64 }), // Token for email change verification
-  emailTokenExpiresAt: timestamp("email_token_expires_at", { withTimezone: true }), // Email change token expiry
 });
 
 // Shifts table
