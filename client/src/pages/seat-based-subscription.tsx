@@ -776,25 +776,28 @@ export default function SeatBasedSubscription() {
           </Card>
 
           {/* Stripe Checkout Modal */}
-          {clientSecret && (
-            <Card className="border-2 border-blue-500 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="text-blue-700">Complete Your Payment</CardTitle>
-                <p className="text-sm text-blue-600">
-                  Adding {pendingSeats} seat{pendingSeats !== 1 ? 's' : ''} for £{(paymentAmount / 100).toFixed(2)}
-                </p>
-              </CardHeader>
-              <CardContent>
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <StripeCheckout
-                    seatsToAdd={pendingSeats}
-                    totalAmount={paymentAmount}
-                    onSuccess={handlePaymentSuccess}
-                  />
-                </Elements>
-              </CardContent>
-            </Card>
-          )}
+          {(() => {
+            console.log(`🎨 MODAL_RENDER_CHECK: clientSecret: ${!!clientSecret}, pendingSeats: ${pendingSeats}, paymentAmount: ${paymentAmount}`);
+            return clientSecret ? (
+              <Card className="border-2 border-blue-500 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-blue-700">Complete Your Payment</CardTitle>
+                  <p className="text-sm text-blue-600">
+                    Adding {pendingSeats} seat{pendingSeats !== 1 ? 's' : ''} for £{(paymentAmount / 100).toFixed(2)}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <StripeCheckout
+                      seatsToAdd={pendingSeats}
+                      totalAmount={paymentAmount}
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                </CardContent>
+              </Card>
+            ) : null;
+          })()}
 
           {/* Seat Recommendations */}
           {seatUsage && seatUsage.utilizationPercentage > 80 && (
