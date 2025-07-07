@@ -11,6 +11,7 @@ import { Loader2, User, Building, Shield, Mail, Lock } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -88,6 +89,10 @@ export default function Profile() {
   const [personalData, setPersonalData] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPasswordLogoutWarning, setShowPasswordLogoutWarning] = useState(false);
+  const [showEmailLogoutWarning, setShowEmailLogoutWarning] = useState(false);
+  const [pendingPasswordData, setPendingPasswordData] = useState<ChangePasswordFormData | null>(null);
+  const [pendingEmailData, setPendingEmailData] = useState<ChangeEmailFormData | null>(null);
   const { user, isAuthenticated, isLoading: authLoading, role, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -225,9 +230,15 @@ export default function Profile() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Password changed successfully.",
+        description: "Password changed successfully. Redirecting to login...",
       });
       passwordForm.reset();
+      setPendingPasswordData(null);
+      setShowPasswordLogoutWarning(false);
+      // Log out and redirect to login
+      setTimeout(() => {
+        window.location.href = "/api/auth/logout";
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
@@ -235,6 +246,8 @@ export default function Profile() {
         description: error.message || "Failed to change password",
         variant: "destructive",
       });
+      setPendingPasswordData(null);
+      setShowPasswordLogoutWarning(false);
     },
   });
 
@@ -247,9 +260,15 @@ export default function Profile() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Confirmation email sent to your new address. Please check your inbox.",
+        description: "Confirmation email sent. Redirecting...",
       });
       emailForm.reset();
+      setPendingEmailData(null);
+      setShowEmailLogoutWarning(false);
+      // Redirect to a "check your email" page
+      setTimeout(() => {
+        window.location.href = "/check-email?type=email-change";
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
@@ -257,6 +276,8 @@ export default function Profile() {
         description: error.message || "Failed to initiate email change",
         variant: "destructive",
       });
+      setPendingEmailData(null);
+      setShowEmailLogoutWarning(false);
     },
   });
 
@@ -390,11 +411,25 @@ export default function Profile() {
   };
 
   const onPasswordSubmit = (data: ChangePasswordFormData) => {
-    passwordMutation.mutate(data);
+    setPendingPasswordData(data);
+    setShowPasswordLogoutWarning(true);
   };
 
   const onEmailSubmit = (data: ChangeEmailFormData) => {
-    emailMutation.mutate(data);
+    setPendingEmailData(data);
+    setShowEmailLogoutWarning(true);
+  };
+
+  const handlePasswordConfirm = () => {
+    if (pendingPasswordData) {
+      passwordMutation.mutate(pendingPasswordData);
+    }
+  };
+
+  const handleEmailConfirm = () => {
+    if (pendingEmailData) {
+      emailMutation.mutate(pendingEmailData);
+    }
   };
 
   // Handle business logo upload
@@ -1135,6 +1170,54 @@ export default function Profile() {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Password Change Warning Dialog */}
+      <AlertDialog open={showPasswordLogoutWarning} onOpenChange={setShowPasswordLogoutWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Password Change Warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              After changing your password, you will be automatically logged out for security reasons. 
+              You'll need to log in again with your new password.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowPasswordLogoutWarning(false);
+              setPendingPasswordData(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handlePasswordConfirm}>
+              Change Password & Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Email Change Warning Dialog */}
+      <AlertDialog open={showEmailLogoutWarning} onOpenChange={setShowEmailLogoutWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Email Change Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              We'll send a confirmation email to your new address. After confirming the change, 
+              you'll be redirected to check your email. Please click the confirmation link to complete the process.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowEmailLogoutWarning(false);
+              setPendingEmailData(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleEmailConfirm}>
+              Send Confirmation Email
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

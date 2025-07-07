@@ -43,6 +43,7 @@ import PageBuilder from "@/pages/page-builder";
 import Help from "@/pages/help";
 import PublicHelp from "@/pages/public-help";
 import ConfirmEmail from "@/pages/confirm-email";
+import CheckEmail from "@/pages/check-email";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -114,6 +115,7 @@ function PublicRoutes() {
       <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/activate" component={StaffActivation} />
       <Route path="/confirm-email" component={ConfirmEmail} />
+      <Route path="/check-email" component={CheckEmail} />
       <Route path="/help" component={PublicHelp} />
       <Route path="/public-help" component={PublicHelp} />
       

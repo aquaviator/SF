@@ -141,6 +141,9 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Fixed password authentication system: Updated login endpoint to use bcrypt.compare(), fixed password hashing in user creation and activation
   - Fixed password change UX: Removed automatic logout/redirect, users stay logged in after password changes with success notification
   - Created email confirmation page: Email verification links now redirect to proper confirmation UI instead of raw JSON API responses
+  - Added security change warning dialogs: Users now see confirmation dialogs before password/email changes explaining logout behavior
+  - Password changes: Show warning dialog → confirm → change password → logout to landing page for re-authentication
+  - Email changes: Show warning dialog → confirm → send email → redirect to "check your email" page for verification workflow
 - July 01, 2025. Initial setup
 - July 01, 2025. Fixed Select form validation issues and added comprehensive tests:
   - Fixed empty value SelectItems in Shifts and Swap Requests forms
