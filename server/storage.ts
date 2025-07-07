@@ -1290,7 +1290,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStaffByTenant(tenantId: string): Promise<User[]> {
-    return await database.select().from(users).where(eq(users.tenantId, tenantId));
+    return await database.select().from(users).where(
+      and(eq(users.tenantId, tenantId), eq(users.role, 'staff'))
+    );
   }
 
   // Business profile operations

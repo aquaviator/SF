@@ -125,6 +125,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 07, 2025. Fixed critical data inconsistency between Seat Management and Workforce sections:
+  - Fixed DatabaseStorage.getStaffByTenant method to properly filter for staff role only instead of returning all users
+  - Resolved discrepancy where Seat Management showed incorrect active/pending counts vs Workforce totals
+  - Fixed frontend to use correct /api/subscription/seat-usage endpoint instead of fallback endpoint
+  - Verified seat usage calculation now accurate: 3 active staff + 4 pending invites = 7 total (matches Workforce count)
+  - Fixed staff invitation email activation links with proper parameter ordering and domain URLs
+  - Added missing invoice number generation for Stripe payment processing functionality
 - July 07, 2025. Implemented comprehensive password and email management system:
   - Added backend API routes for password change (/api/users/me/password), email change (/api/users/me/email), forgot password (/api/auth/forgot-password), password reset (/api/auth/reset-password), email confirmation (/api/auth/confirm-email)
   - Enhanced Profile page with Security tab containing password change and email management forms for both owner and staff users
