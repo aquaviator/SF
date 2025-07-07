@@ -27,6 +27,9 @@ import { Elements } from '@stripe/react-stripe-js';
 import { StripeCheckout } from '@/components/StripeCheckout';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
 // Billing Management Component
 function BillingManagement({ tenantId }: { tenantId: string }) {
   const { toast } = useToast();
