@@ -72,32 +72,57 @@ export default function OwnerDashboard() {
 
   // Fetch shift coverage data
   const { data: shiftCoverage, isLoading: coverageLoading } = useQuery<ShiftCoverage>({
-    queryKey: ["/api/dashboard/shift-coverage"],
-    queryParams: { tenantId }
+    queryKey: ["/api/dashboard/shift-coverage", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/shift-coverage?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch shift coverage');
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch all shifts for detailed breakdown
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
-    queryKey: ["/api/shifts"],
-    queryParams: { tenantId }
+    queryKey: ["/api/shifts", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/shifts?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch shifts');
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch activity logs
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
-    queryKey: ["/api/activity-logs"],
-    queryParams: { tenantId }
+    queryKey: ["/api/activity-logs", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/activity-logs?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch activity logs');
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch staff data
   const { data: staff = [], isLoading: staffLoading } = useQuery<Staff[]>({
-    queryKey: ["/api/staff"],
-    queryParams: { tenantId }
+    queryKey: ["/api/staff", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/staff?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch staff');
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Fetch live time entries for staff status
   const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery<TimeEntry[]>({
-    queryKey: ["/api/dashboard/live-time-entries"],
-    queryParams: { tenantId }
+    queryKey: ["/api/dashboard/live-time-entries", tenantId],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/live-time-entries?tenantId=${tenantId}`);
+      if (!response.ok) throw new Error('Failed to fetch time entries');
+      return response.json();
+    },
+    enabled: !!tenantId,
   });
 
   // Calculate shift statistics from real data
