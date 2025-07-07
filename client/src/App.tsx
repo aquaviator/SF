@@ -40,6 +40,8 @@ import Login from "@/pages/login";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import PageBuilder from "@/pages/page-builder";
+import Help from "@/pages/help";
+import PublicHelp from "@/pages/public-help";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -83,6 +85,7 @@ function ProtectedRoutes() {
               <Route path="/staff/profile" component={Profile} />
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
+              <Route path="/help" component={Help} />
               <Route component={NotFound} />
             </Switch>
           </div>
@@ -109,6 +112,8 @@ function PublicRoutes() {
       <Route path="/register" component={BusinessRegistration} />
       <Route path="/registration-success" component={RegistrationSuccess} />
       <Route path="/activate" component={StaffActivation} />
+      <Route path="/help" component={PublicHelp} />
+      <Route path="/public-help" component={PublicHelp} />
       
       {/* Admin Portal Routes */}
       <Route path="/admin-login" component={AdminLogin} />

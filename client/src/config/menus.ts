@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Bell,
   AlertTriangle,
-  MonitorSpeaker
+  MonitorSpeaker,
+  HelpCircle
 } from "lucide-react";
 import { ComponentType } from "react";
 
@@ -139,6 +140,12 @@ export const ownerMoreMenu: MenuItem[] = [
     route: "/owner/profile",
     icon: User,
     description: "Personal account settings and profile"
+  },
+  {
+    label: "Help",
+    route: "/help",
+    icon: HelpCircle,
+    description: "Help documentation and support"
   }
 ];
 
@@ -167,6 +174,12 @@ export const staffMoreMenu: MenuItem[] = [
     route: "/staff/strikes",
     icon: AlertTriangle,
     description: "View your strike history and status"
+  },
+  {
+    label: "Help",
+    route: "/help",
+    icon: HelpCircle,
+    description: "Help documentation and support"
   }
 ];
 
