@@ -91,13 +91,15 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     const hasRequiredFields = formData.inDate && formData.inTime && formData.reason;
     const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
     
-    // For completed entries, require clock-out. For active entries, clock-out is optional
+    // For active entries (clocked_in, on_break, late), clock-out is optional
+    // For completed entries, clock-out is required
     const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
-    const hasValidClockOut = isActiveEntry ? true : (formData.outDate && formData.outTime);
+    const hasClockOutData = formData.outDate && formData.outTime;
+    const hasValidClockOut = isActiveEntry || hasClockOutData;
     
     // If both clock-in and clock-out are provided, validate that clock-out is after clock-in
     let hasValidTimeOrder = true;
-    if (formData.outDate && formData.outTime && formData.inDate && formData.inTime) {
+    if (hasClockOutData && formData.inDate && formData.inTime) {
       const clockInDateTime = new Date(`${formData.inDate}T${formData.inTime}:00`);
       const clockOutDateTime = new Date(`${formData.outDate}T${formData.outTime}:00`);
       hasValidTimeOrder = clockOutDateTime > clockInDateTime;
@@ -117,17 +119,46 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Debug validation state
+    const hasRequiredFields = formData.inDate && formData.inTime && formData.reason;
+    const hasValidReason = formData.reason !== "Other" || (formData.reason === "Other" && formData.otherNote.trim());
+    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
+    const hasClockOutData = formData.outDate && formData.outTime;
+    const hasValidClockOut = isActiveEntry || hasClockOutData;
+    
+    console.log("🔧 FORM_VALIDATION_DEBUG", {
+      hasRequiredFields,
+      hasValidReason,
+      isActiveEntry,
+      hasClockOutData,
+      hasValidClockOut,
+      entryStatus: entry.status,
+      formData
+    });
+    
     if (!isFormValid()) {
       // Check for specific validation errors
       let errorMessage = "Please fill in all required fields";
       
-      if (formData.outDate && formData.outTime && formData.inDate && formData.inTime) {
+      // Only check time order if both times are provided
+      if (hasClockOutData && formData.inDate && formData.inTime) {
         const clockInDateTime = new Date(`${formData.inDate}T${formData.inTime}:00`);
         const clockOutDateTime = new Date(`${formData.outDate}T${formData.outTime}:00`);
         if (clockOutDateTime <= clockInDateTime) {
           errorMessage = "Clock out time must be after clock in time";
         }
       }
+      
+      // More specific error messages
+      if (!hasRequiredFields) {
+        errorMessage = "Please fill in clock in date, time, and reason";
+      } else if (!hasValidReason) {
+        errorMessage = "Please provide a reason or additional note";
+      } else if (!hasValidClockOut && !isActiveEntry) {
+        errorMessage = "Clock out time is required for completed entries";
+      }
+      
+      console.log("❌ VALIDATION_FAILED", errorMessage);
       
       toast({
         title: "Error",
@@ -139,7 +170,6 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
 
     // Combine date and time into ISO format
     const inDateTime = `${formData.inDate}T${formData.inTime}:00`;
-    const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break";
     
     // For active entries, clock-out is optional
     let payload: any = {
