@@ -798,267 +798,293 @@ export default function OwnerOperationsPage() {
         </div>
       </div>
 
-      {/* Main Grid - 4 columns on desktop, stacked on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+      {/* Main Content - Time Tracking Focus */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Shift Coverage Panel */}
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Shift Coverage</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {coverageLoading ? (
-              <div className="space-y-2">
-                <div className="h-8 bg-muted animate-pulse rounded"></div>
-                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {coverageData?.active || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Confirmed</div>
-                    <div className="text-xs text-gray-500 mt-1">Staff assigned and confirmed</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {coverageData?.upcoming || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Upcoming</div>
-                    <div className="text-xs text-gray-500 mt-1">Shifts starting soon</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-red-600">
-                      {coverageData?.unfilled || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Unfilled</div>
-                    <div className="text-xs text-gray-500 mt-1">Shifts needing staff</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-orange-600">
-                      {coverageData?.underUtilized || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Under-utilized</div>
-                    <div className="text-xs text-gray-500 mt-1">Shifts below capacity</div>
-                  </div>
-                </div>
-                <Button 
-                  onClick={openCoverageDetails}
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full min-h-[44px]"
-                  aria-label="View detailed shift coverage information"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Strike Alerts Panel */}
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Strike Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {strikesLoading ? (
-              <div className="space-y-2">
-                <div className="h-8 bg-muted animate-pulse rounded"></div>
-                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {strikesData && strikesData.totalPoints >= strikesData.maxStrikePoints && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm font-medium text-red-800">Strike Limit Reached</span>
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-red-600">
-                      {strikesData?.totalPoints || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Total Points</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-orange-600">
-                      {strikesData?.staffWithStrikes || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Staff w/ Strikes</div>
-                  </div>
-                </div>
-                <Button 
-                  onClick={navigateToStrikes}
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full min-h-[44px]"
-                  aria-label="View staff strikes dashboard"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Staff Strikes
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Time-Entry Monitor Panel */}
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Time Tracking</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+        {/* PRIMARY: Time Tracking - Main Focus (2/3 width on desktop) */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                <Clock className="h-6 w-6 text-blue-600" />
+                Time Tracking - Today's Operations
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Real-time monitoring of staff attendance and time entries
+              </CardDescription>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Live updates every 30 seconds
+            </div>
           </CardHeader>
           <CardContent>
             {timeEntriesLoading ? (
-              <div className="space-y-2">
-                <div className="h-8 bg-muted animate-pulse rounded"></div>
-                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center space-x-4 p-3 border rounded-lg">
+                    <div className="w-4 h-4 bg-muted animate-pulse rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
+                      <div className="h-3 bg-muted animate-pulse rounded w-1/2"></div>
+                    </div>
+                    <div className="h-6 bg-muted animate-pulse rounded w-16"></div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  {timeEntriesData?.slice(0, 4).map((entry: any, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => openTimeEntryModal(entry.userId, entry.userName)}
-                      className="flex items-center justify-between w-full p-2 rounded hover:bg-muted transition-colors min-h-[44px]"
-                      aria-label={`View time entry details for ${entry.userName}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${getStatusDotColor(entry.status)}`}></div>
-                        <span className="text-sm font-medium">{entry.userName}</span>
+              <div className="space-y-3">
+                {timeEntriesData?.length > 0 ? (
+                  <>
+                    {/* Summary Statistics */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">
+                          {timeEntriesData?.filter((e: any) => e.status === 'clocked_in').length || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Clocked In</div>
                       </div>
-                      <span className="text-xs text-muted-foreground capitalize">
-                        {entry.status.replace('_', ' ')}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {timeEntriesData && timeEntriesData.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No staff currently working
-                  </p>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {timeEntriesData?.filter((e: any) => e.status === 'on_break').length || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground">On Break</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">
+                          {timeEntriesData?.filter((e: any) => e.status === 'late').length || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Late</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {timeEntriesData?.length || 0}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total Active</div>
+                      </div>
+                    </div>
+
+                    {/* Staff List */}
+                    <div className="space-y-2">
+                      <h3 className="font-medium text-sm text-muted-foreground mb-3">Active Staff Details</h3>
+                      {timeEntriesData?.map((entry: any, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => openTimeEntryModal(entry.userId, entry.userName)}
+                          className="flex items-center justify-between w-full p-4 border rounded-lg hover:bg-muted transition-colors min-h-[60px]"
+                          aria-label={`View time entry details for ${entry.userName}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full ${getStatusDotColor(entry.status)}`}></div>
+                            <div className="text-left">
+                              <div className="font-medium">{entry.userName}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Clock in: {entry.clockInTime ? new Date(entry.clockInTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant={entry.status === 'clocked_in' ? 'default' : entry.status === 'on_break' ? 'secondary' : 'destructive'}>
+                              {entry.status.replace('_', ' ')}
+                            </Badge>
+                            {entry.status === 'late' && (
+                              <div className="text-xs text-red-600 mt-1">
+                                Late by {entry.lateByMinutes || '15'} min
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-medium text-lg mb-2">No Active Time Entries</h3>
+                    <p className="text-muted-foreground">
+                      No staff are currently clocked in for today's shifts
+                    </p>
+                  </div>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Holiday & Sickness Queue Panel */}
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-medium">Request Queue</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {pendingLoading ? (
-              <div className="space-y-2">
-                <div className="h-8 bg-muted animate-pulse rounded"></div>
-                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {pendingRequestsData?.filter(r => r.type === 'holiday').length || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Holiday</div>
+        {/* SECONDARY: Operations Sidebar (1/3 width on desktop) */}
+        <div className="space-y-4">
+          
+          {/* Quick Stats */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Today's Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div>
+                  <div className="text-xl font-bold text-green-600">
+                    {coverageData?.active || 0}
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-red-600">
-                      {pendingRequestsData?.filter(r => r.type === 'sick').length || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Sick</div>
-                  </div>
+                  <div className="text-xs text-muted-foreground">Confirmed Shifts</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-orange-600">
-                    {pendingRequestsData?.filter(r => r.priority === 'urgent').length || 0}
+                <div>
+                  <div className="text-xl font-bold text-red-600">
+                    {coverageData?.unfilled || 0}
                   </div>
-                  <div className="text-xs text-muted-foreground">Urgent</div>
+                  <div className="text-xs text-muted-foreground">Unfilled</div>
                 </div>
-                <Button 
-                  onClick={navigateToRequests}
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full min-h-[44px]"
-                  aria-label="Review pending holiday requests"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Review Requests
-                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <Button 
+                onClick={openCoverageDetails}
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                View Coverage
+              </Button>
+            </CardContent>
+          </Card>
 
-      {/* Escalation Alerts - Full Width */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-lg font-medium">Swap & Cancellation Escalations</CardTitle>
-          <Bell className="h-5 w-5 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {escalationsLoading ? (
-            <div className="space-y-2">
-              <div className="h-8 bg-muted animate-pulse rounded"></div>
-              <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {escalationsData && escalationsData.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {escalationsData.map((escalation: any, index: number) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="space-y-1">
-                          <h4 className="font-medium text-sm">{escalation.description}</h4>
-                          <Badge variant={getUrgencyColor(escalation.urgency)} className="text-xs">
-                            {escalation.urgency}
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {escalation.affectedShifts} shifts
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(escalation.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
+          {/* Strike Alerts - Compact */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Strike Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {strikesLoading ? (
+                <div className="space-y-2">
+                  <div className="h-6 bg-muted animate-pulse rounded"></div>
+                  <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No active escalations</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Points</span>
+                    <span className="font-bold text-red-600">
+                      {strikesData?.totalPoints || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Staff w/ Strikes</span>
+                    <span className="font-bold text-orange-600">
+                      {strikesData?.staffWithStrikes || 0}
+                    </span>
+                  </div>
+                  <Button 
+                    onClick={navigateToStrikes}
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </Button>
                 </div>
               )}
-              <div className="flex justify-center">
-                <Button 
-                  onClick={() => setShowEscalationModal(true)}
-                  variant="outline"
-                  className="min-h-[44px]"
-                  aria-label="Manage escalations in scheduling"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Escalations
-                </Button>
-              </div>
+            </CardContent>
+          </Card>
+
+          {/* Request Queue - Compact */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Request Queue
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingLoading ? (
+                <div className="space-y-2">
+                  <div className="h-6 bg-muted animate-pulse rounded"></div>
+                  <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Holiday</span>
+                    <span className="font-bold text-blue-600">
+                      {pendingRequestsData?.filter(r => r.type === 'holiday').length || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Sick</span>
+                    <span className="font-bold text-red-600">
+                      {pendingRequestsData?.filter(r => r.type === 'sick').length || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Urgent</span>
+                    <span className="font-bold text-orange-600">
+                      {pendingRequestsData?.filter(r => r.priority === 'urgent').length || 0}
+                    </span>
+                  </div>
+                  <Button 
+                    onClick={navigateToRequests}
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Review
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Escalation Alerts - Compact Bottom Section */}
+      {escalationsData && escalationsData.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Bell className="h-4 w-4 text-red-500" />
+              Active Escalations
+            </CardTitle>
+            <Badge variant="destructive" className="text-xs">
+              {escalationsData.length} issues
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {escalationsData.slice(0, 3).map((escalation: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-2 border rounded text-sm">
+                  <div className="flex-1">
+                    <div className="font-medium">{escalation.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {escalation.affectedShifts} shifts affected
+                    </div>
+                  </div>
+                  <Badge variant={getUrgencyColor(escalation.urgency)} className="text-xs">
+                    {escalation.urgency}
+                  </Badge>
+                </div>
+              ))}
+              {escalationsData.length > 3 && (
+                <div className="text-center text-xs text-muted-foreground mt-2">
+                  +{escalationsData.length - 3} more escalations
+                </div>
+              )}
+              <Button 
+                onClick={() => setShowEscalationModal(true)}
+                variant="outline"
+                size="sm"
+                className="w-full mt-3"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage All Escalations
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pre-mounted Hidden Modals */}
       <CoverageDetailsModal 
