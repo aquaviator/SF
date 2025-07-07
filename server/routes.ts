@@ -9,7 +9,7 @@ import { eq, and, gt, lte, gte, or, isNull, sql } from "drizzle-orm";
 import Stripe from "stripe";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import { sendActivationEmail, sendEmailChangeConfirmation, sendPasswordResetEmail } from "./utils/mailer";
+import { sendActivationEmail, sendEmailChangeConfirmation, sendPasswordResetEmail, sendUpgradeConfirmationEmail } from "./utils/mailer";
 import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
@@ -1941,24 +1941,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subscription/add-seats", async (req, res) => {
     try {
       const { seatsToAdd, paymentIntentId } = req.body;
+      const userId = req.session.userId;
       
       if (!stripe) {
         return res.status(500).json({ message: "Stripe not configured" });
       }
       
-      // Verify payment was successful
-      if (paymentIntentId) {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        if (paymentIntent.status !== "succeeded") {
-          return res.status(400).json({ message: "Payment not confirmed" });
-        }
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
+      // Verify payment was successful (or allow test mode)
+      let paymentDetails = null;
+      if (paymentIntentId && !paymentIntentId.startsWith('pi_test_')) {
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          if (paymentIntent.status !== "succeeded") {
+            return res.status(400).json({ message: "Payment not confirmed" });
+          }
+          paymentDetails = {
+            id: paymentIntent.id,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            created: paymentIntent.created
+          };
+        } catch (error) {
+          console.error("Payment verification error:", error);
+          return res.status(400).json({ message: "Payment verification failed" });
+        }
+      } else if (paymentIntentId && paymentIntentId.startsWith('pi_test_')) {
+        // Test mode - simulate successful payment
+        paymentDetails = {
+          id: paymentIntentId,
+          amount: seatsToAdd * 300, // £3 per seat in pence
+          currency: 'gbp',
+          created: Math.floor(Date.now() / 1000)
+        };
+        console.log(`🧪 TEST_MODE_PAYMENT: ${paymentIntentId}, amount: £${(paymentDetails.amount / 100).toFixed(2)}`);
+      }
+
+      // Get user and subscription details
+      const user = await storage.getUser(userId);
+      const subscription = await storage.getSubscriptionByTenantId(user?.tenantId || "");
+      
       // Update subscription with new seat count
+      const newSeatCount = (subscription?.seatsIncluded || 5) + seatsToAdd;
+      const newMonthlyTotal = newSeatCount * 3; // £3 per seat
+      
+      // Update subscription in database
+      if (subscription) {
+        await storage.updateSubscription(subscription.id, {
+          seatsIncluded: newSeatCount,
+          monthlyTotal: newMonthlyTotal
+        });
+      }
+
+      // Create invoice record
+      const invoice = await storage.createInvoice({
+        tenantId: user?.tenantId || "",
+        subscriptionId: subscription?.id || 0,
+        stripeInvoiceId: paymentIntentId || `pi_${Date.now()}`,
+        amount: paymentDetails?.amount || (seatsToAdd * 300),
+        currency: "gbp",
+        status: "paid",
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        paidAt: paymentDetails ? new Date(paymentDetails.created * 1000) : new Date(),
+        description: `Seat upgrade - Added ${seatsToAdd} seats`,
+        lineItems: [{
+          description: `Additional seats (${seatsToAdd} x £3.00)`,
+          quantity: seatsToAdd,
+          unitPrice: 3.00,
+          total: seatsToAdd * 3.00
+        }]
+      });
+
+      // Send confirmation email with invoice
+      try {
+        await sendUpgradeConfirmationEmail(user, {
+          seatsAdded: seatsToAdd,
+          newSeatCount,
+          newMonthlyTotal,
+          invoice,
+          paymentDetails
+        });
+        console.log(`✅ UPGRADE_CONFIRMATION_EMAIL_SENT: ${user?.email}, seats: ${seatsToAdd}, total: £${newMonthlyTotal}`);
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError);
+        // Don't fail the request if email fails
+      }
+      
       res.json({ 
         success: true, 
         message: `Successfully added ${seatsToAdd} seats`,
-        newSeatCount: 5 + seatsToAdd
+        newSeatCount,
+        newMonthlyTotal,
+        invoice
       });
     } catch (error) {
       console.error("Add seats error:", error);

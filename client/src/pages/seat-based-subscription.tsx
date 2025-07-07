@@ -723,8 +723,9 @@ export default function SeatBasedSubscription() {
                       {selectedSeats > (subscription?.seatsIncluded || 5) ? (
                         <Button 
                           onClick={() => {
-                            seatForm.setValue("seatsToAdd", selectedSeats - (subscription?.seatsIncluded || 5));
-                            handleAddSeats(seatForm.getValues());
+                            const seatsToAdd = selectedSeats - (subscription?.seatsIncluded || 5);
+                            seatForm.setValue("seatsToAdd", seatsToAdd);
+                            handleAddSeats({ seatsToAdd });
                           }}
                           disabled={createPaymentMutation.isPending}
                           className="w-full"

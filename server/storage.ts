@@ -1736,13 +1736,18 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getSubscriptionByTenantId(tenantId: string): Promise<Subscription | undefined> {
+    const result = await database.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).limit(1);
+    return result[0];
+  }
+
   async createSubscription(insertSubscription: InsertSubscription): Promise<Subscription> {
     const result = await database.insert(subscriptions).values(insertSubscription).returning();
     return result[0];
   }
 
-  async updateSubscription(tenantId: string, insertSubscription: InsertSubscription): Promise<Subscription | undefined> {
-    const result = await database.update(subscriptions).set(insertSubscription).where(eq(subscriptions.tenantId, tenantId)).returning();
+  async updateSubscription(id: number, updateData: Partial<InsertSubscription>): Promise<Subscription | undefined> {
+    const result = await database.update(subscriptions).set(updateData).where(eq(subscriptions.id, id)).returning();
     return result[0];
   }
 

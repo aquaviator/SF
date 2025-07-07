@@ -79,3 +79,61 @@ export async function sendPasswordResetEmail(email: string, token: string, domai
 
   await transporter.sendMail(mailOptions);
 }
+
+export async function sendUpgradeConfirmationEmail(user: any, upgradeDetails: any) {
+  const { seatsAdded, newSeatCount, newMonthlyTotal, invoice, paymentDetails } = upgradeDetails;
+  
+  const mailOptions = {
+    from: process.env.GOOGLE_DELEGATED_EMAIL,
+    to: user.email,
+    subject: 'Subscription Upgraded - ShiftFlo',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb; text-align: center;">Subscription Upgraded Successfully</h1>
+        <p>Hello ${user.firstName || 'there'},</p>
+        
+        <p>Your ShiftFlo subscription has been successfully upgraded!</p>
+        
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #1e293b;">Upgrade Summary</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;"><strong>Seats Added:</strong></td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; text-align: right;">${seatsAdded}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;"><strong>New Seat Count:</strong></td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; text-align: right;">${newSeatCount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;"><strong>New Monthly Total:</strong></td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e2e8f0; text-align: right;"><strong>£${newMonthlyTotal.toFixed(2)}</strong></td>
+            </tr>
+          </table>
+        </div>
+
+        ${invoice ? `
+        <div style="background-color: #fefce8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #eab308;">
+          <h3 style="margin-top: 0; color: #a16207;">Invoice Details</h3>
+          <p><strong>Invoice ID:</strong> ${invoice.stripeInvoiceId}</p>
+          <p><strong>Amount Paid:</strong> £${((invoice.amount || 0) / 100).toFixed(2)}</p>
+          <p><strong>Description:</strong> ${invoice.description}</p>
+          <p><strong>Payment Date:</strong> ${new Date(invoice.paidAt).toLocaleDateString()}</p>
+        </div>
+        ` : ''}
+
+        <p>Your new billing cycle will reflect the updated seat count starting from your next billing date.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <p style="color: #64748b;">Thank you for choosing ShiftFlo!</p>
+        </div>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">
+          If you have any questions about your upgrade, please contact our support team.
+        </p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
