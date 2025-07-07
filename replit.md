@@ -593,6 +593,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Zero tolerance authentication hook inconsistency successfully achieved across entire application
 - July 07, 2025. Completed comprehensive mobile-first optimization for My Work page and Select components:
   - Fixed mobile tab layout: changed from grid-cols-6 to responsive grid-cols-2 md:grid-cols-3 lg:grid-cols-6
+- July 07, 2025. Implemented simplified email management system for profile pages:
+  - Business Email serves as primary login email for owner accounts (managed in Business Details tab)
+  - Owner Details Email field made read-only showing same email with explanatory text
+  - Staff profiles can directly update their login email on their profile page
+  - Added database schema fields for future email change verification (pending_email, email_change_token, email_token_expires_at)
+  - Clear labeling indicates which email fields are used for login authentication
+  - Simplified user experience eliminates confusion between business and personal email addresses
   - Added mobile-first tab labels with shorter names on mobile (Home, Time, Shifts vs Overview, Time Tracking, My Shifts)
   - Fixed critical SelectTrigger mobile display issues: changed from w-full to w-auto min-w-[120px] for auto-sizing
   - Replaced line-clamp-1 with truncate for better text handling (shows ellipsis instead of hard clipping)
