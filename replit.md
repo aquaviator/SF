@@ -591,6 +591,15 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Authentication system now works consistently with proper role detection and tenant isolation
   - All hooks return standardized role, tenantId, user, isLoading, and isAuthenticated properties
   - Zero tolerance authentication hook inconsistency successfully achieved across entire application
+- July 07, 2025. Completed comprehensive mobile-first optimization for My Work page and Select components:
+  - Fixed mobile tab layout: changed from grid-cols-6 to responsive grid-cols-2 md:grid-cols-3 lg:grid-cols-6
+  - Added mobile-first tab labels with shorter names on mobile (Home, Time, Shifts vs Overview, Time Tracking, My Shifts)
+  - Fixed critical SelectTrigger mobile display issues: changed from w-full to w-auto min-w-[120px] for auto-sizing
+  - Replaced line-clamp-1 with truncate for better text handling (shows ellipsis instead of hard clipping)
+  - Updated SelectContent to use w-auto min-w-[120px] for consistent dropdown sizing
+  - Fixed SelectItem nested div structure in swap request modal causing mobile display problems
+  - All dropdown components now properly auto-size to content on mobile devices down to 360px width
+  - Request Time Off modal and all Select dropdowns confirmed working correctly on mobile
 - July 06, 2025. Refined staff activation flow to match business owner activation pattern:
   - Fixed staff invitation duplicate email validation preventing database constraint violations
   - Updated staff invitation API to use database domain configuration instead of localhost URLs
