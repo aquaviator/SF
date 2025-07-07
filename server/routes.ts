@@ -1893,24 +1893,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { seatsToAdd, tenantId } = req.body;
       const userId = req.session.userId;
+      console.log(`💳 CREATE_PAYMENT_INTENT_REQUEST: userId: ${userId}, seatsToAdd: ${seatsToAdd}, tenantId: ${tenantId}`);
       
       if (!stripe) {
+        console.log(`❌ STRIPE_NOT_CONFIGURED`);
         return res.status(500).json({ message: "Stripe not configured" });
       }
       
       if (!userId) {
+        console.log(`❌ USER_NOT_AUTHENTICATED`);
         return res.status(401).json({ message: "Not authenticated" });
       }
       
       if (!seatsToAdd || seatsToAdd < 1) {
+        console.log(`❌ INVALID_SEATS_COUNT: ${seatsToAdd}`);
         return res.status(400).json({ message: "Must add at least 1 seat" });
       }
       
       const pricePerSeat = 300; // £3.00 in pence
       const totalAmount = seatsToAdd * pricePerSeat;
+      console.log(`💰 PAYMENT_CALCULATION: ${seatsToAdd} seats × £3.00 = £${(totalAmount / 100).toFixed(2)} (${totalAmount} pence)`);
       
       // Get or create Stripe customer
+      console.log(`👤 GETTING_STRIPE_CUSTOMER: userId: ${userId}, tenantId: ${tenantId}`);
       const customerId = await getOrCreateStripeCustomer(userId, tenantId);
+      console.log(`✅ STRIPE_CUSTOMER_READY: customerId: ${customerId}`);
       
       const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmount,
@@ -1926,13 +1933,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         receipt_email: await storage.getUser(userId).then(u => u?.email)
       });
       
+      console.log(`✅ STRIPE_PAYMENT_INTENT_CREATED: id: ${paymentIntent.id}, amount: £${(totalAmount / 100).toFixed(2)}, clientSecret: ${paymentIntent.client_secret?.substring(0, 20)}...`);
       res.json({ 
         clientSecret: paymentIntent.client_secret,
         amount: totalAmount,
         seatsToAdd
       });
     } catch (error) {
-      console.error("Payment intent creation error:", error);
+      console.error("❌ PAYMENT_INTENT_CREATION_ERROR:", error);
       res.status(500).json({ message: "Failed to create payment intent" });
     }
   });
@@ -1942,12 +1950,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { seatsToAdd, paymentIntentId } = req.body;
       const userId = req.session.userId;
+      console.log(`🏢 ADD_SEATS_REQUEST: userId: ${userId}, seatsToAdd: ${seatsToAdd}, paymentIntentId: ${paymentIntentId}`);
       
       if (!stripe) {
+        console.log(`❌ STRIPE_NOT_CONFIGURED`);
         return res.status(500).json({ message: "Stripe not configured" });
       }
       
       if (!userId) {
+        console.log(`❌ USER_NOT_AUTHENTICATED`);
         return res.status(401).json({ message: "Not authenticated" });
       }
       
@@ -1981,19 +1992,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get user and subscription details
+      console.log(`👤 FETCHING_USER_AND_SUBSCRIPTION: userId: ${userId}`);
       const user = await storage.getUser(userId);
       const subscription = await storage.getSubscriptionByTenantId(user?.tenantId || "");
+      console.log(`📋 CURRENT_SUBSCRIPTION: id: ${subscription?.id}, current seats: ${subscription?.seatsIncluded || 5}, tenantId: ${user?.tenantId}`);
       
       // Update subscription with new seat count
       const newSeatCount = (subscription?.seatsIncluded || 5) + seatsToAdd;
       const newMonthlyTotal = newSeatCount * 3; // £3 per seat
+      console.log(`📈 SEAT_UPGRADE_CALCULATION: current: ${subscription?.seatsIncluded || 5} + adding: ${seatsToAdd} = new total: ${newSeatCount}, monthly: £${newMonthlyTotal}`);
       
       // Update subscription in database
       if (subscription) {
+        console.log(`💾 UPDATING_SUBSCRIPTION: id: ${subscription.id}, newSeatCount: ${newSeatCount}, newMonthlyTotal: ${newMonthlyTotal}`);
         await storage.updateSubscription(subscription.id, {
           seatsIncluded: newSeatCount,
           monthlyTotal: newMonthlyTotal
         });
+        console.log(`✅ SUBSCRIPTION_UPDATED_SUCCESSFULLY`);
+      } else {
+        console.log(`⚠️ NO_SUBSCRIPTION_FOUND_TO_UPDATE`);
       }
 
       // Create invoice record
@@ -2030,6 +2048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if email fails
       }
       
+      console.log(`🎉 ADD_SEATS_SUCCESS: newSeatCount: ${newSeatCount}, newMonthlyTotal: £${newMonthlyTotal}, invoice: ${invoice?.id}`);
       res.json({ 
         success: true, 
         message: `Successfully added ${seatsToAdd} seats`,
@@ -2038,7 +2057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoice
       });
     } catch (error) {
-      console.error("Add seats error:", error);
+      console.error("❌ ADD_SEATS_ERROR:", error);
       res.status(500).json({ message: "Failed to add seats" });
     }
   });

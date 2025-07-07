@@ -380,17 +380,20 @@ export default function SeatBasedSubscription() {
   // Create Payment Intent Mutation
   const createPaymentMutation = useMutation({
     mutationFn: async (data: SeatManagementData) => {
+      console.log(`💳 CREATING_PAYMENT_INTENT: seatsToAdd: ${data.seatsToAdd}, tenantId: ${tenantId}`);
       return apiRequest("POST", "/api/subscription/create-payment-intent", {
         seatsToAdd: data.seatsToAdd,
         tenantId
       });
     },
     onSuccess: (response: any) => {
+      console.log(`✅ PAYMENT_INTENT_CREATED: clientSecret available, amount: £${(response.amount / 100).toFixed(2)}, seats: ${response.seatsToAdd}`);
       setClientSecret(response.clientSecret);
       setPaymentAmount(response.amount);
       setPendingSeats(response.seatsToAdd);
     },
     onError: (error: any) => {
+      console.error(`❌ PAYMENT_INTENT_FAILED:`, error);
       toast({
         title: "Payment Setup Failed",
         description: error.message || "Please try again.",
@@ -402,15 +405,17 @@ export default function SeatBasedSubscription() {
   // Add Seats Mutation (after successful payment)
   const addSeatsMutation = useMutation({
     mutationFn: async (paymentIntentId: string) => {
+      console.log(`🏢 ADDING_SEATS_TO_SUBSCRIPTION: pendingSeats: ${pendingSeats}, paymentIntentId: ${paymentIntentId}`);
       return apiRequest("POST", "/api/subscription/add-seats", {
         seatsToAdd: pendingSeats,
         paymentIntentId
       });
     },
-    onSuccess: () => {
+    onSuccess: (response: any) => {
+      console.log(`🎉 SEATS_ADDED_SUCCESS:`, response);
       toast({
         title: "Seats Added Successfully",
-        description: "Your team capacity has been increased.",
+        description: `Your team capacity has been increased. ${response.invoice ? 'Confirmation email sent!' : ''}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
       queryClient.invalidateQueries({ queryKey: ["/api/seat-usage"] });
@@ -420,6 +425,7 @@ export default function SeatBasedSubscription() {
       seatForm.reset();
     },
     onError: (error: any) => {
+      console.error(`❌ ADD_SEATS_FAILED:`, error);
       toast({
         title: "Failed to Add Seats",
         description: error.message || "Please try again.",
@@ -429,10 +435,12 @@ export default function SeatBasedSubscription() {
   });
 
   const handleAddSeats = (data: SeatManagementData) => {
+    console.log(`🚀 INITIATING_SEAT_UPGRADE: seats to add: ${data.seatsToAdd}, current seats: ${subscription?.seatsIncluded || 5}`);
     createPaymentMutation.mutate(data);
   };
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
+    console.log(`✅ PAYMENT_SUCCESS: paymentIntentId: ${paymentIntentId}, proceeding to add seats`);
     addSeatsMutation.mutate(paymentIntentId);
   };
 

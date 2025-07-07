@@ -20,9 +20,11 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.log(`⚠️ STRIPE_NOT_READY: stripe: ${!!stripe}, elements: ${!!elements}`);
       return;
     }
 
+    console.log(`💳 SUBMITTING_STRIPE_PAYMENT: amount: £${(totalAmount / 100).toFixed(2)}, seats: ${seatsToAdd}`);
     setIsLoading(true);
 
     try {
@@ -35,17 +37,20 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
       });
 
       if (error) {
-        console.error('Payment error:', error);
+        console.error('❌ STRIPE_PAYMENT_ERROR:', error);
         toast({
           title: "Payment Failed",
           description: error.message || "Payment could not be processed",
           variant: "destructive",
         });
       } else if (paymentIntent?.status === 'succeeded') {
+        console.log(`✅ STRIPE_PAYMENT_SUCCESS: paymentIntent.id: ${paymentIntent.id}, status: ${paymentIntent.status}`);
         onSuccess(paymentIntent.id);
+      } else {
+        console.log(`⚠️ PAYMENT_STATUS_UNEXPECTED: status: ${paymentIntent?.status}`);
       }
     } catch (error) {
-      console.error('Payment processing error:', error);
+      console.error('❌ STRIPE_PAYMENT_EXCEPTION:', error);
       toast({
         title: "Payment Error",
         description: "An unexpected error occurred during payment",
