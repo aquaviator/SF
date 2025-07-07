@@ -587,14 +587,14 @@ export default function Profile() {
                     <Input
                       id="business-email"
                       type="email"
-                      {...businessForm.register("email")}
+                      value={businessData?.email || ''}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
                       placeholder="Enter business email"
                     />
-                    {businessForm.formState.errors.email && (
-                      <p className="text-sm text-red-600">
-                        {businessForm.formState.errors.email.message}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      To change your email address, please use the Security tab
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -701,14 +701,14 @@ export default function Profile() {
                   <Input
                     id="email"
                     type="email"
-                    {...personalForm.register("email")}
+                    value={personalData?.email || ''}
+                    readOnly
+                    className="bg-muted cursor-not-allowed"
                     placeholder="Enter email address"
                   />
-                  {personalForm.formState.errors.email && (
-                    <p className="text-sm text-red-600">
-                      {personalForm.formState.errors.email.message}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    To change your email address, please use the Security tab
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -954,14 +954,14 @@ export default function Profile() {
                     <Input
                       id="staff-email"
                       type="email"
-                      {...personalForm.register("email")}
+                      value={personalData?.email || ''}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
                       placeholder="Enter email address"
                     />
-                    {personalForm.formState.errors.email && (
-                      <p className="text-sm text-red-600">
-                        {personalForm.formState.errors.email.message}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      To change your email address, please use the Security tab
+                    </p>
                   </div>
 
                   <div className="space-y-2">

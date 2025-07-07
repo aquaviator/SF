@@ -136,6 +136,8 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Password changes require current password verification and automatically redirect to login after successful change
   - Email changes require password confirmation and send verification emails to new addresses before updating
   - All security operations include proper logging and security audit trails with console output
+  - Centralized email management: Made ALL email fields system-wide read-only (Profile business/personal tabs, staff edit modals) directing users to Security tab for changes
+  - Enhanced workforce staff edit modal with conditional read-only email fields and helpful guidance text
 - July 01, 2025. Initial setup
 - July 01, 2025. Fixed Select form validation issues and added comprehensive tests:
   - Fixed empty value SelectItems in Shifts and Swap Requests forms
