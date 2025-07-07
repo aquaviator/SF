@@ -1755,9 +1755,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscription routes - Database-driven seat-based billing
   app.get("/api/subscription", async (req, res) => {
     try {
-      const tenantId = "template-business"; // Use template business for now
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
       
-      const subscription = await storage.getSubscription(tenantId);
+      const subscription = await storage.getSubscriptionByTenantId(tenantId);
+      console.log(`🔍 SUBSCRIPTION_LOOKUP: tenantId: ${tenantId}, found: ${!!subscription}`, subscription);
       if (!subscription) {
         // Return default trial subscription if none exists
         const defaultSubscription = {
@@ -1788,7 +1792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         seatsIncluded: subscription.seatsIncluded,
         seatsUsed: subscription.seatsUsed,
         pricePerSeat: subscription.pricePerSeat / 100, // Convert pence to pounds for display
-        monthlyTotal: subscription.monthlyTotal / 100, // Convert pence to pounds for display
+        monthlyTotal: subscription.monthlyTotal, // Already in pounds in database
         trialDaysRemaining: subscription.trialDaysRemaining,
         nextBillingDate: subscription.nextBillingDate,
         features: [
