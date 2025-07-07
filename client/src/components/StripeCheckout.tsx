@@ -34,6 +34,13 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
         elements,
         confirmParams: {
           return_url: window.location.origin + '/owner/subscription?payment=success',
+          payment_method_data: {
+            billing_details: {
+              address: {
+                postal_code: '00000' // Provide default postal code since we set it to 'never'
+              }
+            }
+          }
         },
         redirect: 'if_required'
       });
