@@ -57,12 +57,12 @@ const helpSections: HelpSection[] = [
           "Log in using your email and password provided by your manager",
           "Complete your profile by adding a photo and personal details",
           "Review your work schedule in the My Work section",
-          "Set up your notification preferences",
-          "Familiarize yourself with the mobile-friendly interface"
+          "Familiarize yourself with the mobile-friendly interface",
+          "Explore the help documentation for guidance"
         ],
         tips: [
           "Keep your profile updated for better team communication",
-          "Enable push notifications to stay informed about schedule changes"
+          "Check the My Work dashboard regularly for schedule updates"
         ]
       },
       {
@@ -443,37 +443,7 @@ const helpSections: HelpSection[] = [
       }
     ]
   },
-  {
-    id: "notifications",
-    title: "Notifications",
-    icon: Bell,
-    userType: "both",
-    content: [
-      {
-        title: "Notification Types",
-        description: "Understanding different types of notifications you'll receive.",
-        steps: [
-          "Shift assignments and confirmations",
-          "Schedule changes and updates",
-          "Holiday request approvals/rejections",
-          "Swap request status updates",
-          "Strike point notifications",
-          "System maintenance announcements"
-        ]
-      },
-      {
-        title: "Managing Notifications",
-        description: "Control how and when you receive notifications.",
-        steps: [
-          "Enable/disable notification types",
-          "Set notification timing preferences",
-          "Choose between email and push notifications",
-          "Configure urgent vs. standard notifications",
-          "Update notification contact information"
-        ]
-      }
-    ]
-  },
+
   {
     id: "troubleshooting",
     title: "Troubleshooting",

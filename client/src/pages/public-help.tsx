@@ -276,7 +276,7 @@ const publicHelpSections: PublicHelpSection[] = [
           "Click the activation link in the email",
           "Set your password and complete profile",
           "Explore the My Work dashboard",
-          "Set up notification preferences",
+          "Explore the help documentation and features",
           "Start using time tracking and requests"
         ]
       }

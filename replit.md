@@ -598,6 +598,14 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
   - Replaced line-clamp-1 with truncate for better text handling (shows ellipsis instead of hard clipping)
   - Updated SelectContent to use w-auto min-w-[120px] for consistent dropdown sizing
   - Fixed SelectItem nested div structure in swap request modal causing mobile display problems
+- July 07, 2025. Implemented comprehensive Help & Support documentation system:
+  - Created dual-access help system: public (/help) and authenticated (/help) with role-aware content
+  - Public help page with audience filters (All Topics, For Staff, For Managers) and complete feature overviews
+  - Authenticated help page shows dynamic content based on staff vs owner role with 14 help sections
+  - Added Help menu item to More drawer for both staff and owners with mobile-first design
+  - Comprehensive step-by-step guides covering all implemented features: My Work, Time Tracking, Scheduling, Workforce Management, Business Settings, Policies, Live Operations, Strike System, and more
+  - Search functionality, interactive navigation, and proper mobile responsiveness
+  - Corrected documentation to reflect only actual implemented features (removed non-existent notification system references)
   - All dropdown components now properly auto-size to content on mobile devices down to 360px width
   - Request Time Off modal and all Select dropdowns confirmed working correctly on mobile
 - July 06, 2025. Refined staff activation flow to match business owner activation pattern:
