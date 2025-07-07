@@ -8,7 +8,8 @@ import { db } from "./db";
 import { eq, and, gt, lte, gte, or, isNull, sql } from "drizzle-orm";
 import Stripe from "stripe";
 import crypto from "crypto";
-import { sendActivationEmail } from "./utils/mailer";
+import bcrypt from "bcrypt";
+import { sendActivationEmail, sendEmailChangeConfirmation, sendPasswordResetEmail } from "./utils/mailer";
 import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
@@ -4473,6 +4474,331 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ ADMIN_BROADCAST_ERROR', { error: error.message });
       res.status(500).json({ message: 'Failed to send broadcast' });
+    }
+  });
+
+  // Helper function to get active domain
+  async function getActiveDomain() {
+    const activeDomain = await db
+      .select()
+      .from(domainConfig)
+      .where(eq(domainConfig.isActive, true))
+      .limit(1);
+    
+    return activeDomain[0]?.baseUrl || 'http://localhost:5000';
+  }
+
+  // Password and Email Management Routes
+
+  // Change Password - POST /api/users/me/password
+  app.post("/api/users/me/password", async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.session.userId;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters long" });
+      }
+
+      // Get current user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify current password
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password and clear any reset tokens
+      await db
+        .update(users)
+        .set({
+          password: hashedNewPassword,
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        })
+        .where(eq(users.id, userId));
+
+      console.log("✅ PASSWORD_CHANGED", { userId, timestamp: new Date() });
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("❌ PASSWORD_CHANGE_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  // Change Email - POST /api/users/me/email
+  app.post("/api/users/me/email", async (req, res) => {
+    try {
+      const { newEmail, currentPassword } = req.body;
+      const userId = req.session.userId;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (!newEmail || !currentPassword) {
+        return res.status(400).json({ message: "New email and current password are required" });
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Get current user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      // Check if new email is already in use
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, newEmail))
+        .limit(1);
+
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: "Email address is already in use" });
+      }
+
+      // Generate email change token
+      const emailChangeToken = crypto.randomBytes(32).toString('hex');
+      const emailChangeExpires = new Date();
+      emailChangeExpires.setHours(emailChangeExpires.getHours() + 1); // 1 hour expiry
+
+      // Store token and new email
+      await db
+        .update(users)
+        .set({
+          emailChangeToken,
+          emailChangeExpires,
+          emailChangeNew: newEmail,
+        })
+        .where(eq(users.id, userId));
+
+      // Send confirmation email to new address
+      const activeDomain = await getActiveDomain();
+      await sendEmailChangeConfirmation(newEmail, emailChangeToken, activeDomain);
+
+      console.log("✅ EMAIL_CHANGE_INITIATED", { userId, newEmail, timestamp: new Date() });
+      res.json({ message: "Confirmation email sent to new address" });
+    } catch (error) {
+      console.error("❌ EMAIL_CHANGE_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to initiate email change" });
+    }
+  });
+
+  // Confirm Email Change - GET /api/auth/confirm-email
+  app.get("/api/auth/confirm-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
+      // Find user with valid token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.emailChangeToken, token as string),
+            gt(users.emailChangeExpires, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      if (!user.emailChangeNew) {
+        return res.status(400).json({ message: "No pending email change" });
+      }
+
+      // Update email and clear token fields
+      await db
+        .update(users)
+        .set({
+          email: user.emailChangeNew,
+          username: user.emailChangeNew, // Update username to match new email
+          emailChangeToken: null,
+          emailChangeExpires: null,
+          emailChangeNew: null,
+        })
+        .where(eq(users.id, user.id));
+
+      console.log("✅ EMAIL_CHANGE_CONFIRMED", { userId: user.id, newEmail: user.emailChangeNew, timestamp: new Date() });
+      res.json({ message: "Email address updated successfully" });
+    } catch (error) {
+      console.error("❌ EMAIL_CONFIRM_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to confirm email change" });
+    }
+  });
+
+  // Forgot Password - POST /api/auth/forgot-password
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Always return success to prevent email enumeration
+      const successMessage = "If an account with that email exists, we've sent a password reset link";
+
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (user && user.isActive) {
+        // Generate reset token
+        const resetPasswordToken = crypto.randomBytes(32).toString('hex');
+        const resetPasswordExpires = new Date();
+        resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1); // 1 hour expiry
+
+        // Store reset token
+        await db
+          .update(users)
+          .set({
+            resetPasswordToken,
+            resetPasswordExpires,
+          })
+          .where(eq(users.id, user.id));
+
+        // Send reset email
+        const activeDomain = await getActiveDomain();
+        await sendPasswordResetEmail(email, resetPasswordToken, activeDomain);
+
+        console.log("✅ PASSWORD_RESET_INITIATED", { userId: user.id, email, timestamp: new Date() });
+      }
+
+      res.json({ message: successMessage });
+    } catch (error) {
+      console.error("❌ FORGOT_PASSWORD_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Validate Reset Token - GET /api/auth/validate-reset
+  app.get("/api/auth/validate-reset", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
+      // Check if token is valid and not expired
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.resetPasswordToken, token as string),
+            gt(users.resetPasswordExpires, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      res.json({ message: "Token is valid" });
+    } catch (error) {
+      console.error("❌ VALIDATE_RESET_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to validate reset token" });
+    }
+  });
+
+  // Reset Password - POST /api/auth/reset-password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+
+      // Find user with valid token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.resetPasswordToken, token),
+            gt(users.resetPasswordExpires, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password and clear reset token
+      await db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        })
+        .where(eq(users.id, user.id));
+
+      console.log("✅ PASSWORD_RESET_COMPLETED", { userId: user.id, timestamp: new Date() });
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("❌ RESET_PASSWORD_ERROR", { error: error.message });
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 

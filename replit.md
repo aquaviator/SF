@@ -125,6 +125,17 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 07, 2025. Implemented comprehensive password and email management system:
+  - Added backend API routes for password change (/api/users/me/password), email change (/api/users/me/email), forgot password (/api/auth/forgot-password), password reset (/api/auth/reset-password), email confirmation (/api/auth/confirm-email)
+  - Enhanced Profile page with Security tab containing password change and email management forms for both owner and staff users
+  - Added proper validation with Zod schemas (8+ character passwords, email format validation, password confirmation matching)
+  - Integrated secure token-based workflows with proper expiration (24 hours for password reset, 1 hour for email changes)
+  - Added email notification system using nodemailer with domain-aware URLs for reset and confirmation links
+  - Implemented comprehensive error handling with user-friendly messages and proper authentication checks
+  - Security forms feature mobile-first responsive design with proper form validation and loading states
+  - Password changes require current password verification and automatically redirect to login after successful change
+  - Email changes require password confirmation and send verification emails to new addresses before updating
+  - All security operations include proper logging and security audit trails with console output
 - July 01, 2025. Initial setup
 - July 01, 2025. Fixed Select form validation issues and added comprehensive tests:
   - Fixed empty value SelectItems in Shifts and Swap Requests forms

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Building } from "lucide-react";
+import { Loader2, User, Building, Shield, Mail, Lock } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +33,20 @@ const businessDetailsSchema = z.object({
   website: z.string().url("Invalid website URL").optional().or(z.literal("")),
   businessType: z.string().optional(),
   description: z.string().optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+const changeEmailSchema = z.object({
+  newEmail: z.string().email("Invalid email address"),
+  currentPassword: z.string().min(1, "Current password is required"),
 });
 
 // Interface types
@@ -64,8 +78,10 @@ interface BusinessProfileType {
   ownerProfilePicture?: string;
 }
 
-type BusinessDetailsFormData = z.infer<typeof businessDetailsSchema>;
 type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
+type BusinessDetailsFormData = z.infer<typeof businessDetailsSchema>;
+type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+type ChangeEmailFormData = z.infer<typeof changeEmailSchema>;
 
 export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
@@ -126,6 +142,25 @@ export default function Profile() {
     },
   });
 
+  // Password change form
+  const passwordForm = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Email change form
+  const emailForm = useForm<ChangeEmailFormData>({
+    resolver: zodResolver(changeEmailSchema),
+    defaultValues: {
+      newEmail: "",
+      currentPassword: "",
+    },
+  });
+
   // Business mutation
   const businessMutation = useMutation({
     mutationFn: async (data: BusinessDetailsFormData) => {
@@ -173,6 +208,57 @@ export default function Profile() {
       toast({
         title: "Error",
         description: error.message || "Failed to update personal details",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Password change mutation
+  const passwordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordFormData) => {
+      const response = await apiRequest("POST", "/api/users/me/password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Password changed successfully. Please log in again.",
+      });
+      passwordForm.reset();
+      // Redirect to login after password change
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Email change mutation
+  const emailMutation = useMutation({
+    mutationFn: async (data: ChangeEmailFormData) => {
+      const response = await apiRequest("POST", "/api/users/me/email", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Confirmation email sent to your new address. Please check your inbox.",
+      });
+      emailForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate email change",
         variant: "destructive",
       });
     },
@@ -307,6 +393,14 @@ export default function Profile() {
     personalMutation.mutate(data);
   };
 
+  const onPasswordSubmit = (data: ChangePasswordFormData) => {
+    passwordMutation.mutate(data);
+  };
+
+  const onEmailSubmit = (data: ChangeEmailFormData) => {
+    emailMutation.mutate(data);
+  };
+
   // Handle business logo upload
   const handleBusinessLogoChange = async (imageDataUrl: string) => {
     try {
@@ -407,14 +501,18 @@ export default function Profile() {
 
       {role === 'owner' ? (
         <Tabs defaultValue="business" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="business" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
-              <span>Business Details</span>
+              <span>Business</span>
             </TabsTrigger>
             <TabsTrigger value="personal" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span>Owner Details</span>
+              <span>Personal</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Security</span>
             </TabsTrigger>
           </TabsList>
 
@@ -656,115 +754,390 @@ export default function Profile() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="security">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Settings</CardTitle>
+              <CardDescription>
+                Manage your password and email settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {/* Change Password Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Change Password
+                </h3>
+                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password *</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      {...passwordForm.register("currentPassword")}
+                      placeholder="Enter current password"
+                    />
+                    {passwordForm.formState.errors.currentPassword && (
+                      <p className="text-sm text-red-600">
+                        {passwordForm.formState.errors.currentPassword.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password *</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      {...passwordForm.register("newPassword")}
+                      placeholder="Enter new password (min 8 characters)"
+                    />
+                    {passwordForm.formState.errors.newPassword && (
+                      <p className="text-sm text-red-600">
+                        {passwordForm.formState.errors.newPassword.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password *</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      {...passwordForm.register("confirmPassword")}
+                      placeholder="Confirm new password"
+                    />
+                    {passwordForm.formState.errors.confirmPassword && (
+                      <p className="text-sm text-red-600">
+                        {passwordForm.formState.errors.confirmPassword.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={passwordMutation.isPending}
+                    className="w-full"
+                  >
+                    {passwordMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Change Password
+                  </Button>
+                </form>
+              </div>
+
+              {/* Change Email Section */}
+              <div className="space-y-4 pt-8 border-t">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Change Email Address
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Current email: {personalData?.email}
+                </p>
+                <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-email">New Email Address *</Label>
+                    <Input
+                      id="new-email"
+                      type="email"
+                      {...emailForm.register("newEmail")}
+                      placeholder="Enter new email address"
+                    />
+                    {emailForm.formState.errors.newEmail && (
+                      <p className="text-sm text-red-600">
+                        {emailForm.formState.errors.newEmail.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email-password">Current Password *</Label>
+                    <Input
+                      id="email-password"
+                      type="password"
+                      {...emailForm.register("currentPassword")}
+                      placeholder="Enter current password to confirm"
+                    />
+                    {emailForm.formState.errors.currentPassword && (
+                      <p className="text-sm text-red-600">
+                        {emailForm.formState.errors.currentPassword.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={emailMutation.isPending}
+                    className="w-full"
+                  >
+                    {emailMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Send Confirmation Email
+                  </Button>
+                </form>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         </Tabs>
       ) : (
-        /* Staff Profile - Personal Details Only */
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>
-              Manage your personal profile and account details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Profile Photo Upload */}
-            <div className="space-y-2">
-              <Label>Profile Photo</Label>
-              <PhotoUpload
-                currentImage={personalData?.photoUrl}
-                onImageChange={handlePersonalPhotoChange}
-                type="avatar"
-              />
-            </div>
+        /* Staff Profile - Personal Details and Security */
+        <Tabs defaultValue="personal" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="personal" className="flex items-center space-x-2">
+              <User className="h-4 w-4" />
+              <span>Personal</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Security</span>
+            </TabsTrigger>
+          </TabsList>
 
-            <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="personal">
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>
+                  Manage your personal profile and account details
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Profile Photo Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="staff-firstName">First Name *</Label>
-                  <Input
-                    id="staff-firstName"
-                    {...personalForm.register("firstName")}
-                    placeholder="Enter first name"
+                  <Label>Profile Photo</Label>
+                  <PhotoUpload
+                    currentImage={personalData?.photoUrl}
+                    onImageChange={handlePersonalPhotoChange}
+                    type="avatar"
                   />
-                  {personalForm.formState.errors.firstName && (
-                    <p className="text-sm text-red-600">
-                      {personalForm.formState.errors.firstName.message}
-                    </p>
-                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="staff-lastName">Last Name *</Label>
-                  <Input
-                    id="staff-lastName"
-                    {...personalForm.register("lastName")}
-                    placeholder="Enter last name"
-                  />
-                  {personalForm.formState.errors.lastName && (
-                    <p className="text-sm text-red-600">
-                      {personalForm.formState.errors.lastName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+                <form onSubmit={personalForm.handleSubmit(onPersonalSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-firstName">First Name *</Label>
+                      <Input
+                        id="staff-firstName"
+                        {...personalForm.register("firstName")}
+                        placeholder="Enter first name"
+                      />
+                      {personalForm.formState.errors.firstName && (
+                        <p className="text-sm text-red-600">
+                          {personalForm.formState.errors.firstName.message}
+                        </p>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="staff-email">Email Address *</Label>
-                <Input
-                  id="staff-email"
-                  type="email"
-                  {...personalForm.register("email")}
-                  placeholder="Enter email address"
-                />
-                {personalForm.formState.errors.email && (
-                  <p className="text-sm text-red-600">
-                    {personalForm.formState.errors.email.message}
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-lastName">Last Name *</Label>
+                      <Input
+                        id="staff-lastName"
+                        {...personalForm.register("lastName")}
+                        placeholder="Enter last name"
+                      />
+                      {personalForm.formState.errors.lastName && (
+                        <p className="text-sm text-red-600">
+                          {personalForm.formState.errors.lastName.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-email">Email Address *</Label>
+                    <Input
+                      id="staff-email"
+                      type="email"
+                      {...personalForm.register("email")}
+                      placeholder="Enter email address"
+                    />
+                    {personalForm.formState.errors.email && (
+                      <p className="text-sm text-red-600">
+                        {personalForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-phone">Phone</Label>
+                    <Input
+                      id="staff-phone"
+                      {...personalForm.register("phone")}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-address">Address</Label>
+                    <Textarea
+                      id="staff-address"
+                      {...personalForm.register("address")}
+                      placeholder="Enter your address"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-bio">Bio</Label>
+                    <Textarea
+                      id="staff-bio"
+                      {...personalForm.register("bio")}
+                      placeholder="Tell us about yourself"
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={personalMutation.isPending}
+                    className="w-full"
+                  >
+                    {personalMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Update Profile
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Security Settings</CardTitle>
+                <CardDescription>
+                  Manage your password and email settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Change Password Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Change Password
+                  </h3>
+                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-current-password">Current Password *</Label>
+                      <Input
+                        id="staff-current-password"
+                        type="password"
+                        {...passwordForm.register("currentPassword")}
+                        placeholder="Enter current password"
+                      />
+                      {passwordForm.formState.errors.currentPassword && (
+                        <p className="text-sm text-red-600">
+                          {passwordForm.formState.errors.currentPassword.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-new-password">New Password *</Label>
+                      <Input
+                        id="staff-new-password"
+                        type="password"
+                        {...passwordForm.register("newPassword")}
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                      {passwordForm.formState.errors.newPassword && (
+                        <p className="text-sm text-red-600">
+                          {passwordForm.formState.errors.newPassword.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-confirm-password">Confirm New Password *</Label>
+                      <Input
+                        id="staff-confirm-password"
+                        type="password"
+                        {...passwordForm.register("confirmPassword")}
+                        placeholder="Confirm new password"
+                      />
+                      {passwordForm.formState.errors.confirmPassword && (
+                        <p className="text-sm text-red-600">
+                          {passwordForm.formState.errors.confirmPassword.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={passwordMutation.isPending}
+                      className="w-full"
+                    >
+                      {passwordMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Change Password
+                    </Button>
+                  </form>
+                </div>
+
+                {/* Change Email Section */}
+                <div className="space-y-4 pt-8 border-t">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Change Email Address
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Current email: {personalData?.email}
                   </p>
-                )}
-              </div>
+                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-new-email">New Email Address *</Label>
+                      <Input
+                        id="staff-new-email"
+                        type="email"
+                        {...emailForm.register("newEmail")}
+                        placeholder="Enter new email address"
+                      />
+                      {emailForm.formState.errors.newEmail && (
+                        <p className="text-sm text-red-600">
+                          {emailForm.formState.errors.newEmail.message}
+                        </p>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="staff-phone">Phone</Label>
-                <Input
-                  id="staff-phone"
-                  {...personalForm.register("phone")}
-                  placeholder="Enter phone number"
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="staff-email-password">Current Password *</Label>
+                      <Input
+                        id="staff-email-password"
+                        type="password"
+                        {...emailForm.register("currentPassword")}
+                        placeholder="Enter current password to confirm"
+                      />
+                      {emailForm.formState.errors.currentPassword && (
+                        <p className="text-sm text-red-600">
+                          {emailForm.formState.errors.currentPassword.message}
+                        </p>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="staff-address">Address</Label>
-                <Textarea
-                  id="staff-address"
-                  {...personalForm.register("address")}
-                  placeholder="Enter your address"
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="staff-bio">Bio</Label>
-                <Textarea
-                  id="staff-bio"
-                  {...personalForm.register("bio")}
-                  placeholder="Tell us about yourself"
-                  rows={3}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={personalMutation.isPending}
-                className="w-full"
-              >
-                {personalMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Update Profile
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                    <Button
+                      type="submit"
+                      disabled={emailMutation.isPending}
+                      className="w-full"
+                    >
+                      {emailMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Send Confirmation Email
+                    </Button>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
