@@ -236,8 +236,14 @@ export default function Profile() {
       setPendingPasswordData(null);
       setShowPasswordLogoutWarning(false);
       // Log out and redirect to login
-      setTimeout(() => {
-        window.location.href = "/api/auth/logout";
+      setTimeout(async () => {
+        try {
+          await apiRequest("POST", "/api/auth/logout");
+          window.location.href = "/";
+        } catch (error) {
+          // If logout fails, still redirect to home
+          window.location.href = "/";
+        }
       }, 1500);
     },
     onError: (error: Error) => {
