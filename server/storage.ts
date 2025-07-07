@@ -2331,7 +2331,6 @@ async function initializeDatabaseWithSampleData() {
       name: "Acme Corporation",
       address: "123 Business St, City, State 12345",
       phone: "+1 (555) 123-4567",
-      email: "info@acmecorp.com",
       website: "https://acmecorp.com"
     });
   } catch (error) {
@@ -2344,7 +2343,6 @@ async function initializeDatabaseWithSampleData() {
       name: "Acme Corporation",
       address: "123 Business St, City, State 12345", 
       phone: "+1 (555) 123-4567",
-      email: "info@acmecorp.com",
       website: "https://acmecorp.com"
     });
   } catch (error) {

@@ -189,7 +189,6 @@ export const businessProfiles = pgTable("business_profiles", {
   ownerName: text("owner_name"),
   address: text("address"),
   phone: text("phone"),
-  email: text("email"),
   website: text("website"),
   logoUrl: text("logo_url"),
   ownerProfilePicture: text("owner_profile_picture"),

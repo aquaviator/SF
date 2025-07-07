@@ -30,7 +30,6 @@ const businessDetailsSchema = z.object({
   name: z.string().min(1, "Business name is required"),
   address: z.string().min(1, "Business address is required"),
   phone: z.string().min(1, "Business phone is required"),
-  email: z.string().email("Invalid email address"),
   website: z.string().url("Invalid website URL").optional().or(z.literal("")),
   businessType: z.string().optional(),
   description: z.string().optional(),
@@ -71,7 +70,6 @@ interface BusinessProfileType {
   ownerName?: string;
   address: string;
   phone: string;
-  email: string;
   website?: string;
   businessType?: string;
   description?: string;
@@ -624,7 +622,7 @@ export default function Profile() {
                     <Input
                       id="business-email"
                       type="email"
-                      value={businessData?.email || ''}
+                      value={personalData?.email || ''}
                       readOnly
                       className="bg-muted cursor-not-allowed"
                       placeholder="Enter business email"
