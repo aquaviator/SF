@@ -1,678 +1,432 @@
-import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import type { User, Shift } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DataTable, Column } from "@/components/DataTable";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/hooks/useRole";
+import { Link } from "wouter";
 import { 
   Users, 
   Calendar, 
   Clock, 
-  TrendingUp, 
   AlertTriangle, 
-  CheckCircle,
-  Plus,
-  Eye,
-  BarChart3,
-  Loader2,
-  ChevronRight
+  CheckCircle, 
+  XCircle,
+  TrendingUp,
+  Activity,
+  UserCheck,
+  UserX,
+  CalendarDays,
+  Briefcase
 } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
 
-// Form Schemas
-const createShiftSchema = z.object({
-  tenantId: z.string(),
-  date: z.string().min(1, "Date is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  locationId: z.string().min(1, "Location is required"),
-  roleId: z.string().min(1, "Role is required"),
-  title: z.string().min(1, "Shift title is required"),
-  description: z.string().optional(),
-});
-
-const addStaffSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
-  role: z.literal("staff"),
-});
-
-type CreateShiftFormData = z.infer<typeof createShiftSchema>;
-type AddStaffFormData = z.infer<typeof addStaffSchema>;
-
-// Schema types for dashboard data
-
-interface DashboardMetrics {
-  totalStaff: number;
-  activeShifts: number;
-  pendingRequests: number;
-  completionRate: number;
+interface ShiftCoverage {
+  active: number;
+  upcoming: number;
+  unfilled: number;
+  underUtilized: number;
 }
 
-interface StaffStatus {
+interface Shift {
   id: number;
-  name: string;
-  status: "clocked-in" | "clocked-out" | "break" | "absent";
-  currentShift?: string;
-  hoursToday: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  role: string;
+  status: string;
+  assignedTo: number | null;
+  location: string;
 }
 
-interface RecentActivity {
+interface ActivityLog {
   id: number;
-  type: "shift_created" | "assignment_made" | "swap_approved" | "holiday_requested" | "shift_cancelled";
-  description: string;
-  timestamp: Date;
-  user: string;
+  action: string;
+  details: string;
+  createdAt: string;
 }
 
-// Monthly Shift Overview Component
-interface MonthlyShiftOverviewProps {
-  tenantId: string;
+interface Staff {
+  id: number;
+  firstName: string;
+  lastName: string;
+  role: string;
+  status?: string;
 }
 
-function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
-  const [selectedWeek, setSelectedWeek] = useState(0);
-  
-  const { data: shifts = [], isLoading } = useQuery({
-    queryKey: ['/api/shifts', tenantId],
-    enabled: !!tenantId,
-  });
-
-  // Get the next 4 weeks starting from today
-  const getWeeksData = () => {
-    const today = new Date();
-    const weeks = [];
-    
-    for (let i = 0; i < 4; i++) {
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() + (i * 7));
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      
-      const weekShifts = shifts.filter((shift: any) => {
-        const shiftDate = new Date(shift.date);
-        return shiftDate >= weekStart && shiftDate <= weekEnd;
-      });
-      
-      const allocated = weekShifts.filter((s: any) => s.status === 'assigned' || s.status === 'confirmed').length;
-      const confirmed = weekShifts.filter((s: any) => s.status === 'confirmed').length;
-      const assigned = weekShifts.filter((s: any) => s.status === 'assigned').length;
-      const open = weekShifts.filter((s: any) => s.status === 'open').length;
-      
-      weeks.push({
-        weekStart,
-        weekEnd,
-        total: weekShifts.length,
-        allocated,
-        confirmed,
-        assigned,
-        open,
-        shifts: weekShifts
-      });
-    }
-    
-    return weeks;
+interface TimeEntry {
+  id: number;
+  userId: number;
+  status: string;
+  clockInTime: string;
+  totalHours: string;
+  user: {
+    firstName: string;
+    lastName: string;
   };
-
-  const weeksData = getWeeksData();
-
-  // Calculate total overview statistics across all weeks
-  const totalOverview = weeksData.reduce(
-    (totals, week) => ({
-      total: totals.total + week.total,
-      confirmed: totals.confirmed + week.confirmed,
-      assigned: totals.assigned + week.assigned, // Use direct assigned count
-      open: totals.open + week.open
-    }),
-    { total: 0, confirmed: 0, assigned: 0, open: 0 }
-  );
-
-  // Debug logging
-  console.log("📊 SHIFT_OVERVIEW_DEBUG", {
-    totalShifts: shifts.length,
-    weeksDataLength: weeksData.length,
-    totalOverview,
-    week1: weeksData[0],
-    sampleShifts: shifts.slice(0, 3).map(s => ({ date: s.date, status: s.status }))
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2 text-sm text-muted-foreground">Loading shift overview...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 rounded-lg border">
-        <span className="text-sm font-medium text-gray-700">Status Legend:</span>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span className="text-xs text-gray-600">Confirmed</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <span className="text-xs text-gray-600">Assigned</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span className="text-xs text-gray-600">Declined</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-          <span className="text-xs text-gray-600">Open</span>
-        </div>
-      </div>
-
-      {/* Total Overview Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="text-2xl font-bold text-blue-700">{totalOverview.total}</div>
-          <div className="text-sm text-blue-600">Total Shifts</div>
-        </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="text-2xl font-bold text-green-700">{totalOverview.confirmed}</div>
-          <div className="text-sm text-green-600">Confirmed</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <div className="text-2xl font-bold text-yellow-700">{totalOverview.assigned}</div>
-          <div className="text-sm text-yellow-600">Assigned (Pending)</div>
-        </div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="text-2xl font-bold text-gray-700">{totalOverview.open}</div>
-          <div className="text-sm text-gray-600">Open Shifts</div>
-        </div>
-      </div>
-
-      {/* Week tabs */}
-      <div className="flex flex-wrap gap-2">
-        {weeksData.map((week, index) => (
-          <button
-            key={index}
-            onClick={() => setSelectedWeek(index)}
-            className={`px-3 py-2 text-sm rounded-md transition-colors ${
-              selectedWeek === index
-                ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Week {index + 1}: {week.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {week.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </button>
-        ))}
-      </div>
-
-      {/* Selected week overview */}
-      {weeksData[selectedWeek] && (
-        <div className="space-y-4">
-          {/* Week summary cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-blue-700">{weeksData[selectedWeek].total}</div>
-              <div className="text-sm text-blue-600">Total Shifts</div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-green-700">{weeksData[selectedWeek].confirmed}</div>
-              <div className="text-sm text-green-600">Confirmed</div>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-yellow-700">{weeksData[selectedWeek].assigned}</div>
-              <div className="text-sm text-yellow-600">Assigned (Pending)</div>
-            </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-gray-700">{weeksData[selectedWeek].open}</div>
-              <div className="text-sm text-gray-600">Open Shifts</div>
-            </div>
-          </div>
-
-          {/* Daily breakdown */}
-          {weeksData[selectedWeek].shifts.length > 0 ? (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium mb-3">Daily Breakdown</h4>
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-2 text-sm">
-                {Array.from({ length: 7 }, (_, dayIndex) => {
-                  const dayDate = new Date(weeksData[selectedWeek].weekStart);
-                  dayDate.setDate(dayDate.getDate() + dayIndex);
-                  const dayShifts = weeksData[selectedWeek].shifts.filter((shift: any) => {
-                    const shiftDate = new Date(shift.date);
-                    return shiftDate.toDateString() === dayDate.toDateString();
-                  });
-                  
-                  return (
-                    <div key={dayIndex} className="bg-white rounded p-2 border">
-                      <div className="font-medium text-xs text-gray-600">
-                        {dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}
-                      </div>
-                      <div className="text-xs mt-1 space-y-1">
-                        {dayShifts.length > 0 ? (
-                          dayShifts.map((shift: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <div 
-                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                  shift.status === 'confirmed' ? 'bg-green-500' :
-                                  shift.status === 'assigned' ? 'bg-yellow-500' :
-                                  shift.status === 'declined' ? 'bg-red-500' : 'bg-gray-400'
-                                }`}
-                              ></div>
-                              <span className="truncate text-xs">{shift.role}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-gray-400">No shifts</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4 text-gray-500">
-              <Calendar className="h-8 w-8 mx-auto mb-2" />
-              <p>No shifts scheduled for this week</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function OwnerDashboard() {
+  const { user } = useAuth();
   const { tenantId } = useRole();
-  const { toast } = useToast();
 
-  // Modal state management
-  const [isCreateShiftOpen, setIsCreateShiftOpen] = useState(false);
-  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
-  const [isApproveRequestsOpen, setIsApproveRequestsOpen] = useState(false);
-  const [isViewReportsOpen, setIsViewReportsOpen] = useState(false);
-
-  // Form setup
-  const createShiftForm = useForm<CreateShiftFormData>({
-    resolver: zodResolver(createShiftSchema),
-    defaultValues: {
-      tenantId: tenantId || "",
-      date: "",
-      startTime: "",
-      endTime: "",
-      locationId: "",
-      roleId: "",
-      title: "",
-      description: "",
-    },
+  // Fetch shift coverage data
+  const { data: shiftCoverage, isLoading: coverageLoading } = useQuery<ShiftCoverage>({
+    queryKey: ["/api/dashboard/shift-coverage"],
+    queryParams: { tenantId }
   });
 
-  const addStaffForm = useForm<AddStaffFormData>({
-    resolver: zodResolver(addStaffSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      role: "staff",
-    },
+  // Fetch all shifts for detailed breakdown
+  const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
+    queryKey: ["/api/shifts"],
+    queryParams: { tenantId }
   });
 
-  // Fetch data for form dropdowns
-  const { data: jobRoles = [] } = useQuery({
-    queryKey: ["/api/job-roles", tenantId],
-    queryFn: () => fetch(`/api/job-roles?tenantId=${tenantId}`).then(res => res.json()),
+  // Fetch activity logs
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
+    queryKey: ["/api/activity-logs"],
+    queryParams: { tenantId }
   });
 
-  const { data: locations = [] } = useQuery({
-    queryKey: ["/api/locations", tenantId],
-    queryFn: () => fetch(`/api/locations?tenantId=${tenantId}`).then(res => res.json()),
+  // Fetch staff data
+  const { data: staff = [], isLoading: staffLoading } = useQuery<Staff[]>({
+    queryKey: ["/api/staff"],
+    queryParams: { tenantId }
   });
 
-  // Mutations
-  const createShiftMutation = useMutation({
-    mutationFn: async (data: CreateShiftFormData) => {
-      return await apiRequest("POST", "/api/shifts", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/shifts", tenantId] });
-      toast({ title: "Success", description: "Shift created successfully" });
-      setIsCreateShiftOpen(false);
-      createShiftForm.reset();
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create shift", variant: "destructive" });
-    },
+  // Fetch live time entries for staff status
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery<TimeEntry[]>({
+    queryKey: ["/api/dashboard/live-time-entries"],
+    queryParams: { tenantId }
   });
 
-  const addStaffMutation = useMutation({
-    mutationFn: async (data: AddStaffFormData) => {
-      return await apiRequest("POST", "/api/admin/staff", {
-        ...data,
-        tenantId
-      });
-    },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
-      toast({ 
-        title: "Invitation Sent", 
-        description: `Invitation email sent to ${addStaffForm.getValues("email")}. They will receive an activation link to complete their registration.`
-      });
-      setIsAddStaffOpen(false);
-      addStaffForm.reset();
-    },
-    onError: (error: any) => {
-      let message = error?.message || "Failed to send staff invitation";
-      
-      // Handle seat limit exceeded error specifically
-      if (error?.message?.includes("Seat limit reached")) {
-        message = `${error.message} Please upgrade your subscription or deactivate staff to add more users.`;
-      }
-      
-      toast({ title: "Error", description: message, variant: "destructive" });
-    },
-  });
-
-  // Fetch real staff data for metrics
-  const { data: staffData = [], isLoading: metricsStaffLoading } = useQuery<User[]>({
-    queryKey: ["/api/staff", tenantId],
-    queryFn: () => fetch(`/api/staff?tenantId=${tenantId}`).then(res => res.json()),
-  });
-
-  // Fetch real shift data for metrics
-  const { data: shiftsData = [], isLoading: metricsShiftsLoading } = useQuery<Shift[]>({
-    queryKey: ["/api/shifts", tenantId],
-    queryFn: () => fetch(`/api/shifts?tenantId=${tenantId}`).then(res => res.json()),
-  });
-
-  // Fetch holiday requests for pending count
-  const { data: holidayRequests = [] } = useQuery({
-    queryKey: ["/api/holiday-requests", tenantId],
-    queryFn: () => fetch(`/api/holiday-requests?tenantId=${tenantId}`).then(res => res.json()),
-  });
-
-  // Fetch shift coverage data for accurate active shifts count
-  const { data: shiftCoverage } = useQuery({
-    queryKey: ["/api/dashboard/shift-coverage", tenantId],
-    queryFn: () => fetch(`/api/dashboard/shift-coverage?tenantId=${tenantId}`).then(res => res.json()),
-  });
-
-  // Calculate real metrics from API data
-  const metrics: DashboardMetrics = {
-    totalStaff: staffData.length,
-    activeShifts: shiftCoverage?.active || 0, // Use real shift coverage data
-    pendingRequests: holidayRequests.filter((req: any) => req.status === 'pending').length,
-    completionRate: shiftsData.length > 0 ? 
-      (shiftsData.filter(shift => shift.status === 'completed').length / shiftsData.length) * 100 : 0,
+  // Calculate shift statistics from real data
+  const shiftStats = {
+    total: shifts.length,
+    assigned: shifts.filter(s => s.status === 'assigned').length,
+    confirmed: shifts.filter(s => s.status === 'confirmed').length,
+    open: shifts.filter(s => s.status === 'open').length,
+    declined: shifts.filter(s => s.status === 'declined').length
   };
 
-  const metricsLoading = metricsStaffLoading || metricsShiftsLoading;
+  // Calculate staff utilization
+  const staffWorking = timeEntries.filter(te => ['clocked_in', 'on_break', 'late'].includes(te.status)).length;
+  const staffUtilization = staff.length > 0 ? Math.round((staffWorking / staff.length) * 100) : 0;
 
-  // Fetch time entries for staff status
-  const { data: timeEntries = [] } = useQuery({
-    queryKey: ["/api/time-entries", tenantId],
+  // Get today's shifts
+  const today = new Date().toISOString().split('T')[0];
+  const todayShifts = shifts.filter(s => s.date === today);
+
+  // Get this week's shifts (next 7 days)
+  const weekStart = new Date();
+  const weekEnd = new Date();
+  weekEnd.setDate(weekStart.getDate() + 7);
+  
+  const thisWeekShifts = shifts.filter(s => {
+    const shiftDate = new Date(s.date);
+    return shiftDate >= weekStart && shiftDate <= weekEnd;
   });
 
-  // Fetch live time entries to match Staff Status with Time Tracking
-  const { data: liveTimeEntries = [] } = useQuery({
-    queryKey: ["/api/dashboard/live-time-entries", tenantId],
-    queryFn: () => fetch(`/api/dashboard/live-time-entries?tenantId=${tenantId}`).then(res => res.json()),
-  });
+  const isLoading = coverageLoading || shiftsLoading || activitiesLoading || staffLoading || timeEntriesLoading;
 
-  // Map staff status using ONLY staff with active time entries to match Live Operations exactly
-  const staffStatus: StaffStatus[] = liveTimeEntries.map((timeEntry: any) => {
-    const staff = staffData.find(s => s.id === timeEntry.userId);
-    if (!staff) return null;
-    
-    const todayShifts = shiftsData.filter(shift => 
-      shift.assignedTo === staff.id && 
-      shift.date === new Date().toISOString().split('T')[0]
-    );
-    
-    const activeShift = todayShifts.find(shift => 
-      shift.status === 'assigned' || shift.status === 'confirmed'
-    );
-
-    // Map time entry status to staff status format
-    const status: "clocked-in" | "clocked-out" | "break" | "absent" = 
-      timeEntry.status === "on_break" ? "break" : 
-      timeEntry.status === "clocked_in" || timeEntry.status === "late" ? "clocked-in" : 
-      timeEntry.status === "clocked_out" ? "clocked-out" : "absent";
-
-    return {
-      id: staff.id,
-      name: `${staff.firstName} ${staff.lastName}`,
-      status,
-      currentShift: activeShift?.role || timeEntry?.currentShift?.role,
-      hoursToday: Math.round((6 + Math.random() * 3) * 10) / 10 // Calculated hours
-    };
-  }).filter(Boolean) as StaffStatus[];
-
-  // Fetch activity logs from database
-  const { data: activityLogs = [], isLoading: activitiesLoading } = useQuery({
-    queryKey: ["/api/activity-logs", tenantId],
-    queryFn: () => fetch(`/api/activity-logs?tenantId=${tenantId}`).then(res => res.json()),
-  });
-
-  // Convert activity logs to dashboard format
-  const activities: RecentActivity[] = activityLogs.slice(0, 4).map((log: any) => ({
-    id: log.id,
-    type: log.action === 'created' ? 'shift_created' : 
-          log.action === 'assigned' ? 'assignment_made' :
-          log.action === 'approved' ? 'swap_approved' : 
-          log.action === 'shift_cancelled' ? 'shift_cancelled' :
-          'holiday_requested',
-    description: log.details || `${log.action} ${log.resourceType}`,
-    timestamp: new Date(log.createdAt),
-    user: `User ${log.userId}`,
-  }));
-
-  const getStatusBadge = (status: StaffStatus["status"]) => {
-    const variants = {
-      "clocked-in": "bg-green-100 text-green-800",
-      "clocked-out": "bg-gray-100 text-gray-800",
-      "break": "bg-yellow-100 text-yellow-800",
-      "absent": "bg-red-100 text-red-800",
-    };
-
-    const labels = {
-      "clocked-in": "Clocked In",
-      "clocked-out": "Clocked Out", 
-      "break": "On Break",
-      "absent": "Absent",
-    };
-
+  if (isLoading) {
     return (
-      <Badge className={variants[status]}>
-        {labels[status]}
-      </Badge>
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
     );
-  };
-
-  const activityColumns: Column<RecentActivity>[] = [
-    {
-      key: "description",
-      header: "Activity",
-      cell: (activity) => (
-        <div>
-          <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-          <p className="text-xs text-gray-500">by {activity.user}</p>
-        </div>
-      ),
-    },
-    {
-      key: "timestamp",
-      header: "Time",
-      cell: (activity) => (
-        <span className="text-sm text-gray-600">
-          {activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      ),
-    },
-  ];
-
-  if (metricsLoading) {
-    return <div className="flex items-center justify-center h-64">Loading dashboard...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Owner Dashboard</h2>
-        <p className="text-gray-600">Overview of your workforce and operations</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Owner Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.firstName} {user?.lastName}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/owner/scheduling">
+            <Button size="sm">
+              <Calendar className="h-4 w-4 mr-2" />
+              View Schedule
+            </Button>
+          </Link>
+          <Link href="/owner/operations">
+            <Button variant="outline" size="sm">
+              <Activity className="h-4 w-4 mr-2" />
+              Live Operations
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Key Performance Indicators */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.totalStaff}</div>
-            <p className="text-xs text-muted-foreground">
-              +2 from last month
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Active team members</p>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{staff.length}</p>
+                <p className="text-xs text-muted-foreground">Total Staff</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed Shifts</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.activeShifts}</div>
-            <p className="text-xs text-muted-foreground">
-              Staff assigned
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Ready for tomorrow</p>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold">{staffUtilization}%</p>
+                <p className="text-xs text-muted-foreground">Staff Utilisation</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.pendingRequests}</div>
-            <p className="text-xs text-muted-foreground">
-              Needs attention
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Awaiting your review</p>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-4 w-4 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold">{shiftStats.open}</p>
+                <p className="text-xs text-muted-foreground">Open Opportunities</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.completionRate}%</div>
-            <p className="text-xs text-muted-foreground">
-              +2.1% from last week
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Shifts completed on time</p>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-yellow-500" />
+              <div>
+                <p className="text-2xl font-bold">{shiftStats.assigned}</p>
+                <p className="text-xs text-muted-foreground">Assigned Shifts</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold">{shiftStats.confirmed}</p>
+                <p className="text-xs text-muted-foreground">Confirmed Shifts</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <UserCheck className="h-4 w-4 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{staffWorking}</p>
+                <p className="text-xs text-muted-foreground">Staff Working</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <div>
+                <p className="text-2xl font-bold">{shiftCoverage?.unfilled || 0}</p>
+                <p className="text-xs text-muted-foreground">Unfilled Shifts</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Shift Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Month Ahead - Shift Overview
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MonthlyShiftOverview tenantId={tenantId} />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Today's Shift Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Today's Shifts ({todayShifts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {todayShifts.length === 0 ? (
+              <p className="text-muted-foreground">No shifts scheduled for today</p>
+            ) : (
+              todayShifts.map((shift) => (
+                <div key={shift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{shift.role}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {shift.startTime} - {shift.endTime} • {shift.location}
+                    </p>
+                  </div>
+                  <Badge variant={
+                    shift.status === 'confirmed' ? 'default' : 
+                    shift.status === 'assigned' ? 'secondary' :
+                    shift.status === 'open' ? 'outline' : 'destructive'
+                  }>
+                    {shift.status}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Staff Status */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
               Staff Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {staffStatus.map((staff) => (
-                <div key={staff.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{staff.name}</p>
-                    {staff.currentShift && (
-                      <p className="text-xs text-gray-500">{staff.currentShift}</p>
-                    )}
+          <CardContent className="space-y-3">
+            {staff.length === 0 ? (
+              <p className="text-muted-foreground">No staff members found</p>
+            ) : (
+              staff.slice(0, 6).map((member) => {
+                const timeEntry = timeEntries.find(te => te.userId === member.id);
+                const status = timeEntry?.status || 'available';
+                
+                return (
+                  <div key={member.id} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{member.firstName} {member.lastName}</p>
+                      <p className="text-sm text-muted-foreground">{member.role}</p>
+                    </div>
+                    <Badge variant={
+                      ['clocked_in', 'on_break', 'late'].includes(status) ? 'default' :
+                      status === 'available' ? 'secondary' : 'outline'
+                    }>
+                      {status === 'clocked_in' ? 'Working' :
+                       status === 'on_break' ? 'On Break' :
+                       status === 'late' ? 'Late' :
+                       'Available'}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {staff.hoursToday}h today
-                    </span>
-                    {getStatusBadge(staff.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
+                );
+              })
+            )}
+            {staff.length > 6 && (
+              <Link href="/owner/workforce">
+                <Button variant="outline" size="sm" className="w-full">
+                  View All Staff ({staff.length})
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
 
         {/* Recent Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <DataTable
-              data={activities}
-              columns={activityColumns}
-              title=""
-              isLoading={activitiesLoading}
-              emptyState={
-                <div className="text-center py-4">
-                  <p className="text-gray-500">No recent activity</p>
+          <CardContent className="space-y-3">
+            {activities.length === 0 ? (
+              <p className="text-muted-foreground">No recent activity</p>
+            ) : (
+              activities.slice(0, 5).map((activity) => (
+                <div key={activity.id} className="space-y-1">
+                  <p className="text-sm">{activity.details}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(activity.createdAt).toLocaleTimeString()}
+                  </p>
                 </div>
-              }
-            />
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Week Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            This Week's Overview ({thisWeekShifts.length} shifts)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className="text-2xl font-bold text-blue-700">{thisWeekShifts.length}</p>
+              <p className="text-sm text-blue-600">Total Shifts</p>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <p className="text-2xl font-bold text-green-700">
+                {thisWeekShifts.filter(s => s.status === 'confirmed').length}
+              </p>
+              <p className="text-sm text-green-600">Confirmed</p>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <p className="text-2xl font-bold text-yellow-700">
+                {thisWeekShifts.filter(s => s.status === 'assigned').length}
+              </p>
+              <p className="text-sm text-yellow-600">Assigned</p>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-2xl font-bold text-gray-700">
+                {thisWeekShifts.filter(s => s.status === 'open').length}
+              </p>
+              <p className="text-sm text-gray-600">Open</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-medium">Daily Breakdown</h4>
+            {Array.from({ length: 7 }, (_, i) => {
+              const date = new Date();
+              date.setDate(date.getDate() + i);
+              const dateStr = date.toISOString().split('T')[0];
+              const dayShifts = shifts.filter(s => s.date === dateStr);
+              
+              return (
+                <div key={dateStr} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">
+                      {date.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {dayShifts.length === 0 ? (
+                      <span className="text-muted-foreground">No shifts</span>
+                    ) : (
+                      dayShifts.map((shift, idx) => (
+                        <Badge 
+                          key={idx}
+                          variant={
+                            shift.status === 'confirmed' ? 'default' : 
+                            shift.status === 'assigned' ? 'secondary' :
+                            'outline'
+                          }
+                        >
+                          {shift.role}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
@@ -681,287 +435,33 @@ export default function OwnerDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-              onClick={() => setIsCreateShiftOpen(true)}
-            >
-              <Plus className="w-6 h-6" />
-              <span>Create Shift</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-              onClick={() => setIsAddStaffOpen(true)}
-            >
-              <Users className="w-6 h-6" />
-              <span>Add Staff</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-              onClick={() => setIsApproveRequestsOpen(true)}
-            >
-              <CheckCircle className="w-6 h-6" />
-              <span>Approve Requests</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-              onClick={() => setIsViewReportsOpen(true)}
-            >
-              <Eye className="w-6 h-6" />
-              <span>View Reports</span>
-            </Button>
+            <Link href="/owner/scheduling">
+              <Button className="w-full h-auto flex-col gap-2 p-4">
+                <Calendar className="h-6 w-6" />
+                <span>Create Shift</span>
+              </Button>
+            </Link>
+            <Link href="/owner/workforce">
+              <Button className="w-full h-auto flex-col gap-2 p-4" variant="outline">
+                <Users className="h-6 w-6" />
+                <span>Add Staff</span>
+              </Button>
+            </Link>
+            <Link href="/owner/requests">
+              <Button className="w-full h-auto flex-col gap-2 p-4" variant="outline">
+                <CheckCircle className="h-6 w-6" />
+                <span>Approve Requests</span>
+              </Button>
+            </Link>
+            <Link href="/owner/analytics">
+              <Button className="w-full h-auto flex-col gap-2 p-4" variant="outline">
+                <Briefcase className="h-6 w-6" />
+                <span>View Reports</span>
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
-
-      {/* Quick Action Modals */}
-      <Dialog open={isCreateShiftOpen} onOpenChange={setIsCreateShiftOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New Shift</DialogTitle>
-            <DialogDescription>
-              Create a new shift quickly from the dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...createShiftForm}>
-            <form onSubmit={createShiftForm.handleSubmit((data) => createShiftMutation.mutate(data))} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createShiftForm.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Shift Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. Morning Shift" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createShiftForm.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="date" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createShiftForm.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Time</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="time" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createShiftForm.control}
-                  name="endTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Time</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="time" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createShiftForm.control}
-                  name="locationId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {locations.map((location: any) => (
-                            <SelectItem key={location.id} value={location.id.toString()}>
-                              {location.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createShiftForm.control}
-                  name="roleId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {jobRoles.map((role: any) => (
-                            <SelectItem key={role.id} value={role.id.toString()}>
-                              {role.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={createShiftForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} placeholder="Shift description..." />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateShiftOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createShiftMutation.isPending}>
-                  {createShiftMutation.isPending ? "Creating..." : "Create Shift"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Invite New Staff Member</DialogTitle>
-            <DialogDescription>
-              Send an invitation email to a new team member. They will receive an activation link to complete their registration.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...addStaffForm}>
-            <form onSubmit={addStaffForm.handleSubmit((data) => addStaffMutation.mutate(data))} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addStaffForm.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="John" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={addStaffForm.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Smith" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={addStaffForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" placeholder="john.smith@company.com" />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-sm text-muted-foreground">This will be used as their login username</p>
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsAddStaffOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={addStaffMutation.isPending}>
-                  {addStaffMutation.isPending ? "Sending..." : "Send Invitation"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isApproveRequestsOpen} onOpenChange={setIsApproveRequestsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Approve Requests</DialogTitle>
-            <DialogDescription>
-              This functionality is not yet implemented.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-4 text-center text-gray-500">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
-            <p>Request approval workflow is not currently available.</p>
-            <p className="text-sm mt-2">This feature will be added in a future update.</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isViewReportsOpen} onOpenChange={setIsViewReportsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>View Reports</DialogTitle>
-            <DialogDescription>
-              This functionality is not yet implemented.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-4 text-center text-gray-500">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
-            <p>Quick reports feature is not currently available.</p>
-            <p className="text-sm mt-2">Use the Analytics module for detailed reports.</p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
