@@ -2127,7 +2127,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⚠️ NO_SUBSCRIPTION_FOUND_TO_UPDATE`);
       }
 
-      // Create invoice record with proper invoice number
+      // Create invoice record with proper invoice number and billing periods
+      const now = new Date();
+      const billingStart = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+      const billingEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of current month
+      
       const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
       const invoice = await storage.createInvoice({
         tenantId: user?.tenantId || "",
@@ -2138,6 +2142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency: "gbp",
         status: "paid",
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        billingPeriodStart: billingStart,
+        billingPeriodEnd: billingEnd,
         paidAt: paymentDetails ? new Date(paymentDetails.created * 1000) : new Date(),
         description: `Seat upgrade - Added ${seatsToAdd} seats`,
         lineItems: [{
@@ -3891,7 +3897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalSeats = subscription?.seatsIncluded || 5;
       
       const tenantUsers = await storage.getStaffByTenant(tenantId);
-      const currentStaffCount = tenantUsers.filter(u => u.role === 'staff').length; // active + pending
+      const currentStaffCount = tenantUsers.length; // All staff regardless of role (getStaffByTenant already filters for staff role)
       
       if (currentStaffCount >= totalSeats) {
         console.log(`🚫 SEAT_LIMIT_EXCEEDED: ${currentStaffCount}/${totalSeats} seats used for tenant ${tenantId}`);
