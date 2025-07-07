@@ -2027,12 +2027,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscription = await storage.getSubscriptionByTenantId(tenantId as string);
       const totalSeats = subscription?.seatsIncluded || 5;
       
-      // Get staff for this tenant
+      // Get staff for this tenant (getStaffByTenant already filters for staff role)
       const tenantUsers = await storage.getStaffByTenant(tenantId as string);
       
-      // Count active and pending staff
-      const activeStaff = tenantUsers.filter(u => u.role === 'staff' && u.isActive).length;
-      const pendingInvites = tenantUsers.filter(u => u.role === 'staff' && !u.isActive).length;
+      // Count active and pending staff (no need to filter by role again)
+      const activeStaff = tenantUsers.filter(u => u.isActive).length;
+      const pendingInvites = tenantUsers.filter(u => !u.isActive).length;
       const seatsUsed = activeStaff + pendingInvites;
       const availableSeats = Math.max(0, totalSeats - seatsUsed);
       const utilizationPercentage = Math.round((seatsUsed / totalSeats) * 100);
