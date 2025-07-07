@@ -108,6 +108,45 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
     });
   };
 
+  // Mobile card view for shifts
+  const renderMobileShiftCard = (shift: Shift) => (
+    <div key={shift.id} className="bg-card border border-border rounded-lg p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="font-medium text-sm">{shift.role}</div>
+          <div className="text-xs text-muted-foreground">{shift.startTime} - {shift.endTime}</div>
+        </div>
+        <Badge variant={shift.status === 'assigned' ? 'default' : shift.status === 'open' ? 'secondary' : 'outline'} className="text-xs">
+          {shift.status}
+        </Badge>
+      </div>
+      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+        <MapPin className="h-3 w-3" />
+        <span>{shift.location}</span>
+      </div>
+      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-border">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onEditShift(shift)}
+          className="h-8 px-3 text-xs"
+        >
+          <Edit className="h-3 w-3 mr-1" />
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onDeleteShift(shift)}
+          className="h-8 px-3 text-xs text-red-600 hover:text-red-700"
+        >
+          <Trash2 className="h-3 w-3 mr-1" />
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+
   // Render shifts grouped by date with day demarkation
   const renderShiftsWithDateGroups = (shifts: Shift[]) => {
     const shiftsByDate = shifts.reduce((acc, shift) => {
@@ -120,14 +159,14 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
     return Object.entries(shiftsByDate).map(([date, dayShifts]) => (
       <React.Fragment key={date}>
         {/* Date separator */}
-        <tr className="bg-muted/30">
+        <tr className="bg-muted/30 hidden md:table-row">
           <td colSpan={5} className="px-4 py-2 text-sm font-medium text-muted-foreground border-b border-border">
             {formatDateDisplay(date)}
           </td>
         </tr>
         {/* Shifts for this date */}
         {dayShifts.map(shift => (
-          <tr key={shift.id} className="border-b border-border hover:bg-muted/50">
+          <tr key={shift.id} className="border-b border-border hover:bg-muted/50 hidden md:table-row">
             <td className="px-4 py-3 text-sm">{shift.role}</td>
             <td className="px-4 py-3 text-sm">{shift.startTime} - {shift.endTime}</td>
             <td className="px-4 py-3 text-sm">{shift.location}</td>
@@ -162,6 +201,29 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
     ));
   };
 
+  // Mobile version of shifts grouped by date
+  const renderMobileShiftsWithDateGroups = (shifts: Shift[]) => {
+    const shiftsByDate = shifts.reduce((acc, shift) => {
+      const date = shift.date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(shift);
+      return acc;
+    }, {} as Record<string, Shift[]>);
+
+    return Object.entries(shiftsByDate).map(([date, dayShifts]) => (
+      <div key={date} className="space-y-3">
+        {/* Date separator for mobile */}
+        <div className="text-sm font-medium text-muted-foreground border-b border-border pb-2">
+          {formatDateDisplay(date)}
+        </div>
+        {/* Shifts for this date */}
+        <div className="space-y-3">
+          {dayShifts.map(renderMobileShiftCard)}
+        </div>
+      </div>
+    ));
+  };
+
   // Render group section
   const renderGroup = (title: string, shifts: Shift[], startIndex: number, endIndex: number) => {
     const paginatedShifts = shifts.slice(startIndex, endIndex);
@@ -181,7 +243,8 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop table view */}
+          <div className="overflow-x-auto hidden md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
@@ -196,6 +259,11 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
                 {renderShiftsWithDateGroups(paginatedShifts)}
               </tbody>
             </table>
+          </div>
+          
+          {/* Mobile card view */}
+          <div className="block md:hidden space-y-4">
+            {renderMobileShiftsWithDateGroups(paginatedShifts)}
           </div>
           
           {shifts.length > itemsPerPage && (
