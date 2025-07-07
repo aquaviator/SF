@@ -20,6 +20,7 @@ import {
 } from "../shared/schema";
 import { db as database } from './db';
 import { eq, and } from 'drizzle-orm';
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User operations
@@ -1256,8 +1257,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async activateUser(id: number, password: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const result = await database.update(users).set({
-      password,
+      password: hashedPassword,
       activatedAt: new Date(),
       activationToken: null,
       tokenExpiresAt: null,
@@ -1267,7 +1269,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await database.insert(users).values(insertUser).returning();
+    // Hash password if provided and not already hashed
+    let userWithHashedPassword = { ...insertUser };
+    if (insertUser.password && !insertUser.password.startsWith('$2b$')) {
+      userWithHashedPassword.password = await bcrypt.hash(insertUser.password, 10);
+    }
+    
+    const result = await database.insert(users).values(userWithHashedPassword).returning();
     return result[0];
   }
 
