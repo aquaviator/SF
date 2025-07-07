@@ -1,0 +1,65 @@
+Here’s a simple, robust way to enforce a seat-based model in ShiftFlo:
+
+1. Key Concepts
+Seats Included (seats_included on subscription): how many active staff the tenant is allowed.
+
+Seats Used (live count): number of users in the “Staff” list who are active (not archived/deactivated).
+
+2. On Upgrade
+Admin increases seats_included (e.g. from 10 → 15).
+
+Result: seats_used (≤10) is now under the new limit, so the tenant can invite or activate up to 5 more staff without any action.
+
+3. On Downgrade
+Admin decreases seats_included (e.g. from 15 → 10).
+
+Immediately compute seats_used (still 15).
+
+Mark subscription “Over Limit” (set a flag or status).
+
+Prevent any new invites or activations until compliance is restored.
+
+Notify the tenant (email + banner in Admin UI):
+
+“You have 15 active staff but only 10 seats. Please archive or deactivate 5 users to restore service.”
+
+Allow manual clean-up:
+
+In the Workforce List, highlight the bottom 5 users (e.g. by join date or alphabetical).
+
+Offer “Archive” or “Deactivate” actions.
+
+As soon as seats_used drops to ≤ seats_included, clear the “Over Limit” flag and re-enable invites.
+
+4. Enforcement Points
+Invite/Activation API: always check
+
+js
+Copy
+Edit
+if (seats_used >= seats_included) 
+  throw Error("Seat limit reached – upgrade or deactivate staff first");
+Daily Compliance Job: send “Over Limit” reminders if still out of compliance 24 hrs after downgrade.
+
+5. UI Feedback
+On the Staff list, show a header:
+
+“10 / 10 seats used” (green)
+or
+“15 / 10 seats used – please deactivate 5 staff” (red banner + button links to archive interface)
+
+Disable the “Add Staff” button when over limit.
+
+6. Data Model
+subscriptions: already has seats_included.
+
+Compute seats_used with a simple query:
+
+sql
+Copy
+Edit
+SELECT COUNT(*) FROM users 
+WHERE tenant_id = X AND role = 'staff' AND is_active = true;
+Optionally add a boolean column over_limit or a status code on subscriptions.
+
+This gives you a secure, transparent seat model where upgrades unlock new seats automatically, and downgrades require a brief clean-up to stay within the new limit—no surprises and no ghost-removals.

@@ -163,6 +163,12 @@ export default function Workforce() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
           console.log("❌ STAFF_INVITATION_ERROR", { errorData, timestamp: new Date().toISOString() });
+          
+          // Handle seat limit exceeded error specifically
+          if (errorData.code === 'SEAT_LIMIT_EXCEEDED') {
+            throw new Error(`${errorData.message} You have ${errorData.currentSeats}/${errorData.maxSeats} seats used.`);
+          }
+          
           throw new Error(errorData.message || "Failed to send invitation");
         }
         

@@ -343,7 +343,13 @@ export default function OwnerDashboard() {
       addStaffForm.reset();
     },
     onError: (error: any) => {
-      const message = error?.message || "Failed to send staff invitation";
+      let message = error?.message || "Failed to send staff invitation";
+      
+      // Handle seat limit exceeded error specifically
+      if (error?.message?.includes("Seat limit reached")) {
+        message = `${error.message} Please upgrade your subscription or deactivate staff to add more users.`;
+      }
+      
       toast({ title: "Error", description: message, variant: "destructive" });
     },
   });

@@ -1824,7 +1824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seat Usage endpoint
+  // Seat Usage endpoint with seat-based enforcement
   app.get("/api/seat-usage", async (req, res) => {
     try {
       const tenantId = req.query.tenantId as string;
@@ -1832,29 +1832,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID is required" });
       }
       
+      // Get subscription to know seat limit
+      const subscription = await storage.getSubscriptionByTenantId(tenantId);
+      const totalSeats = subscription?.seatsIncluded || 5;
+      
       // Get active staff count from database
       let activeStaff = 2; // Default for template business
+      let pendingInvites = 0;
+      
       try {
         // Query users directly from database to get staff count
         const allUsers = await storage.getAllUsers();
         const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
         activeStaff = tenantUsers.filter(u => u.role === 'staff' && u.isActive).length;
+        pendingInvites = tenantUsers.filter(u => u.role === 'staff' && !u.isActive).length;
       } catch (error) {
         console.log("Using default staff count for seat usage calculation");
       }
       
+      const seatsUsed = activeStaff + pendingInvites;
+      const isOverLimit = seatsUsed > totalSeats;
+      const excessSeats = isOverLimit ? seatsUsed - totalSeats : 0;
+      
       const seatUsage = {
-        totalSeats: 5,
-        activeStaff: activeStaff,
-        pendingInvites: 0,
-        availableSeats: Math.max(0, 5 - activeStaff),
-        utilizationPercentage: Math.round((activeStaff / 5) * 100)
+        totalSeats,
+        activeStaff,
+        pendingInvites,
+        seatsUsed,
+        availableSeats: Math.max(0, totalSeats - seatsUsed),
+        utilizationPercentage: Math.round((seatsUsed / totalSeats) * 100),
+        isOverLimit,
+        excessSeats
       };
       
+      console.log(`💺 SEAT_USAGE_CALCULATED: ${JSON.stringify(seatUsage)}`);
       res.json(seatUsage);
     } catch (error) {
       console.error("Seat usage API error:", error);
       res.status(500).json({ message: "Failed to fetch seat usage" });
+    }
+  });
+
+  // Check seat limit for staff operations
+  app.get("/api/seat-limit-check", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID is required" });
+      }
+
+      const subscription = await storage.getSubscriptionByTenantId(tenantId);
+      const totalSeats = subscription?.seatsIncluded || 5;
+      
+      const allUsers = await storage.getAllUsers();
+      const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
+      const seatsUsed = tenantUsers.filter(u => u.role === 'staff').length; // active + pending
+      
+      const isOverLimit = seatsUsed > totalSeats;
+      const availableSeats = Math.max(0, totalSeats - seatsUsed);
+      
+      if (isOverLimit) {
+        const excessSeats = seatsUsed - totalSeats;
+        return res.json({
+          canAddStaff: false,
+          message: `You have ${seatsUsed} active staff but only ${totalSeats} seats. Please deactivate ${excessSeats} staff members to restore service.`,
+          isOverLimit: true,
+          excessSeats
+        });
+      }
+      
+      if (availableSeats <= 0) {
+        return res.json({
+          canAddStaff: false,
+          message: `Seat limit reached (${seatsUsed}/${totalSeats}). Upgrade your subscription or deactivate staff to add more users.`,
+          isOverLimit: false,
+          excessSeats: 0
+        });
+      }
+      
+      res.json({ 
+        canAddStaff: true, 
+        availableSeats,
+        isOverLimit: false,
+        excessSeats: 0
+      });
+    } catch (error) {
+      console.error("Seat limit check error:", error);
+      res.status(500).json({ message: "Failed to check seat limit" });
     }
   });
 
@@ -1942,6 +2006,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ PAYMENT_INTENT_CREATION_ERROR:", error);
       res.status(500).json({ message: "Failed to create payment intent" });
+    }
+  });
+
+  // Get seat usage statistics
+  app.get("/api/subscription/seat-usage", async (req, res) => {
+    try {
+      const { tenantId } = req.query;
+      console.log(`📊 SEAT_USAGE_REQUEST: tenantId: ${tenantId}`);
+      
+      if (!tenantId) {
+        return res.status(400).json({ message: "Tenant ID required" });
+      }
+      
+      // Get subscription details
+      const subscription = await storage.getSubscriptionByTenantId(tenantId as string);
+      const totalSeats = subscription?.seatsIncluded || 5;
+      
+      // Get staff for this tenant
+      const tenantUsers = await storage.getStaffByTenant(tenantId as string);
+      
+      // Count active and pending staff
+      const activeStaff = tenantUsers.filter(u => u.role === 'staff' && u.isActive).length;
+      const pendingInvites = tenantUsers.filter(u => u.role === 'staff' && !u.isActive).length;
+      const seatsUsed = activeStaff + pendingInvites;
+      const availableSeats = Math.max(0, totalSeats - seatsUsed);
+      const utilizationPercentage = Math.round((seatsUsed / totalSeats) * 100);
+      const isOverLimit = seatsUsed > totalSeats;
+      const excessSeats = Math.max(0, seatsUsed - totalSeats);
+      
+      const seatUsage = {
+        totalSeats,
+        activeStaff,
+        pendingInvites,
+        seatsUsed,
+        availableSeats,
+        utilizationPercentage,
+        isOverLimit,
+        excessSeats
+      };
+      
+      console.log(`📋 SEAT_USAGE_CALCULATED:`, seatUsage);
+      res.json(seatUsage);
+    } catch (error) {
+      console.error("❌ SEAT_USAGE_ERROR:", error);
+      res.status(500).json({ message: "Failed to get seat usage" });
     }
   });
 
@@ -3769,6 +3878,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       if (!firstName || !lastName || !email || !role || !tenantId) {
         return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check seat limit before creating staff
+      const subscription = await storage.getSubscriptionByTenantId(tenantId);
+      const totalSeats = subscription?.seatsIncluded || 5;
+      
+      const tenantUsers = await storage.getStaffByTenant(tenantId);
+      const currentStaffCount = tenantUsers.filter(u => u.role === 'staff').length; // active + pending
+      
+      if (currentStaffCount >= totalSeats) {
+        console.log(`🚫 SEAT_LIMIT_EXCEEDED: ${currentStaffCount}/${totalSeats} seats used for tenant ${tenantId}`);
+        return res.status(400).json({ 
+          message: `Seat limit reached (${currentStaffCount}/${totalSeats}). Upgrade your subscription or deactivate staff to add more users.`,
+          code: 'SEAT_LIMIT_EXCEEDED',
+          currentSeats: currentStaffCount,
+          maxSeats: totalSeats
+        });
       }
 
       // Check if email already exists in the system

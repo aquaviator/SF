@@ -335,8 +335,11 @@ interface SeatUsage {
   totalSeats: number;
   activeStaff: number;
   pendingInvites: number;
+  seatsUsed: number;
   availableSeats: number;
   utilizationPercentage: number;
+  isOverLimit: boolean;
+  excessSeats: number;
 }
 
 export default function SeatBasedSubscription() {
@@ -597,6 +600,27 @@ export default function SeatBasedSubscription() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {seatUsage?.isOverLimit && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Seat Limit Exceeded
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>
+                          You have {seatUsage.excessSeats} more staff than your plan allows. 
+                          Please upgrade your subscription or deactivate staff to continue inviting new users.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold">{subscription?.seatsIncluded || 5}</div>
@@ -611,8 +635,12 @@ export default function SeatBasedSubscription() {
                   <div className="text-sm text-muted-foreground">Pending Invites</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-600">{seatUsage?.availableSeats || 0}</div>
-                  <div className="text-sm text-muted-foreground">Available Seats</div>
+                  <div className={`text-2xl font-bold ${(seatUsage?.availableSeats || 0) <= 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    {seatUsage?.availableSeats || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {(seatUsage?.availableSeats || 0) <= 0 ? 'Seat Limit Reached' : 'Available Seats'}
+                  </div>
                 </div>
               </div>
               
