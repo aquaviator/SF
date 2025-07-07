@@ -93,7 +93,7 @@ export function OverrideClockModal({ entry, onClose, onSaved }: OverrideClockMod
     
     // For completed entries, require clock-out. For active entries, clock-out is optional
     const isActiveEntry = entry.status === "clocked_in" || entry.status === "on_break" || entry.status === "late";
-    const hasValidClockOut = isActiveEntry || (formData.outDate && formData.outTime);
+    const hasValidClockOut = isActiveEntry ? true : (formData.outDate && formData.outTime);
     
     // If both clock-in and clock-out are provided, validate that clock-out is after clock-in
     let hasValidTimeOrder = true;
