@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { emailService } from "./emailService";
 import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, promoCodes } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
@@ -1615,27 +1616,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid business profile data", errors: result.error.issues });
       }
       
-      // Get current business profile to check if email is changing
-      const currentProfile = await storage.getBusinessProfile(result.data.tenantId);
-      if (!currentProfile) {
-        return res.status(404).json({ message: "Business profile not found" });
-      }
-      
-      // Check if email is being changed
-      if (result.data.email && result.data.email !== currentProfile.email) {
-        // For now, require email verification - don't allow direct change
-        return res.status(400).json({ 
-          message: "Email changes require verification. Please use the email change request system.",
-          code: "EMAIL_VERIFICATION_REQUIRED"
-        });
-      }
-      
       const businessProfile = await storage.updateBusinessProfile(result.data.tenantId, result.data);
       if (!businessProfile) {
         return res.status(404).json({ message: "Business profile not found" });
       }
+      
+      console.log('✅ BUSINESS_PROFILE_UPDATED', { 
+        tenantId: result.data.tenantId, 
+        emailChanged: !!result.data.email,
+        newEmail: result.data.email 
+      });
+      
       res.json(businessProfile);
     } catch (error) {
+      console.error('Business profile update error:', error);
       res.status(500).json({ message: "Failed to update business profile" });
     }
   });
@@ -4620,6 +4614,245 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setup2FARoutes(app);
   setupAdminSeatPricingRoutes(app);
   setupSeatPricingRoutes(app);
+
+  // Secure Email Change Routes
+  app.post("/api/email-change/request-user", async (req, res) => {
+    try {
+      const { userId, newEmail } = req.body;
+      
+      if (!userId || !newEmail) {
+        return res.status(400).json({ message: "User ID and new email are required" });
+      }
+
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if new email is already in use
+      const existingUser = await storage.getUserByUsername(newEmail);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: "Email address is already in use" });
+      }
+
+      // Generate 6-digit verification code
+      const token = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Store token in database
+      await storage.createEmailChangeToken({
+        userId,
+        tenantId: user.tenantId,
+        type: 'user',
+        currentEmail: user.email,
+        newEmail,
+        token,
+        expiresAt,
+      });
+
+      // Send verification email
+      const emailSent = await emailService.sendEmailChangeVerification({
+        to: newEmail,
+        currentEmail: user.email,
+        token,
+        type: 'user',
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+      res.json({ 
+        message: "Verification code sent to new email address",
+        token: process.env.NODE_ENV === 'development' ? token : undefined // Only for development
+      });
+    } catch (error) {
+      console.error('Email change request error:', error);
+      res.status(500).json({ message: "Failed to process email change request" });
+    }
+  });
+
+  app.post("/api/email-change/verify-user", async (req, res) => {
+    try {
+      const { userId, verificationCode } = req.body;
+
+      if (!userId || !verificationCode) {
+        return res.status(400).json({ message: "User ID and verification code are required" });
+      }
+
+      // Find token
+      const tokenRecord = await storage.getEmailChangeToken(verificationCode);
+      if (!tokenRecord || tokenRecord.userId !== userId || tokenRecord.type !== 'user') {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Check if token is expired
+      if (new Date() > tokenRecord.expiresAt) {
+        await storage.deleteEmailChangeToken(verificationCode);
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      // Update user email and username
+      const updatedUser = await storage.updateUser(userId, {
+        email: tokenRecord.newEmail,
+        username: tokenRecord.newEmail,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // For owner users, also update business profile email
+      if (updatedUser.role === 'owner') {
+        await storage.updateBusinessProfile(updatedUser.tenantId, { 
+          email: tokenRecord.newEmail 
+        });
+      }
+
+      // Delete used token
+      await storage.deleteEmailChangeToken(verificationCode);
+
+      console.log('✅ USER_EMAIL_CHANGE_COMPLETE', { 
+        userId, 
+        oldEmail: tokenRecord.currentEmail, 
+        newEmail: tokenRecord.newEmail 
+      });
+
+      res.json({ 
+        message: "Email address updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error('Email change verification error:', error);
+      res.status(500).json({ message: "Failed to verify email change" });
+    }
+  });
+
+  app.post("/api/email-change/request-business", async (req, res) => {
+    try {
+      const { tenantId, newEmail } = req.body;
+      
+      if (!tenantId || !newEmail) {
+        return res.status(400).json({ message: "Tenant ID and new email are required" });
+      }
+
+      // Get business profile
+      const businessProfile = await storage.getBusinessProfile(tenantId);
+      if (!businessProfile) {
+        return res.status(404).json({ message: "Business profile not found" });
+      }
+
+      // Check if new email is already in use
+      const existingUser = await storage.getUserByUsername(newEmail);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email address is already in use" });
+      }
+
+      // Generate 6-digit verification code
+      const token = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Store token in database
+      await storage.createEmailChangeToken({
+        userId: null,
+        tenantId,
+        type: 'business',
+        currentEmail: businessProfile.email || '',
+        newEmail,
+        token,
+        expiresAt,
+      });
+
+      // Send verification email
+      const emailSent = await emailService.sendEmailChangeVerification({
+        to: newEmail,
+        currentEmail: businessProfile.email || '',
+        token,
+        type: 'business',
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+      res.json({ 
+        message: "Verification code sent to new email address",
+        token: process.env.NODE_ENV === 'development' ? token : undefined // Only for development
+      });
+    } catch (error) {
+      console.error('Business email change request error:', error);
+      res.status(500).json({ message: "Failed to process email change request" });
+    }
+  });
+
+  app.post("/api/email-change/verify-business", async (req, res) => {
+    try {
+      const { tenantId, verificationCode } = req.body;
+
+      if (!tenantId || !verificationCode) {
+        return res.status(400).json({ message: "Tenant ID and verification code are required" });
+      }
+
+      // Find token
+      const tokenRecord = await storage.getEmailChangeToken(verificationCode);
+      if (!tokenRecord || tokenRecord.tenantId !== tenantId || tokenRecord.type !== 'business') {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Check if token is expired
+      if (new Date() > tokenRecord.expiresAt) {
+        await storage.deleteEmailChangeToken(verificationCode);
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      // Update business profile email
+      const updatedProfile = await storage.updateBusinessProfile(tenantId, {
+        email: tokenRecord.newEmail,
+      });
+
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "Business profile not found" });
+      }
+
+      // Also update owner user email and username to keep in sync
+      const ownerUsers = await storage.getStaffByTenant(tenantId);
+      const owner = ownerUsers.find(user => user.role === 'owner');
+      
+      if (owner) {
+        await storage.updateUser(owner.id, {
+          email: tokenRecord.newEmail,
+          username: tokenRecord.newEmail,
+        });
+      }
+
+      // Delete used token
+      await storage.deleteEmailChangeToken(verificationCode);
+
+      console.log('✅ BUSINESS_EMAIL_CHANGE_COMPLETE', { 
+        tenantId, 
+        oldEmail: tokenRecord.currentEmail, 
+        newEmail: tokenRecord.newEmail 
+      });
+
+      res.json({ 
+        message: "Business email address updated successfully",
+        businessProfile: updatedProfile
+      });
+    } catch (error) {
+      console.error('Business email change verification error:', error);
+      res.status(500).json({ message: "Failed to verify email change" });
+    }
+  });
+
+  // Cleanup expired tokens periodically (could be moved to a cron job)
+  setInterval(async () => {
+    try {
+      await storage.cleanupExpiredEmailTokens();
+    } catch (error) {
+      console.error('Failed to cleanup expired email tokens:', error);
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
 
   const httpServer = createServer(app);
   return httpServer;

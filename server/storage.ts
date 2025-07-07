@@ -3,7 +3,7 @@ import {
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, seatPricing, seatAllocation,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
-  staffStrikes, mailingList,
+  staffStrikes, mailingList, emailChangeTokens,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -16,10 +16,10 @@ import {
   type UsageMetric, type InsertUsageMetric, type Invoice, type InsertInvoice, type BillingInfo, type InsertBillingInfo,
   type TimeEntry, type InsertTimeEntry, type PerformanceMetric, type InsertPerformanceMetric,
   type HolidayEntitlement, type InsertHolidayEntitlement, type StaffStrike, type InsertStaffStrike,
-  type MailingList, type InsertMailingList
+  type MailingList, type InsertMailingList, type EmailChangeToken, type InsertEmailChangeToken
 } from "../shared/schema";
 import { db as database } from './db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, lt } from 'drizzle-orm';
 
 export interface IStorage {
   // User operations
@@ -33,9 +33,10 @@ export interface IStorage {
   getStaffByTenant(tenantId: string): Promise<User[]>;
 
   // Email change operations
-  requestEmailChange(userId: number, newEmail: string, token: string, expiresAt: Date): Promise<boolean>;
-  verifyEmailChange(userId: number, token: string): Promise<User | undefined>;
-  cancelEmailChange(userId: number): Promise<boolean>;
+  createEmailChangeToken(token: InsertEmailChangeToken): Promise<EmailChangeToken>;
+  getEmailChangeToken(token: string): Promise<EmailChangeToken | undefined>;
+  deleteEmailChangeToken(token: string): Promise<void>;
+  cleanupExpiredEmailTokens(): Promise<void>;
 
   // Shift operations
   getShift(id: number): Promise<Shift | undefined>;
@@ -2296,6 +2297,26 @@ export class DatabaseStorage implements IStorage {
   async getMailingListByEmail(email: string): Promise<MailingList | undefined> {
     const result = await database.select().from(mailingList).where(eq(mailingList.email, email)).limit(1);
     return result[0];
+  }
+
+  // Email change token operations
+  async createEmailChangeToken(token: InsertEmailChangeToken): Promise<EmailChangeToken> {
+    const [newToken] = await database.insert(emailChangeTokens).values(token).returning();
+    return newToken;
+  }
+
+  async getEmailChangeToken(token: string): Promise<EmailChangeToken | undefined> {
+    const [foundToken] = await database.select().from(emailChangeTokens).where(eq(emailChangeTokens.token, token));
+    return foundToken;
+  }
+
+  async deleteEmailChangeToken(token: string): Promise<void> {
+    await database.delete(emailChangeTokens).where(eq(emailChangeTokens.token, token));
+  }
+
+  async cleanupExpiredEmailTokens(): Promise<void> {
+    const now = new Date();
+    await database.delete(emailChangeTokens).where(lt(emailChangeTokens.expiresAt, now));
   }
 }
 

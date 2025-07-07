@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Building } from "lucide-react";
+import { Loader2, User, Building, Shield } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { SecureEmailChangeModal } from "@/components/SecureEmailChangeModal";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -74,6 +75,8 @@ export default function Profile() {
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showUserEmailChange, setShowUserEmailChange] = useState(false);
+  const [showBusinessEmailChange, setShowBusinessEmailChange] = useState(false);
   const { user, isAuthenticated, isLoading: authLoading, role, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -514,14 +517,28 @@ export default function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="business-email">Business Email (Login Email) *</Label>
-                    <Input
-                      id="business-email"
-                      type="email"
-                      {...businessForm.register("email")}
-                      placeholder="Enter business email"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="business-email"
+                        type="email"
+                        {...businessForm.register("email")}
+                        placeholder="Enter business email"
+                        disabled
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowBusinessEmailChange(true)}
+                        className="shrink-0"
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        Change
+                      </Button>
+                    </div>
                     <p className="text-xs text-gray-500">
-                      This email is used for login and automatically syncs with your personal email.
+                      For security, email changes require verification
                     </p>
                     {businessForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
@@ -631,17 +648,29 @@ export default function Profile() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Login Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={businessData?.email || ""}
-                    readOnly
-                    disabled
-                    className="bg-gray-50 text-gray-500 cursor-not-allowed"
-                    placeholder="Login email (managed in Business Details)"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="email"
+                      type="email"
+                      value={businessData?.email || ""}
+                      readOnly
+                      disabled
+                      className="bg-gray-50 text-gray-500 cursor-not-allowed flex-1"
+                      placeholder="Login email"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowUserEmailChange(true)}
+                      className="shrink-0"
+                    >
+                      <Shield className="h-4 w-4 mr-1" />
+                      Change
+                    </Button>
+                  </div>
                   <p className="text-xs text-gray-500">
-                    This is your login email. To change it, update the Business Email in the Business Details tab.
+                    For security, email changes require verification
                   </p>
                 </div>
 
@@ -742,14 +771,28 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="staff-email">Email Address (Login Email) *</Label>
-                <Input
-                  id="staff-email"
-                  type="email"
-                  {...personalForm.register("email")}
-                  placeholder="Enter email address"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="staff-email"
+                    type="email"
+                    {...personalForm.register("email")}
+                    placeholder="Enter email address"
+                    disabled
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowUserEmailChange(true)}
+                    className="shrink-0"
+                  >
+                    <Shield className="h-4 w-4 mr-1" />
+                    Change
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-500">
-                  This is your login email for the account.
+                  For security, email changes require verification
                 </p>
                 {personalForm.formState.errors.email && (
                   <p className="text-sm text-red-600">
@@ -802,7 +845,22 @@ export default function Profile() {
         </Card>
       )}
 
+      {/* Secure Email Change Modals */}
+      <SecureEmailChangeModal
+        isOpen={showBusinessEmailChange}
+        onClose={() => setShowBusinessEmailChange(false)}
+        currentEmail={businessData?.email || ""}
+        tenantId={tenantId || ""}
+        type="business"
+      />
 
+      <SecureEmailChangeModal
+        isOpen={showUserEmailChange}
+        onClose={() => setShowUserEmailChange(false)}
+        currentEmail={personalData?.email || user?.email || ""}
+        userId={user?.id}
+        type="user"
+      />
     </div>
   );
 }
