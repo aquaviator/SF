@@ -1207,8 +1207,8 @@ export default function Profile() {
           <AlertDialogHeader>
             <AlertDialogTitle>Email Change Confirmation</AlertDialogTitle>
             <AlertDialogDescription>
-              We'll send a confirmation email to your new address. After confirming the change, 
-              you'll be redirected to check your email. Please click the confirmation link to complete the process.
+              We'll send a confirmation email to your new address. You'll be redirected to a confirmation page. 
+              Please check your email and click the confirmation link to complete the email change.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

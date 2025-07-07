@@ -88,6 +88,11 @@ function ProtectedRoutes() {
               <Route path="/owner/strikes" component={OwnerStrikes} />
               <Route path="/staff/performance" component={Performance} />
               <Route path="/help" component={Help} />
+              
+              {/* Special Pages - accessible to both authenticated and unauthenticated users */}
+              <Route path="/check-email" component={CheckEmail} />
+              <Route path="/confirm-email" component={ConfirmEmail} />
+              
               <Route component={NotFound} />
             </Switch>
           </div>
