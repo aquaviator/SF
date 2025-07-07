@@ -16,6 +16,8 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  console.log(`🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: ${seatsToAdd}, totalAmount: ${totalAmount}, stripe: ${!!stripe}, elements: ${!!elements}`);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
