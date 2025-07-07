@@ -2030,10 +2030,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get staff for this tenant (getStaffByTenant already filters for staff role)
       const tenantUsers = await storage.getStaffByTenant(tenantId as string);
       
-      // Count active and pending staff (no need to filter by role again)
+      // Count active and pending staff - ONLY active staff count toward seats
       const activeStaff = tenantUsers.filter(u => u.isActive).length;
       const pendingInvites = tenantUsers.filter(u => !u.isActive).length;
-      const seatsUsed = activeStaff + pendingInvites;
+      const seatsUsed = activeStaff; // Only active staff count toward paid seats
       const availableSeats = Math.max(0, totalSeats - seatsUsed);
       const utilizationPercentage = Math.round((seatsUsed / totalSeats) * 100);
       const isOverLimit = seatsUsed > totalSeats;
@@ -3897,14 +3897,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalSeats = subscription?.seatsIncluded || 5;
       
       const tenantUsers = await storage.getStaffByTenant(tenantId);
-      const currentStaffCount = tenantUsers.length; // All staff regardless of role (getStaffByTenant already filters for staff role)
+      const currentActiveStaffCount = tenantUsers.filter(u => u.isActive).length; // Only active staff count toward seats
       
-      if (currentStaffCount >= totalSeats) {
-        console.log(`🚫 SEAT_LIMIT_EXCEEDED: ${currentStaffCount}/${totalSeats} seats used for tenant ${tenantId}`);
+      if (currentActiveStaffCount >= totalSeats) {
+        console.log(`🚫 SEAT_LIMIT_EXCEEDED: ${currentActiveStaffCount}/${totalSeats} seats used for tenant ${tenantId}`);
         return res.status(400).json({ 
-          message: `Seat limit reached (${currentStaffCount}/${totalSeats}). Upgrade your subscription or deactivate staff to add more users.`,
+          message: `Active staff limit reached (${currentActiveStaffCount}/${totalSeats}). Upgrade your subscription or deactivate active staff to add more users.`,
           code: 'SEAT_LIMIT_EXCEEDED',
-          currentSeats: currentStaffCount,
+          currentSeats: currentActiveStaffCount,
           maxSeats: totalSeats
         });
       }
