@@ -3949,7 +3949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send activation email with dynamic domain
       try {
         const activeDomain = await getActiveDomain();
-        await sendActivationEmail(email, firstName, activationToken, tenantId, activeDomain);
+        await sendActivationEmail(email, activationToken, activeDomain);
         console.log(`✅ ACTIVATION_EMAIL_SENT`, { email, domain: activeDomain, timestamp: new Date() });
       } catch (emailError) {
         console.error(`❌ EMAIL_SEND_FAILED`, { error: emailError.message, email, timestamp: new Date() });
@@ -4224,7 +4224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const activeDomain = await getActiveDomain();
         const { sendActivationEmail } = await import('./utils/mailer.js');
         console.log(`📧 Attempting to send activation email to: ${ownerEmail}`);
-        await sendActivationEmail(ownerEmail, ownerFirstName, activationToken, tenantId, activeDomain);
+        await sendActivationEmail(ownerEmail, activationToken, activeDomain);
         console.log(`✅ Activation email sent successfully to: ${ownerEmail}`);
       } catch (emailError) {
         console.error(`❌ Failed to send activation email to ${ownerEmail}:`, emailError);
