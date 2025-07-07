@@ -4510,6 +4510,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Reinstatement API
+  app.patch("/api/admin/users/:id/reinstate", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Get user info for logging
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!user[0]) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Reactivate the user
+      await db
+        .update(users)
+        .set({
+          isActive: true,
+        })
+        .where(eq(users.id, userId));
+
+      console.log(`✅ USER_REINSTATED`, {
+        userId,
+        userEmail: user[0].email,
+        timestamp: new Date()
+      });
+
+      res.json({
+        userReactivated: true,
+        message: `${user[0].firstName} ${user[0].lastName} has been successfully reinstated`
+      });
+    } catch (error) {
+      console.error("Error reinstating user:", error);
+      res.status(500).json({ message: "Failed to reinstate user" });
+    }
+  });
+
   // Permanently Delete User API (Hard Delete - Only for inactive users)
   app.delete("/api/admin/users/:id", async (req, res) => {
     try {

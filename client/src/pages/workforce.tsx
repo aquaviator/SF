@@ -26,12 +26,14 @@ import {
   Target,
   UserX,
   Edit,
-  Trash2
+  Trash2,
+  UserCheck
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import type { User } from "@shared/schema";
 import { OffboardUserModal } from "@/components/OffboardUserModal";
 import { DeleteUserModal } from "@/components/DeleteUserModal";
+import { ReinstateUserModal } from "@/components/ReinstateUserModal";
 
 const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -102,6 +104,10 @@ export default function Workforce() {
   const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
 
+  // Reinstate modal state
+  const [reinstatingUser, setReinstatingUser] = React.useState<User | null>(null);
+  const [isReinstateModalOpen, setIsReinstateModalOpen] = React.useState(false);
+
   const openOffboardModal = (user: User) => {
     setOffboardingUser(user);
     setIsOffboardModalOpen(true);
@@ -129,8 +135,28 @@ export default function Workforce() {
   };
 
   const handleDeleteComplete = (response: { userDeleted: boolean }) => {
-    // Refresh the staff list after successful deletion
-    window.location.reload();
+    // Refresh the staff list after successful deletion but stay on inactive tab
+    queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
+    setIsDeleteModalOpen(false);
+    setDeletingUser(null);
+  };
+
+  // Reinstate modal functions
+  const openReinstateModal = (user: User) => {
+    setReinstatingUser(user);
+    setIsReinstateModalOpen(true);
+  };
+
+  const closeReinstateModal = () => {
+    setIsReinstateModalOpen(false);
+    setReinstatingUser(null);
+  };
+
+  const handleReinstateComplete = (response: { userReactivated: boolean; message: string }) => {
+    // Refresh the staff list after successful reinstatement
+    queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
+    setIsReinstateModalOpen(false);
+    setReinstatingUser(null);
   };
 
   // Custom submit handler for invitations
@@ -499,8 +525,18 @@ export default function Workforce() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => openReinstateModal(staff)}
+            className="min-h-[44px] min-w-[44px] text-green-600 hover:text-green-700 hover:bg-green-50"
+            title="Reinstate user"
+          >
+            <UserCheck className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => openDeleteModal(staff)}
             className="min-h-[44px] min-w-[44px] text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Permanently delete user"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -877,6 +913,15 @@ export default function Workforce() {
           isOpen={isDeleteModalOpen}
           onClose={closeDeleteModal}
           onDeleted={handleDeleteComplete}
+        />
+      )}
+
+      {reinstatingUser && (
+        <ReinstateUserModal
+          user={reinstatingUser}
+          isOpen={isReinstateModalOpen}
+          onClose={closeReinstateModal}
+          onReinstated={handleReinstateComplete}
         />
       )}
     </div>
