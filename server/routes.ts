@@ -3244,17 +3244,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       nextWeek.setHours(23, 59, 59, 999); // End of next week
       
       const shifts = await storage.getShiftsByTenant(tenantId);
-      // Check what dates we actually have in the shifts
-      const shiftDates = shifts.map(s => s.date).sort();
-      const todayShifts = shifts.filter(s => s.date === '2025-07-04');
+      
+      // Use current date for filtering - FIX: Use actual current date
+      const todayString = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const todayShifts = shifts.filter(s => s.date === todayString);
       
       console.log("🔍 SHIFTS_RAW_DATA", { 
         tenantId, 
         totalShifts: shifts.length, 
         todayShifts: todayShifts.length,
         sampleTodayShift: todayShifts[0],
-        allDates: shiftDates.slice(0, 10), // First 10 dates
-        today: today.toISOString().split('T')[0],
+        allDates: shifts.map(s => s.date).slice(0, 10), // First 10 dates
+        today: todayString,
         nextWeek: nextWeek.toISOString().split('T')[0]
       });
       
@@ -3265,9 +3266,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const isInRange = shiftDate >= today && shiftDate <= nextWeek;
         
-        // Special debug for July 4th shifts
-        if (shift.date === '2025-07-04') {
-          console.log("🎯 JULY_4TH_SHIFT_DEBUG", { 
+        // Debug today's shifts specifically
+        if (shift.date === todayString) {
+          console.log("🎯 TODAY_SHIFT_DEBUG", { 
             shiftId: shift.id,
             shiftDate: shift.date,
             shiftTime: shiftDate.getTime(),
@@ -3284,8 +3285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return isInRange;
       });
       
-      // Calculate coverage statistics - FIX: Only confirmed shifts are truly active
-      const active = filteredShifts.filter(s => s.status === "confirmed").length;
+      // Calculate coverage statistics - FIX: Include assigned shifts as active
+      const active = filteredShifts.filter(s => s.status === "assigned" || s.status === "confirmed").length;
       const upcoming = filteredShifts.filter(s => s.status === "claimed").length;
       const unfilled = filteredShifts.filter(s => s.status === "open" || s.status === "declined").length;
       const underUtilized = filteredShifts.filter(s => !s.assignedTo && s.status !== "open").length;

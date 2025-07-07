@@ -139,6 +139,17 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
 
   const weeksData = getWeeksData();
 
+  // Calculate total overview statistics across all weeks
+  const totalOverview = weeksData.reduce(
+    (totals, week) => ({
+      total: totals.total + week.total,
+      confirmed: totals.confirmed + week.confirmed,
+      assigned: totals.assigned + (week.allocated - week.confirmed), // allocated minus confirmed = assigned
+      open: totals.open + week.open
+    }),
+    { total: 0, confirmed: 0, assigned: 0, open: 0 }
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -168,6 +179,26 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
           <span className="text-xs text-gray-600">Open</span>
+        </div>
+      </div>
+
+      {/* Total Overview Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="text-2xl font-bold text-blue-700">{totalOverview.total}</div>
+          <div className="text-sm text-blue-600">Total Shifts</div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="text-2xl font-bold text-green-700">{totalOverview.confirmed}</div>
+          <div className="text-sm text-green-600">Confirmed</div>
+        </div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="text-2xl font-bold text-yellow-700">{totalOverview.assigned}</div>
+          <div className="text-sm text-yellow-600">Assigned (Pending)</div>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <div className="text-2xl font-bold text-gray-700">{totalOverview.open}</div>
+          <div className="text-sm text-gray-600">Open Shifts</div>
         </div>
       </div>
 
