@@ -19,7 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 const personalDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address").optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   bio: z.string().optional(),
@@ -485,13 +485,16 @@ export default function Profile() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="business-email">Email *</Label>
+                    <Label htmlFor="business-email">Business Email (Login Email) *</Label>
                     <Input
                       id="business-email"
                       type="email"
                       {...businessForm.register("email")}
                       placeholder="Enter business email"
                     />
+                    <p className="text-xs text-gray-500">
+                      This is your primary login email for the account.
+                    </p>
                     {businessForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
                         {businessForm.formState.errors.email.message}
@@ -599,18 +602,19 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">Login Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    {...personalForm.register("email")}
-                    placeholder="Enter email address"
+                    value={businessData?.email || ""}
+                    readOnly
+                    disabled
+                    className="bg-gray-50 text-gray-500 cursor-not-allowed"
+                    placeholder="Login email (managed in Business Details)"
                   />
-                  {personalForm.formState.errors.email && (
-                    <p className="text-sm text-red-600">
-                      {personalForm.formState.errors.email.message}
-                    </p>
-                  )}
+                  <p className="text-xs text-gray-500">
+                    This is your login email. To change it, update the Business Email in the Business Details tab.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -709,13 +713,16 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="staff-email">Email Address *</Label>
+                <Label htmlFor="staff-email">Email Address (Login Email) *</Label>
                 <Input
                   id="staff-email"
                   type="email"
                   {...personalForm.register("email")}
                   placeholder="Enter email address"
                 />
+                <p className="text-xs text-gray-500">
+                  This is your login email for the account.
+                </p>
                 {personalForm.formState.errors.email && (
                   <p className="text-sm text-red-600">
                     {personalForm.formState.errors.email.message}
