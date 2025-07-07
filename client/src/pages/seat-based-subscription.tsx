@@ -381,10 +381,11 @@ export default function SeatBasedSubscription() {
   const createPaymentMutation = useMutation({
     mutationFn: async (data: SeatManagementData) => {
       console.log(`💳 CREATING_PAYMENT_INTENT: seatsToAdd: ${data.seatsToAdd}, tenantId: ${tenantId}`);
-      return apiRequest("POST", "/api/subscription/create-payment-intent", {
+      const response = await apiRequest("POST", "/api/subscription/create-payment-intent", {
         seatsToAdd: data.seatsToAdd,
         tenantId
       });
+      return response.json();
     },
     onSuccess: (response: any) => {
       console.log(`✅ PAYMENT_INTENT_CREATED: full response:`, response);
@@ -407,10 +408,11 @@ export default function SeatBasedSubscription() {
   const addSeatsMutation = useMutation({
     mutationFn: async (paymentIntentId: string) => {
       console.log(`🏢 ADDING_SEATS_TO_SUBSCRIPTION: pendingSeats: ${pendingSeats}, paymentIntentId: ${paymentIntentId}`);
-      return apiRequest("POST", "/api/subscription/add-seats", {
+      const response = await apiRequest("POST", "/api/subscription/add-seats", {
         seatsToAdd: pendingSeats,
         paymentIntentId
       });
+      return response.json();
     },
     onSuccess: (response: any) => {
       console.log(`🎉 SEATS_ADDED_SUCCESS:`, response);
