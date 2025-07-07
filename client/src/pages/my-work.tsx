@@ -1415,13 +1415,32 @@ export default function MyWork() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="time-tracking">Time Tracking</TabsTrigger>
-          <TabsTrigger value="my-shifts">My Shifts</TabsTrigger>
-          <TabsTrigger value="my-strikes">My Strikes</TabsTrigger>
-          <TabsTrigger value="holiday-requests">Holiday Requests</TabsTrigger>
-          <TabsTrigger value="swap-requests">Swap Requests</TabsTrigger>
+        {/* Mobile-first responsive tabs */}
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">Overview</span>
+            <span className="sm:hidden">Home</span>
+          </TabsTrigger>
+          <TabsTrigger value="time-tracking" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">Time Tracking</span>
+            <span className="sm:hidden">Time</span>
+          </TabsTrigger>
+          <TabsTrigger value="my-shifts" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">My Shifts</span>
+            <span className="sm:hidden">Shifts</span>
+          </TabsTrigger>
+          <TabsTrigger value="my-strikes" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">My Strikes</span>
+            <span className="sm:hidden">Strikes</span>
+          </TabsTrigger>
+          <TabsTrigger value="holiday-requests" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">Holiday Requests</span>
+            <span className="sm:hidden">Holiday</span>
+          </TabsTrigger>
+          <TabsTrigger value="swap-requests" className="text-xs md:text-sm px-2 py-2 md:px-3">
+            <span className="hidden sm:inline">Swap Requests</span>
+            <span className="sm:hidden">Swaps</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -2403,14 +2422,7 @@ export default function MyWork() {
                                     )
                                     .map((shift: any) => (
                                       <SelectItem key={shift.id} value={shift.id.toString()}>
-                                        <div className="flex flex-col items-start">
-                                          <div className="font-medium">
-                                            {shift.date} - {shift.startTime} to {shift.endTime}
-                                          </div>
-                                          <div className="text-sm text-muted-foreground">
-                                            {shift.role} at {shift.location}
-                                          </div>
-                                        </div>
+                                        {shift.date} - {shift.startTime} to {shift.endTime} ({shift.role} at {shift.location})
                                       </SelectItem>
                                     ))}
                                 </SelectContent>
