@@ -1545,33 +1545,113 @@ export default function MyWork() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Monthly Target */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>Monthly Target</span>
-                      <span>120h / 160h</span>
+                      <span>{calculateMonthlyHours()}h / 160h</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: "75%" }}></div>
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${Math.min((parseFloat(calculateMonthlyHours()) / 160) * 100, 100)}%` }}
+                      ></div>
                     </div>
                   </div>
                   
+                  {/* On-time Arrival */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>On-time Arrival</span>
-                      <span>95%</span>
+                      <span>{(() => {
+                        const today = new Date();
+                        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                        
+                        // Get time entries this month with shifts
+                        const monthlyTimeEntries = (timeEntries || []).filter((entry: any) => {
+                          const entryDate = new Date(entry.clockInTime);
+                          return entryDate >= startOfMonth && entryDate <= today;
+                        });
+                        
+                        if (monthlyTimeEntries.length === 0) return "N/A";
+                        
+                        // Count on-time entries (status !== 'late')
+                        const onTimeEntries = monthlyTimeEntries.filter((entry: any) => entry.status !== 'late');
+                        const onTimeRate = (onTimeEntries.length / monthlyTimeEntries.length) * 100;
+                        
+                        return `${onTimeRate.toFixed(0)}%`;
+                      })()}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: "95%" }}></div>
+                      <div 
+                        className="bg-green-600 h-2 rounded-full" 
+                        style={{ width: `${(() => {
+                          const today = new Date();
+                          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                          const monthlyTimeEntries = (timeEntries || []).filter((entry: any) => {
+                            const entryDate = new Date(entry.clockInTime);
+                            return entryDate >= startOfMonth && entryDate <= today;
+                          });
+                          if (monthlyTimeEntries.length === 0) return 0;
+                          const onTimeEntries = monthlyTimeEntries.filter((entry: any) => entry.status !== 'late');
+                          return (onTimeEntries.length / monthlyTimeEntries.length) * 100;
+                        })()}%` }}
+                      ></div>
                     </div>
                   </div>
                   
+                  {/* Shift Completion */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>Shift Completion</span>
-                      <span>100%</span>
+                      <span>{(() => {
+                        const today = new Date();
+                        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                        
+                        // Get past shifts this month (before today)
+                        const today_start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        const monthlyPastShifts = shifts.filter(shift => {
+                          const shiftDate = new Date(shift.date);
+                          return shiftDate >= startOfMonth && shiftDate < today_start;
+                        });
+                        
+                        if (monthlyPastShifts.length === 0) return "N/A";
+                        
+                        // Count completed shifts
+                        const completedShifts = monthlyPastShifts.filter(shift => 
+                          shift.status === "completed" || shift.status === "clocked_out" ||
+                          (timeEntries || []).some((entry: any) => {
+                            const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+                            return entry.shiftId === shift.id || entryDate === shift.date;
+                          })
+                        );
+                        
+                        const completionRate = (completedShifts.length / monthlyPastShifts.length) * 100;
+                        return `${completionRate.toFixed(0)}%`;
+                      })()}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: "100%" }}></div>
+                      <div 
+                        className="bg-green-600 h-2 rounded-full" 
+                        style={{ width: `${(() => {
+                          const today = new Date();
+                          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                          const today_start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                          const monthlyPastShifts = shifts.filter(shift => {
+                            const shiftDate = new Date(shift.date);
+                            return shiftDate >= startOfMonth && shiftDate < today_start;
+                          });
+                          if (monthlyPastShifts.length === 0) return 100;
+                          const completedShifts = monthlyPastShifts.filter(shift => 
+                            shift.status === "completed" || shift.status === "clocked_out" ||
+                            (timeEntries || []).some((entry: any) => {
+                              const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+                              return entry.shiftId === shift.id || entryDate === shift.date;
+                            })
+                          );
+                          return (completedShifts.length / monthlyPastShifts.length) * 100;
+                        })()}%` }}
+                      ></div>
                     </div>
                   </div>
                 </div>
