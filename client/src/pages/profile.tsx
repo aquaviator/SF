@@ -225,13 +225,9 @@ export default function Profile() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Password changed successfully. Please log in again.",
+        description: "Password changed successfully.",
       });
       passwordForm.reset();
-      // Redirect to login after password change
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
     },
     onError: (error: Error) => {
       toast({
