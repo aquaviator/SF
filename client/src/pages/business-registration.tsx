@@ -62,11 +62,14 @@ export default function BusinessRegistration() {
     setIsLoading(true);
     try {
       // Transform nested form data to flat structure expected by server
-      // Generate subdomain from business name automatically
-      const autoSubdomain = data.business.name.toLowerCase()
+      // Generate unique subdomain from business name with timestamp
+      const baseSubdomain = data.business.name.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '-')
-        .slice(0, 20);
+        .slice(0, 15); // Shorter to leave room for timestamp
+      
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
+      const autoSubdomain = `${baseSubdomain}-${timestamp}`;
       
       const flatData = {
         businessName: data.business.name,
