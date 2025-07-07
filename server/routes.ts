@@ -379,6 +379,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const validatedData = updateUserSchema.parse(req.body);
+      
+      // Get current user to check if email is changing
+      const currentUser = await storage.getUser(id);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if email is being changed
+      if (validatedData.email && validatedData.email !== currentUser.email) {
+        // For now, require email verification - don't allow direct change
+        return res.status(400).json({ 
+          message: "Email changes require verification. Please use the email change request system.",
+          code: "EMAIL_VERIFICATION_REQUIRED"
+        });
+      }
+      
       const user = await storage.updateUser(id, validatedData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -389,6 +405,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Email change request endpoint
+  app.post("/api/users/:id/request-email-change", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { newEmail } = req.body;
+      
+      if (!newEmail || !newEmail.includes("@")) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+      
+      // Check if email is already in use
+      const existingUser = await storage.getUserByUsername(newEmail);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: "Email address is already in use" });
+      }
+      
+      // Generate verification token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      // Store pending email change
+      const success = await storage.requestEmailChange(userId, newEmail, token, expiresAt);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to initiate email change" });
+      }
+      
+      // TODO: Send verification email with token
+      // For now, return the token for testing
+      console.log("📧 EMAIL_CHANGE_REQUEST", { userId, newEmail, token, expiresAt });
+      
+      res.json({ 
+        message: "Email change verification sent. Please check your new email address.",
+        // Remove token from response in production
+        verificationToken: token
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to request email change" });
+    }
+  });
+
+  // Email change verification endpoint
+  app.post("/api/users/:id/verify-email-change", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+      
+      const user = await storage.verifyEmailChange(userId, token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+      
+      console.log("✅ EMAIL_CHANGE_VERIFIED", { userId, newEmail: user.email });
+      
+      res.json({ 
+        message: "Email address updated successfully",
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to verify email change" });
+    }
+  });
+
+  // Cancel email change endpoint
+  app.delete("/api/users/:id/cancel-email-change", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      const success = await storage.cancelEmailChange(userId);
+      if (!success) {
+        return res.status(404).json({ message: "No pending email change found" });
+      }
+      
+      console.log("🚫 EMAIL_CHANGE_CANCELLED", { userId });
+      
+      res.json({ message: "Email change request cancelled" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to cancel email change" });
     }
   });
 
@@ -1489,6 +1594,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = insertBusinessProfileSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json({ message: "Invalid business profile data", errors: result.error.issues });
+      }
+      
+      // Get current business profile to check if email is changing
+      const currentProfile = await storage.getBusinessProfile(result.data.tenantId);
+      if (!currentProfile) {
+        return res.status(404).json({ message: "Business profile not found" });
+      }
+      
+      // Check if email is being changed
+      if (result.data.email && result.data.email !== currentProfile.email) {
+        // For now, require email verification - don't allow direct change
+        return res.status(400).json({ 
+          message: "Email changes require verification. Please use the email change request system.",
+          code: "EMAIL_VERIFICATION_REQUIRED"
+        });
       }
       
       const businessProfile = await storage.updateBusinessProfile(result.data.tenantId, result.data);

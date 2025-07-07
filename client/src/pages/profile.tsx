@@ -148,11 +148,22 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ["/api/business-profile"] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update business details",
-        variant: "destructive",
-      });
+      console.error("Business update error:", error);
+      
+      // Check if this is an email verification required error
+      if (error.message.includes("EMAIL_VERIFICATION_REQUIRED")) {
+        toast({
+          title: "Email Verification Required",
+          description: "Email changes require verification. Please use a secure email change system.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update business details",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -170,11 +181,22 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ["/api/users", user?.id] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update personal details",
-        variant: "destructive",
-      });
+      console.error("Personal update error:", error);
+      
+      // Check if this is an email verification required error
+      if (error.message.includes("EMAIL_VERIFICATION_REQUIRED")) {
+        toast({
+          title: "Email Verification Required",
+          description: "Email changes require verification. Please use a secure email change system.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update personal details",
+          variant: "destructive",
+        });
+      }
     },
   });
 

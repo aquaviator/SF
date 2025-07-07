@@ -32,6 +32,11 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   getStaffByTenant(tenantId: string): Promise<User[]>;
 
+  // Email change operations
+  requestEmailChange(userId: number, newEmail: string, token: string, expiresAt: Date): Promise<boolean>;
+  verifyEmailChange(userId: number, token: string): Promise<User | undefined>;
+  cancelEmailChange(userId: number): Promise<boolean>;
+
   // Shift operations
   getShift(id: number): Promise<Shift | undefined>;
   getShiftsByTenant(tenantId: string): Promise<Shift[]>;
@@ -1283,6 +1288,61 @@ export class DatabaseStorage implements IStorage {
 
   async getStaffByTenant(tenantId: string): Promise<User[]> {
     return await database.select().from(users).where(eq(users.tenantId, tenantId));
+  }
+
+  // Email change operations
+  async requestEmailChange(userId: number, newEmail: string, token: string, expiresAt: Date): Promise<boolean> {
+    const result = await database.update(users).set({
+      pendingEmail: newEmail,
+      emailChangeToken: token,
+      emailTokenExpiresAt: expiresAt
+    }).where(eq(users.id, userId)).returning();
+    return result.length > 0;
+  }
+
+  async verifyEmailChange(userId: number, token: string): Promise<User | undefined> {
+    // First verify the token and check expiry
+    const user = await database.select().from(users).where(
+      and(
+        eq(users.id, userId),
+        eq(users.emailChangeToken, token)
+      )
+    ).limit(1);
+
+    if (user.length === 0 || !user[0].emailTokenExpiresAt || !user[0].pendingEmail) {
+      return undefined;
+    }
+
+    // Check if token is expired
+    if (new Date() > user[0].emailTokenExpiresAt) {
+      // Clean up expired token
+      await database.update(users).set({
+        pendingEmail: null,
+        emailChangeToken: null,
+        emailTokenExpiresAt: null
+      }).where(eq(users.id, userId));
+      return undefined;
+    }
+
+    // Update email and clear pending fields
+    const result = await database.update(users).set({
+      email: user[0].pendingEmail,
+      username: user[0].pendingEmail, // Also update username since it's used for login
+      pendingEmail: null,
+      emailChangeToken: null,
+      emailTokenExpiresAt: null
+    }).where(eq(users.id, userId)).returning();
+
+    return result[0];
+  }
+
+  async cancelEmailChange(userId: number): Promise<boolean> {
+    const result = await database.update(users).set({
+      pendingEmail: null,
+      emailChangeToken: null,
+      emailTokenExpiresAt: null
+    }).where(eq(users.id, userId)).returning();
+    return result.length > 0;
   }
 
   // Business profile operations
