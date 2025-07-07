@@ -46,6 +46,8 @@ export const users = pgTable("users", {
   emailChangeNew: text("email_change_new"),
   resetPasswordToken: varchar("reset_password_token", { length: 64 }),
   resetPasswordExpires: timestamp("reset_password_expires", { withTimezone: true }),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  defaultPaymentMethodId: varchar("default_payment_method_id", { length: 255 }),
 });
 
 // Shifts table

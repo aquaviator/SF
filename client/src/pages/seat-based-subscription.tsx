@@ -25,8 +25,288 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { StripeCheckout } from '@/components/StripeCheckout';
+import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Billing Management Component
+function BillingManagement({ tenantId }: { tenantId: string }) {
+  const { toast } = useToast();
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
+
+  // Fetch payment methods
+  const { data: paymentMethods, refetch: refetchPaymentMethods } = useQuery({
+    queryKey: ["/api/stripe/payment-methods"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/stripe/payment-methods");
+      return response.json();
+    },
+  });
+
+  // Fetch invoices
+  const { data: invoices } = useQuery({
+    queryKey: ["/api/stripe/invoices"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/stripe/invoices");
+      return response.json();
+    },
+  });
+
+  // Create setup intent for adding cards
+  const createSetupIntent = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/stripe/setup-intent", { tenantId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSetupClientSecret(data.clientSecret);
+      setShowAddCard(true);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to setup card addition",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete payment method
+  const deletePaymentMethod = useMutation({
+    mutationFn: async (paymentMethodId: string) => {
+      await apiRequest("DELETE", `/api/stripe/payment-methods/${paymentMethodId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success", 
+        description: "Payment method removed successfully",
+      });
+      refetchPaymentMethods();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove payment method",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Set default payment method
+  const setDefaultPaymentMethod = useMutation({
+    mutationFn: async (paymentMethodId: string) => {
+      await apiRequest("POST", `/api/stripe/payment-methods/${paymentMethodId}/default`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Default payment method updated",
+      });
+      refetchPaymentMethods();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to update default payment method",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSetupComplete = () => {
+    setShowAddCard(false);
+    setSetupClientSecret(null);
+    refetchPaymentMethods();
+    toast({
+      title: "Success",
+      description: "Payment method added successfully",
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Payment Methods Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Payment Methods
+            <Button 
+              onClick={() => createSetupIntent.mutate()}
+              disabled={createSetupIntent.isPending}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Card
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {paymentMethods && paymentMethods.length > 0 ? (
+            <div className="space-y-3">
+              {paymentMethods.map((method: any) => (
+                <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                      💳
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        **** **** **** {method.last4}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {method.brand.toUpperCase()} • Expires {method.expMonth}/{method.expYear}
+                      </p>
+                    </div>
+                    {method.isDefault && (
+                      <Badge variant="secondary">Default</Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {!method.isDefault && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDefaultPaymentMethod.mutate(method.id)}
+                        disabled={setDefaultPaymentMethod.isPending}
+                      >
+                        Set Default
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deletePaymentMethod.mutate(method.id)}
+                      disabled={deletePaymentMethod.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No payment methods added yet</p>
+              <p className="text-sm">Add a card to enable automatic billing</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Billing History Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invoices && invoices.length > 0 ? (
+            <div className="space-y-3">
+              {invoices.map((invoice: any) => (
+                <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">
+                      Invoice #{invoice.number}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(invoice.created).toLocaleDateString()} • {invoice.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-medium">
+                        £{(invoice.amount / 100).toFixed(2)}
+                      </p>
+                      <Badge variant={invoice.status === 'paid' ? 'default' : 'secondary'}>
+                        {invoice.status}
+                      </Badge>
+                    </div>
+                    {invoice.hostedInvoiceUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(invoice.hostedInvoiceUrl, '_blank')}
+                      >
+                        View
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No billing history yet</p>
+              <p className="text-sm">Invoices will appear here after your first payment</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Card Modal */}
+      {showAddCard && setupClientSecret && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-4">Add Payment Method</h3>
+            <Elements stripe={stripePromise} options={{ clientSecret: setupClientSecret }}>
+              <StripeSetupForm
+                onSuccess={handleSetupComplete}
+                onCancel={() => {
+                  setShowAddCard(false);
+                  setSetupClientSecret(null);
+                }}
+              />
+            </Elements>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Stripe Setup Form Component for adding payment methods
+function StripeSetupForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsLoading(true);
+
+    const { error } = await stripe.confirmSetup({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/owner/subscription?setup=success',
+      },
+      redirect: 'if_required'
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Setup error:', error);
+    } else {
+      onSuccess();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <div className="flex gap-3 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+          Cancel
+        </Button>
+        <Button type="submit" disabled={!stripe || isLoading} className="flex-1">
+          {isLoading ? 'Adding...' : 'Add Card'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+
 
 // Seat Management Form Schema
 const seatManagementSchema = z.object({
@@ -453,18 +733,7 @@ export default function SeatBasedSubscription() {
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Billing history will appear here once you upgrade to a paid plan</p>
-                <p className="text-sm">Connect with Stripe for automated billing management</p>
-              </div>
-            </CardContent>
-          </Card>
+          <BillingManagement tenantId={tenantId} />
         </TabsContent>
       </Tabs>
     </div>

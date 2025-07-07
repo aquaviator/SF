@@ -1858,13 +1858,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create or retrieve Stripe customer
+  async function getOrCreateStripeCustomer(userId: number, tenantId: string) {
+    try {
+      const user = await storage.getUser(userId);
+      if (!user) throw new Error("User not found");
+
+      // Check if user already has a Stripe customer ID
+      if (user.stripeCustomerId) {
+        return user.stripeCustomerId;
+      }
+
+      // Create new Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        metadata: {
+          userId: userId.toString(),
+          tenantId
+        }
+      });
+
+      // Save customer ID to user
+      await storage.updateUser(userId, { stripeCustomerId: customer.id });
+      return customer.id;
+    } catch (error) {
+      console.error("Error creating Stripe customer:", error);
+      throw error;
+    }
+  }
+
   // Create payment intent for seat upgrades
   app.post("/api/subscription/create-payment-intent", async (req, res) => {
     try {
       const { seatsToAdd, tenantId } = req.body;
+      const userId = req.session.userId;
       
       if (!stripe) {
         return res.status(500).json({ message: "Stripe not configured" });
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
       if (!seatsToAdd || seatsToAdd < 1) {
@@ -1874,15 +1909,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pricePerSeat = 300; // £3.00 in pence
       const totalAmount = seatsToAdd * pricePerSeat;
       
+      // Get or create Stripe customer
+      const customerId = await getOrCreateStripeCustomer(userId, tenantId);
+      
       const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmount,
         currency: "gbp",
+        customer: customerId,
         metadata: {
           tenantId,
+          userId: userId.toString(),
           seatsToAdd: seatsToAdd.toString(),
           type: "seat_upgrade"
         },
-        description: `Add ${seatsToAdd} seats to subscription`
+        description: `Add ${seatsToAdd} seats to subscription`,
+        receipt_email: await storage.getUser(userId).then(u => u?.email)
       });
       
       res.json({ 
@@ -1922,6 +1963,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Add seats error:", error);
       res.status(500).json({ message: "Failed to add seats" });
+    }
+  });
+
+  // Stripe customer management endpoints
+  app.get("/api/stripe/customer", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.json({ hasCustomer: false });
+      }
+
+      const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+      res.json({
+        hasCustomer: true,
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          name: customer.name,
+          defaultPaymentMethod: customer.invoice_settings?.default_payment_method
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      res.status(500).json({ message: "Failed to fetch customer" });
+    }
+  });
+
+  // Setup intent for adding payment methods
+  app.post("/api/stripe/setup-intent", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { tenantId } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const customerId = await getOrCreateStripeCustomer(userId, tenantId);
+
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        usage: 'off_session'
+      });
+
+      res.json({ clientSecret: setupIntent.client_secret });
+    } catch (error) {
+      console.error("Error creating setup intent:", error);
+      res.status(500).json({ message: "Failed to create setup intent" });
+    }
+  });
+
+  // List customer payment methods
+  app.get("/api/stripe/payment-methods", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.json([]);
+      }
+
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: user.stripeCustomerId,
+        type: 'card'
+      });
+
+      res.json(paymentMethods.data.map(pm => ({
+        id: pm.id,
+        brand: pm.card?.brand,
+        last4: pm.card?.last4,
+        expMonth: pm.card?.exp_month,
+        expYear: pm.card?.exp_year,
+        isDefault: pm.id === user.defaultPaymentMethodId
+      })));
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+      res.status(500).json({ message: "Failed to fetch payment methods" });
+    }
+  });
+
+  // Delete payment method
+  app.delete("/api/stripe/payment-methods/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await stripe.paymentMethods.detach(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting payment method:", error);
+      res.status(500).json({ message: "Failed to delete payment method" });
+    }
+  });
+
+  // Set default payment method
+  app.post("/api/stripe/payment-methods/:id/default", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: "No customer found" });
+      }
+
+      await stripe.customers.update(user.stripeCustomerId, {
+        invoice_settings: { default_payment_method: id }
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting default payment method:", error);
+      res.status(500).json({ message: "Failed to set default payment method" });
+    }
+  });
+
+  // Get billing history from Stripe
+  app.get("/api/stripe/invoices", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.json([]);
+      }
+
+      const invoices = await stripe.invoices.list({
+        customer: user.stripeCustomerId,
+        limit: 100
+      });
+
+      res.json(invoices.data.map(invoice => ({
+        id: invoice.id,
+        number: invoice.number,
+        status: invoice.status,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+        created: new Date(invoice.created * 1000),
+        dueDate: invoice.due_date ? new Date(invoice.due_date * 1000) : null,
+        hostedInvoiceUrl: invoice.hosted_invoice_url,
+        invoicePdf: invoice.invoice_pdf,
+        description: invoice.lines.data[0]?.description || 'Subscription payment'
+      })));
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  // Get specific invoice
+  app.get("/api/stripe/invoices/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const invoice = await stripe.invoices.retrieve(id);
+      
+      res.json({
+        id: invoice.id,
+        number: invoice.number,
+        status: invoice.status,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+        created: new Date(invoice.created * 1000),
+        dueDate: invoice.due_date ? new Date(invoice.due_date * 1000) : null,
+        hostedInvoiceUrl: invoice.hosted_invoice_url,
+        invoicePdf: invoice.invoice_pdf,
+        description: invoice.lines.data[0]?.description || 'Subscription payment',
+        lineItems: invoice.lines.data.map(line => ({
+          description: line.description,
+          amount: line.amount,
+          quantity: line.quantity
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ message: "Failed to fetch invoice" });
     }
   });
 
