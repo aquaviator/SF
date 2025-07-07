@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -468,11 +469,10 @@ export default function SeatBasedSubscription() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="seats">Seat Management</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing Calculator</TabsTrigger>
-          <TabsTrigger value="billing">Billing History</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -577,77 +577,189 @@ export default function SeatBasedSubscription() {
         </TabsContent>
 
         <TabsContent value="seats" className="space-y-6">
-          {/* Add Seats Card */}
+          {/* Current Seat Usage */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Add More Seats
+                <Users className="h-5 w-5" />
+                Current Seat Usage
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={seatForm.handleSubmit(handleAddSeats)} className="space-y-4">
-                <FormField
-                  control={seatForm.control}
-                  name="seatsToAdd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Seats to Add</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => field.onChange(Math.max(1, field.value - 1))}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <Input
-                            {...field}
-                            type="number"
-                            className="w-20 text-center"
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => field.onChange(Math.min(50, field.value + 1))}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{subscription?.seatsIncluded || 5}</div>
+                  <div className="text-sm text-muted-foreground">Total Seats</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{seatUsage?.activeStaff || 0}</div>
+                  <div className="text-sm text-muted-foreground">Active Staff</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{seatUsage?.pendingInvites || 0}</div>
+                  <div className="text-sm text-muted-foreground">Pending Invites</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-600">{seatUsage?.availableSeats || 0}</div>
+                  <div className="text-sm text-muted-foreground">Available Seats</div>
+                </div>
+              </div>
+              
+              {/* Usage Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Seat Utilization</span>
+                  <span className={getSeatStatusColor(seatUsage?.utilizationPercentage || 0)}>
+                    {seatUsage?.utilizationPercentage || 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all ${
+                      (seatUsage?.utilizationPercentage || 0) >= 90 ? 'bg-red-500' :
+                      (seatUsage?.utilizationPercentage || 0) >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${Math.min(seatUsage?.utilizationPercentage || 0, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seat Adjustment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Adjust Seat Count
+              </CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Upgrade or downgrade your subscription as your team grows or shrinks
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Current Plan Display */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex justify-between items-center">
-                    <span>Additional Monthly Cost:</span>
-                    <span className="font-bold">
-                      £{((subscription?.pricePerSeat || 3) * seatForm.watch("seatsToAdd")).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <span>New Monthly Total:</span>
-                    <span className="font-bold text-lg">
-                      £{calculateNewTotal(seatForm.watch("seatsToAdd")).toFixed(2)}
-                    </span>
+                    <div>
+                      <div className="font-medium">Current Plan</div>
+                      <div className="text-sm text-muted-foreground">
+                        {subscription?.seatsIncluded || 5} seats • £{subscription?.pricePerSeat || 3}/seat/month
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold">£{subscription?.monthlyTotal || 15}/month</div>
+                    </div>
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  disabled={createPaymentMutation.isPending || addSeatsMutation.isPending} 
-                  className="w-full"
-                >
-                  {createPaymentMutation.isPending ? "Setting up payment..." : 
-                   addSeatsMutation.isPending ? "Adding Seats..." : "Proceed to Payment"}
-                </Button>
-              </form>
+                {/* Seat Selector */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Select New Seat Count</label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedSeats(Math.max(1, selectedSeats - 1))}
+                        disabled={selectedSeats <= 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="text-2xl font-bold w-16 text-center">{selectedSeats}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedSeats(selectedSeats + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Pricing Comparison */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold mb-2">Monthly Billing</h3>
+                      <div className="text-2xl font-bold">£{(selectedSeats * 3).toFixed(2)}</div>
+                      <p className="text-sm text-muted-foreground">£3 per seat/month</p>
+                      
+                      {selectedSeats !== (subscription?.seatsIncluded || 5) && (
+                        <div className="mt-2 text-sm">
+                          {selectedSeats > (subscription?.seatsIncluded || 5) ? (
+                            <span className="text-green-600">
+                              +£{((selectedSeats - (subscription?.seatsIncluded || 5)) * 3).toFixed(2)} increase
+                            </span>
+                          ) : (
+                            <span className="text-blue-600">
+                              -£{(((subscription?.seatsIncluded || 5) - selectedSeats) * 3).toFixed(2)} savings
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+                      <h3 className="font-semibold mb-2">Annual Billing</h3>
+                      <div className="text-2xl font-bold text-blue-600">
+                        £{(selectedSeats * 3 * 12 * 0.85).toFixed(2)}
+                      </div>
+                      <p className="text-sm text-blue-600">£{(3 * 0.85).toFixed(2)} per seat/month (15% savings)</p>
+                      
+                      {selectedSeats !== (subscription?.seatsIncluded || 5) && (
+                        <div className="mt-2 text-sm text-blue-600">
+                          Annual savings: £{(selectedSeats * 3 * 12 * 0.15).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {selectedSeats !== (subscription?.seatsIncluded || 5) && (
+                    <div className="space-y-3">
+                      {selectedSeats > (subscription?.seatsIncluded || 5) ? (
+                        <Button 
+                          onClick={() => {
+                            seatForm.setValue("seatsToAdd", selectedSeats - (subscription?.seatsIncluded || 5));
+                            handleAddSeats(seatForm.getValues());
+                          }}
+                          disabled={createPaymentMutation.isPending}
+                          className="w-full"
+                          size="lg"
+                        >
+                          {createPaymentMutation.isPending ? "Processing..." : `Upgrade to ${selectedSeats} Seats`}
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            // TODO: Implement downgrade functionality
+                            toast({
+                              title: "Downgrade Request",
+                              description: "Please contact support to downgrade your subscription.",
+                            });
+                          }}
+                          className="w-full"
+                          size="lg"
+                        >
+                          Request Downgrade to {selectedSeats} Seats
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => setSelectedSeats(subscription?.seatsIncluded || 5)}
+                        className="w-full"
+                      >
+                        Reset to Current Plan
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -681,59 +793,7 @@ export default function SeatBasedSubscription() {
           )}
         </TabsContent>
 
-        <TabsContent value="pricing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pricing Calculator</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    How many seats do you need?
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedSeats(Math.max(1, selectedSeats - 1))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-2xl font-bold w-16 text-center">{selectedSeats}</span>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedSeats(selectedSeats + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-6 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Monthly Billing</h3>
-                    <div className="text-3xl font-bold">£{(selectedSeats * 3).toFixed(2)}</div>
-                    <p className="text-sm text-muted-foreground">£3 per seat/month</p>
-                  </div>
-                  
-                  <div className="p-6 border rounded-lg bg-blue-50 border-blue-200">
-                    <h3 className="font-semibold mb-2">Annual Billing</h3>
-                    <div className="text-3xl font-bold text-blue-600">
-                      £{(selectedSeats * 3 * 12 * 0.85).toFixed(2)}
-                    </div>
-                    <p className="text-sm text-blue-600">£{(3 * 0.85).toFixed(2)} per seat/month (15% savings)</p>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <Button size="lg">
-                    Upgrade to {selectedSeats} Seats
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="billing" className="space-y-6">
           <BillingManagement tenantId={tenantId} />
