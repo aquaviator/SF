@@ -83,48 +83,84 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
     return 'future';
   };
 
-  // Group shifts by date periods
+  // Sort shifts newest first (newest date at top)
+  const sortedShifts = [...shifts].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB.getTime() - dateA.getTime(); // Newest first
+  });
+
+  // Group shifts by date periods with sorted shifts
   const groupedShifts = {
-    today: shifts.filter(shift => getDateGroup(shift.date) === 'today'),
-    thisWeek: shifts.filter(shift => getDateGroup(shift.date) === 'thisWeek'),
-    thisMonth: shifts.filter(shift => getDateGroup(shift.date) === 'thisMonth'),
-    older: shifts.filter(shift => getDateGroup(shift.date) === 'older')
+    today: sortedShifts.filter(shift => getDateGroup(shift.date) === 'today'),
+    thisWeek: sortedShifts.filter(shift => getDateGroup(shift.date) === 'thisWeek'),
+    thisMonth: sortedShifts.filter(shift => getDateGroup(shift.date) === 'thisMonth'),
+    older: sortedShifts.filter(shift => getDateGroup(shift.date) === 'older')
   };
 
-  // Render individual shift row
-  const renderShiftRow = (shift: Shift) => (
-    <tr key={shift.id} className="border-b border-border hover:bg-muted/50">
-      <td className="px-4 py-3 text-sm">{shift.date}</td>
-      <td className="px-4 py-3 text-sm">{shift.role}</td>
-      <td className="px-4 py-3 text-sm">{shift.startTime} - {shift.endTime}</td>
-      <td className="px-4 py-3 text-sm">{shift.location}</td>
-      <td className="px-4 py-3">
-        <Badge variant={shift.status === 'assigned' ? 'default' : shift.status === 'open' ? 'secondary' : 'outline'} className="text-xs">
-          {shift.status}
-        </Badge>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onEditShift(shift)}
-            className="h-8 w-8 p-0"
-          >
-            <Edit className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onDeleteShift(shift)}
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      </td>
-    </tr>
-  );
+  // Helper to format date for display
+  const formatDateDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short' 
+    });
+  };
+
+  // Render shifts grouped by date with day demarkation
+  const renderShiftsWithDateGroups = (shifts: Shift[]) => {
+    const shiftsByDate = shifts.reduce((acc, shift) => {
+      const date = shift.date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(shift);
+      return acc;
+    }, {} as Record<string, Shift[]>);
+
+    return Object.entries(shiftsByDate).map(([date, dayShifts]) => (
+      <React.Fragment key={date}>
+        {/* Date separator */}
+        <tr className="bg-muted/30">
+          <td colSpan={5} className="px-4 py-2 text-sm font-medium text-muted-foreground border-b border-border">
+            {formatDateDisplay(date)}
+          </td>
+        </tr>
+        {/* Shifts for this date */}
+        {dayShifts.map(shift => (
+          <tr key={shift.id} className="border-b border-border hover:bg-muted/50">
+            <td className="px-4 py-3 text-sm">{shift.role}</td>
+            <td className="px-4 py-3 text-sm">{shift.startTime} - {shift.endTime}</td>
+            <td className="px-4 py-3 text-sm">{shift.location}</td>
+            <td className="px-4 py-3">
+              <Badge variant={shift.status === 'assigned' ? 'default' : shift.status === 'open' ? 'secondary' : 'outline'} className="text-xs">
+                {shift.status}
+              </Badge>
+            </td>
+            <td className="px-4 py-3">
+              <div className="flex items-center space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditShift(shift)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onDeleteShift(shift)}
+                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </React.Fragment>
+    ));
+  };
 
   // Render group section
   const renderGroup = (title: string, shifts: Shift[], startIndex: number, endIndex: number) => {
@@ -149,7 +185,6 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left px-4 py-3 text-sm font-medium">Date</th>
                   <th className="text-left px-4 py-3 text-sm font-medium">Role</th>
                   <th className="text-left px-4 py-3 text-sm font-medium">Time</th>
                   <th className="text-left px-4 py-3 text-sm font-medium">Location</th>
@@ -158,7 +193,7 @@ function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCr
                 </tr>
               </thead>
               <tbody>
-                {paginatedShifts.map(renderShiftRow)}
+                {renderShiftsWithDateGroups(paginatedShifts)}
               </tbody>
             </table>
           </div>
