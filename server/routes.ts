@@ -2123,10 +2123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⚠️ NO_SUBSCRIPTION_FOUND_TO_UPDATE`);
       }
 
-      // Create invoice record
+      // Create invoice record with proper invoice number
+      const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
       const invoice = await storage.createInvoice({
         tenantId: user?.tenantId || "",
         subscriptionId: subscription?.id || 0,
+        invoiceNumber: invoiceNumber,
         stripeInvoiceId: paymentIntentId || `pi_${Date.now()}`,
         amount: paymentDetails?.amount || (seatsToAdd * 300),
         currency: "gbp",

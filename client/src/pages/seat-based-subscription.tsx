@@ -371,9 +371,9 @@ export default function SeatBasedSubscription() {
 
   // Fetch Seat Usage
   const { data: seatUsage } = useQuery<SeatUsage>({
-    queryKey: ["/api/seat-usage", tenantId],
+    queryKey: ["/api/subscription/seat-usage", tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/seat-usage?tenantId=${tenantId}`);
+      const response = await fetch(`/api/subscription/seat-usage?tenantId=${tenantId}`);
       if (!response.ok) throw new Error('Failed to fetch seat usage');
       return response.json();
     },
