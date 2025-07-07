@@ -52,6 +52,186 @@ import { insertScheduleTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
+// ShiftsGroupedView Component
+interface ShiftsGroupedViewProps {
+  shifts: Shift[];
+  isLoading: boolean;
+  onEditShift: (shift: Shift) => void;
+  onDeleteShift: (shift: Shift) => void;
+  onCreateShift: () => void;
+}
+
+function ShiftsGroupedView({ shifts, isLoading, onEditShift, onDeleteShift, onCreateShift }: ShiftsGroupedViewProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Helper function to get date group
+  const getDateGroup = (shiftDate: string) => {
+    const today = new Date();
+    const shift = new Date(shiftDate);
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startOfShift = new Date(shift.getFullYear(), shift.getMonth(), shift.getDate());
+    
+    // Calculate days difference
+    const diffTime = startOfShift.getTime() - startOfToday.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'today';
+    if (diffDays >= 1 && diffDays <= 7) return 'thisWeek';
+    if (diffDays >= 8 && diffDays <= 31) return 'thisMonth';
+    if (diffDays < 0) return 'older';
+    return 'future';
+  };
+
+  // Group shifts by date periods
+  const groupedShifts = {
+    today: shifts.filter(shift => getDateGroup(shift.date) === 'today'),
+    thisWeek: shifts.filter(shift => getDateGroup(shift.date) === 'thisWeek'),
+    thisMonth: shifts.filter(shift => getDateGroup(shift.date) === 'thisMonth'),
+    older: shifts.filter(shift => getDateGroup(shift.date) === 'older')
+  };
+
+  // Render individual shift row
+  const renderShiftRow = (shift: Shift) => (
+    <tr key={shift.id} className="border-b border-border hover:bg-muted/50">
+      <td className="px-4 py-3 text-sm">{shift.date}</td>
+      <td className="px-4 py-3 text-sm">{shift.role}</td>
+      <td className="px-4 py-3 text-sm">{shift.startTime} - {shift.endTime}</td>
+      <td className="px-4 py-3 text-sm">{shift.location}</td>
+      <td className="px-4 py-3">
+        <Badge variant={shift.status === 'assigned' ? 'default' : shift.status === 'open' ? 'secondary' : 'outline'} className="text-xs">
+          {shift.status}
+        </Badge>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEditShift(shift)}
+            className="h-8 w-8 p-0"
+          >
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onDeleteShift(shift)}
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+
+  // Render group section
+  const renderGroup = (title: string, shifts: Shift[], startIndex: number, endIndex: number) => {
+    const paginatedShifts = shifts.slice(startIndex, endIndex);
+    if (paginatedShifts.length === 0) return null;
+
+    return (
+      <Card key={title} className="mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span>{title} ({shifts.length})</span>
+            {title === 'Today' && (
+              <Button size="sm" onClick={onCreateShift} className="flex items-center space-x-1">
+                <Plus className="h-4 w-4" />
+                <span>Add Shift</span>
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-3 text-sm font-medium">Date</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium">Role</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium">Time</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium">Location</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium">Status</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedShifts.map(renderShiftRow)}
+              </tbody>
+            </table>
+          </div>
+          
+          {shifts.length > itemsPerPage && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, shifts.length)} of {shifts.length} shifts
+              </p>
+              <div className="flex items-center space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of {Math.ceil(shifts.length / itemsPerPage)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(shifts.length / itemsPerPage), prev + 1))}
+                  disabled={currentPage >= Math.ceil(shifts.length / itemsPerPage)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-32">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">Loading shifts...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  return (
+    <div className="space-y-4">
+      {renderGroup('Today', groupedShifts.today, startIndex, endIndex)}
+      {renderGroup('This Week', groupedShifts.thisWeek, startIndex, endIndex)}
+      {renderGroup('This Month', groupedShifts.thisMonth, startIndex, endIndex)}
+      {renderGroup('Older', groupedShifts.older, startIndex, endIndex)}
+      
+      {shifts.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center h-32 text-center">
+            <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">No shifts scheduled</p>
+            <Button size="sm" onClick={onCreateShift} className="mt-2">
+              Create First Shift
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 // Define shift form schema
 const shiftFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -712,19 +892,13 @@ export default function Scheduling() {
           </TabsList>
 
           <TabsContent value="shifts" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Shifts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DataTable 
-                  title="Shifts"
-                  data={shifts} 
-                  columns={shiftColumns}
-                  isLoading={shiftsLoading}
-                />
-              </CardContent>
-            </Card>
+            <ShiftsGroupedView 
+              shifts={shifts}
+              isLoading={shiftsLoading}
+              onEditShift={openEditShiftModal}
+              onDeleteShift={handleShiftDelete}
+              onCreateShift={openCreateShiftModal}
+            />
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-4">
