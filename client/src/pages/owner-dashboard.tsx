@@ -121,6 +121,7 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
       
       const allocated = weekShifts.filter((s: any) => s.status === 'assigned' || s.status === 'confirmed').length;
       const confirmed = weekShifts.filter((s: any) => s.status === 'confirmed').length;
+      const assigned = weekShifts.filter((s: any) => s.status === 'assigned').length;
       const open = weekShifts.filter((s: any) => s.status === 'open').length;
       
       weeks.push({
@@ -129,6 +130,7 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
         total: weekShifts.length,
         allocated,
         confirmed,
+        assigned,
         open,
         shifts: weekShifts
       });
@@ -144,11 +146,20 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
     (totals, week) => ({
       total: totals.total + week.total,
       confirmed: totals.confirmed + week.confirmed,
-      assigned: totals.assigned + (week.allocated - week.confirmed), // allocated minus confirmed = assigned
+      assigned: totals.assigned + week.assigned, // Use direct assigned count
       open: totals.open + week.open
     }),
     { total: 0, confirmed: 0, assigned: 0, open: 0 }
   );
+
+  // Debug logging
+  console.log("📊 SHIFT_OVERVIEW_DEBUG", {
+    totalShifts: shifts.length,
+    weeksDataLength: weeksData.length,
+    totalOverview,
+    week1: weeksData[0],
+    sampleShifts: shifts.slice(0, 3).map(s => ({ date: s.date, status: s.status }))
+  });
 
   if (isLoading) {
     return (
@@ -233,7 +244,7 @@ function MonthlyShiftOverview({ tenantId }: MonthlyShiftOverviewProps) {
               <div className="text-sm text-green-600">Confirmed</div>
             </div>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-yellow-700">{weeksData[selectedWeek].allocated - weeksData[selectedWeek].confirmed}</div>
+              <div className="text-2xl font-bold text-yellow-700">{weeksData[selectedWeek].assigned}</div>
               <div className="text-sm text-yellow-600">Assigned (Pending)</div>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
