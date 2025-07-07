@@ -86,22 +86,12 @@ export default function CheckEmail() {
               Didn't receive the email? Check your spam folder or request a new one from your profile settings.
             </p>
             
-            <div className="flex gap-3">
-              <Link href="/" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to ShiftFlo
-                </Button>
-              </Link>
-              
-              {emailType === 'email-change' && (
-                <Link href="/owner/profile" className="flex-1">
-                  <Button className="w-full">
-                    Return to Profile
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <Link href="/" className="w-full">
+              <Button variant="outline" className="w-full">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Return to Homepage
+              </Button>
+            </Link>
           </div>
 
           <div className="border-t pt-4">

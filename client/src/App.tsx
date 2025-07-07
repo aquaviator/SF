@@ -90,7 +90,6 @@ function ProtectedRoutes() {
               <Route path="/help" component={Help} />
               
               {/* Special Pages - accessible to both authenticated and unauthenticated users */}
-              <Route path="/check-email" component={CheckEmail} />
               <Route path="/confirm-email" component={ConfirmEmail} />
               
               <Route component={NotFound} />
@@ -130,6 +129,10 @@ function PublicRoutes() {
       <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/page-builder" component={PageBuilder} />
+      
+      {/* Public pages for logged-out users */}
+      <Route path="/check-email" component={CheckEmail} />
+      <Route path="/confirm-email" component={ConfirmEmail} />
       
       <Route component={Landing} />
     </Switch>

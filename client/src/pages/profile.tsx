@@ -264,14 +264,20 @@ export default function Profile() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Confirmation email sent. Redirecting...",
+        description: "Confirmation email sent. Logging out...",
       });
       emailForm.reset();
       setPendingEmailData(null);
       setShowEmailLogoutWarning(false);
-      // Redirect to a "check your email" page
-      setTimeout(() => {
-        window.location.href = "/check-email?type=email-change";
+      // Log out and redirect to check email page
+      setTimeout(async () => {
+        try {
+          await apiRequest("POST", "/api/auth/logout");
+          window.location.href = "/check-email?type=email-change";
+        } catch (error) {
+          // If logout fails, still redirect to check email page
+          window.location.href = "/check-email?type=email-change";
+        }
       }, 1500);
     },
     onError: (error: Error) => {
