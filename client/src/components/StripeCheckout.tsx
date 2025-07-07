@@ -1,58 +1,58 @@
-import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 interface StripeCheckoutProps {
   seatsToAdd: number;
   totalAmount: number;
-  onSuccess?: (paymentIntentId: string) => void;
+  onSuccess: (paymentIntentId: string) => void;
 }
 
 export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeCheckoutProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!stripe || !elements) {
       return;
     }
 
-    setIsProcessing(true);
+    setIsLoading(true);
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
-        redirect: 'if_required',
+        confirmParams: {
+          return_url: window.location.origin + '/owner/subscription?payment=success',
+        },
+        redirect: 'if_required'
       });
 
       if (error) {
+        console.error('Payment error:', error);
         toast({
           title: "Payment Failed",
-          description: error.message,
+          description: error.message || "Payment could not be processed",
           variant: "destructive",
         });
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        toast({
-          title: "Payment Successful",
-          description: `Successfully added ${seatsToAdd} seats to your subscription`,
-        });
-        onSuccess?.(paymentIntent.id);
+      } else if (paymentIntent?.status === 'succeeded') {
+        onSuccess(paymentIntent.id);
       }
     } catch (error) {
+      console.error('Payment processing error:', error);
       toast({
         title: "Payment Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during payment",
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
@@ -60,28 +60,46 @@ export function StripeCheckout({ seatsToAdd, totalAmount, onSuccess }: StripeChe
     <Card>
       <CardHeader>
         <CardTitle>Complete Payment</CardTitle>
-        <CardDescription>
-          Add {seatsToAdd} seat{seatsToAdd > 1 ? 's' : ''} for £{(totalAmount / 100).toFixed(2)}
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <PaymentElement />
-          <Button 
-            type="submit" 
-            disabled={!stripe || isProcessing}
-            className="w-full"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Pay £${(totalAmount / 100).toFixed(2)}`
-            )}
-          </Button>
-        </form>
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex justify-between text-sm">
+              <span>Seats to add:</span>
+              <span>{seatsToAdd}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Cost per seat:</span>
+              <span>£3.00/month</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+              <span>Total:</span>
+              <span>£{(totalAmount / 100).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <PaymentElement 
+              options={{
+                fields: {
+                  billingDetails: {
+                    address: {
+                      postalCode: 'never' // This will hide postal code field to avoid validation issues
+                    }
+                  }
+                }
+              }}
+            />
+            
+            <Button 
+              type="submit" 
+              disabled={!stripe || isLoading} 
+              className="w-full"
+            >
+              {isLoading ? "Processing Payment..." : `Pay £${(totalAmount / 100).toFixed(2)}`}
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
