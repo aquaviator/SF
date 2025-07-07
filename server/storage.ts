@@ -1324,7 +1324,7 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
-    // Update email and clear pending fields
+    // Update user email and clear pending fields
     const result = await database.update(users).set({
       email: user[0].pendingEmail,
       username: user[0].pendingEmail, // Also update username since it's used for login
@@ -1332,6 +1332,13 @@ export class DatabaseStorage implements IStorage {
       emailChangeToken: null,
       emailTokenExpiresAt: null
     }).where(eq(users.id, userId)).returning();
+
+    // For owner users, also update the business profile email
+    if (result[0] && user[0].role === 'owner') {
+      await database.update(businessProfiles).set({
+        email: user[0].pendingEmail
+      }).where(eq(businessProfiles.tenantId, user[0].tenantId));
+    }
 
     return result[0];
   }

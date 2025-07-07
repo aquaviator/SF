@@ -12,6 +12,7 @@ import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { EmailChangeModal } from "@/components/EmailChangeModal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -72,6 +73,7 @@ export default function Profile() {
   const [personalData, setPersonalData] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<BusinessProfileType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const { user, isAuthenticated, isLoading: authLoading, role, tenantId } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -508,14 +510,27 @@ export default function Profile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="business-email">Business Email (Login Email) *</Label>
-                    <Input
-                      id="business-email"
-                      type="email"
-                      {...businessForm.register("email")}
-                      placeholder="Enter business email"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="business-email"
+                        type="email"
+                        {...businessForm.register("email")}
+                        placeholder="Enter business email"
+                        className="flex-1"
+                        readOnly
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowEmailModal(true)}
+                        className="whitespace-nowrap"
+                      >
+                        Change Email
+                      </Button>
+                    </div>
                     <p className="text-xs text-gray-500">
-                      This is your primary login email for the account.
+                      Email changes require verification for security. Click "Change Email" to start the secure process.
                     </p>
                     {businessForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
@@ -736,14 +751,27 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="staff-email">Email Address (Login Email) *</Label>
-                <Input
-                  id="staff-email"
-                  type="email"
-                  {...personalForm.register("email")}
-                  placeholder="Enter email address"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="staff-email"
+                    type="email"
+                    {...personalForm.register("email")}
+                    placeholder="Enter email address"
+                    className="flex-1"
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEmailModal(true)}
+                    className="whitespace-nowrap"
+                  >
+                    Change Email
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-500">
-                  This is your login email for the account.
+                  Email changes require verification for security. Click "Change Email" to start the secure process.
                 </p>
                 {personalForm.formState.errors.email && (
                   <p className="text-sm text-red-600">
@@ -795,6 +823,14 @@ export default function Profile() {
           </CardContent>
         </Card>
       )}
+
+      {/* Email Change Modal */}
+      <EmailChangeModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        currentEmail={personalData?.email || user?.email || ""}
+        userId={user?.id || 0}
+      />
     </div>
   );
 }
