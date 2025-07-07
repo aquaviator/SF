@@ -4665,7 +4665,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.id, user.id));
 
       console.log("✅ EMAIL_CHANGE_CONFIRMED", { userId: user.id, newEmail: user.emailChangeNew, timestamp: new Date() });
-      res.json({ message: "Email address updated successfully" });
+      res.json({ 
+        message: "Email address updated successfully",
+        newEmail: user.emailChangeNew
+      });
     } catch (error) {
       console.error("❌ EMAIL_CONFIRM_ERROR", { error: error.message });
       res.status(500).json({ message: "Failed to confirm email change" });
