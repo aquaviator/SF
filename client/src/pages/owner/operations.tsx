@@ -373,9 +373,10 @@ interface TimeEntryModalProps {
   onClose: () => void;
   userId?: number;
   userName?: string;
+  onRefreshDashboard?: () => void;
 }
 
-function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalProps) {
+function TimeEntryModal({ isOpen, onClose, userId, userName, onRefreshDashboard }: TimeEntryModalProps) {
   const { tenantId } = useRole();
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
@@ -427,7 +428,12 @@ function TimeEntryModal({ isOpen, onClose, userId, userName }: TimeEntryModalPro
     console.log("✅ OVERRIDE_SAVED", { entryId: updatedEntry.id, userName, timestamp: new Date() });
     setShowOverrideModal(false);
     setSelectedEntry(null);
-    refetch(); // Refresh the time entries data
+    refetch(); // Refresh the time entries data in modal
+    
+    // Also refresh the main dashboard live time entries
+    if (onRefreshDashboard) {
+      onRefreshDashboard();
+    }
   };
 
   return (
@@ -880,6 +886,11 @@ export default function OwnerOperationsPage() {
                               <div className="text-sm text-muted-foreground">
                                 Clock in: {entry.clockInTime ? new Date(entry.clockInTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                               </div>
+                              {(entry.overrideNote || entry.adjustmentReason || entry.notes) && (
+                                <div className="text-xs text-blue-600 mt-1 max-w-[200px] truncate">
+                                  Note: {entry.overrideNote || entry.adjustmentReason || entry.notes}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
@@ -1098,6 +1109,7 @@ export default function OwnerOperationsPage() {
         onClose={() => setShowTimeEntryModal(false)}
         userId={selectedUserId}
         userName={selectedUserName}
+        onRefreshDashboard={refetchTimeEntries}
       />
       
       <BulkHolidayModal 
