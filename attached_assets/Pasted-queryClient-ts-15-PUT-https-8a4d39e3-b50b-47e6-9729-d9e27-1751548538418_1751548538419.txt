@@ -1,0 +1,224 @@
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/holiday-requests/17 400 (Bad Request)
+apiRequest @ queryClient.ts:15
+mutationFn @ owner-requests.tsx:98
+fn @ @tanstack_react-query.js?v=b27e50ee:1189
+run @ @tanstack_react-query.js?v=b27e50ee:494
+start @ @tanstack_react-query.js?v=b27e50ee:536
+execute @ @tanstack_react-query.js?v=b27e50ee:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:292
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+owner-requests.tsx:109 OWNER REQUESTS: Error updating holiday request: Error: 400: {"message":"Invalid data","errors":[{"code":"invalid_type","expected":"string","received":"undefined","path":["tenantId"],"message":"Required"},{"code":"invalid_type","expected":"number","received":"undefined","path":["requesterId"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["startDate"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["endDate"],"message":"Required"}]}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+overrideMethod @ hook.js:608
+onError @ owner-requests.tsx:109
+execute @ @tanstack_react-query.js?v=b27e50ee:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:292
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/holiday-requests/18 400 (Bad Request)
+apiRequest @ queryClient.ts:15
+mutationFn @ owner-requests.tsx:98
+fn @ @tanstack_react-query.js?v=b27e50ee:1189
+run @ @tanstack_react-query.js?v=b27e50ee:494
+start @ @tanstack_react-query.js?v=b27e50ee:536
+execute @ @tanstack_react-query.js?v=b27e50ee:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:300
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+owner-requests.tsx:109 OWNER REQUESTS: Error updating holiday request: Error: 400: {"message":"Invalid data","errors":[{"code":"invalid_type","expected":"string","received":"undefined","path":["tenantId"],"message":"Required"},{"code":"invalid_type","expected":"number","received":"undefined","path":["requesterId"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["startDate"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["endDate"],"message":"Required"}]}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+overrideMethod @ hook.js:608
+onError @ owner-requests.tsx:109
+execute @ @tanstack_react-query.js?v=b27e50ee:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:300
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/holiday-requests/18 400 (Bad Request)
+apiRequest @ queryClient.ts:15
+mutationFn @ owner-requests.tsx:98
+fn @ @tanstack_react-query.js?v=b27e50ee:1189
+run @ @tanstack_react-query.js?v=b27e50ee:494
+start @ @tanstack_react-query.js?v=b27e50ee:536
+execute @ @tanstack_react-query.js?v=b27e50ee:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:292
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+owner-requests.tsx:109 OWNER REQUESTS: Error updating holiday request: Error: 400: {"message":"Invalid data","errors":[{"code":"invalid_type","expected":"string","received":"undefined","path":["tenantId"],"message":"Required"},{"code":"invalid_type","expected":"number","received":"undefined","path":["requesterId"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["startDate"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["endDate"],"message":"Required"}]}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+overrideMethod @ hook.js:608
+onError @ owner-requests.tsx:109
+execute @ @tanstack_react-query.js?v=b27e50ee:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:292
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+queryClient.ts:15 
+            
+            
+           PUT https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/holiday-requests/17 400 (Bad Request)
+apiRequest @ queryClient.ts:15
+mutationFn @ owner-requests.tsx:98
+fn @ @tanstack_react-query.js?v=b27e50ee:1189
+run @ @tanstack_react-query.js?v=b27e50ee:494
+start @ @tanstack_react-query.js?v=b27e50ee:536
+execute @ @tanstack_react-query.js?v=b27e50ee:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:300
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449
+owner-requests.tsx:109 OWNER REQUESTS: Error updating holiday request: Error: 400: {"message":"Invalid data","errors":[{"code":"invalid_type","expected":"string","received":"undefined","path":["tenantId"],"message":"Required"},{"code":"invalid_type","expected":"number","received":"undefined","path":["requesterId"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["startDate"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["endDate"],"message":"Required"}]}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+overrideMethod @ hook.js:608
+onError @ owner-requests.tsx:109
+execute @ @tanstack_react-query.js?v=b27e50ee:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=b27e50ee:2630
+(anonymous) @ @tanstack_react-query.js?v=b27e50ee:3295
+handleHolidayAction @ owner-requests.tsx:144
+onClick @ owner-requests.tsx:300
+callCallback2 @ chunk-RPCDYKBN.js?v=b27e50ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b27e50ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b27e50ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b27e50ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b27e50ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b27e50ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b27e50ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b27e50ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b27e50ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b27e50ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b27e50ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b27e50ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b27e50ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b27e50ee:5449

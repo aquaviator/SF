@@ -1,0 +1,53 @@
+he two snippets are structurally very similar—both are a flex container with a fixed-size square on the left and some text on the right—but they differ in what they render inside that square:
+
+1) Your BrandedHeader (the business logo)
+html
+Copy
+Edit
+<div class="flex items-center space-x-3">
+  <img
+    src="data:image/jpeg;base64,…"
+    alt="DAB logo"
+    class="h-10 w-auto object-contain rounded-md"
+  />
+  <div class="hidden sm:block">
+    <h1 class="text-lg font-semibold …">DAB</h1>
+    <p class="text-xs text-gray-500 …">powered by shiftflo</p>
+  </div>
+</div>
+Always shows an <img> tag with a (base64) src.
+
+Uses object-contain so the logo scales to fit.
+
+The surrounding <div> is just hidden on very small screens (hidden sm:block).
+
+2) Your SidebarNav avatar (the user profile)
+html
+Copy
+Edit
+<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+  <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+    <span class="text-white text-sm font-medium">SW</span>
+  </div>
+  <div class="flex-1 min-w-0">
+    <p class="text-sm font-medium … truncate">Sarah Wilson</p>
+    <!-- role & tenant name here -->
+  </div>
+</div>
+Renders a <span> with the initials (“SW”) because no <img> ever made it in.
+
+That happens whenever:
+
+userProfile.photoUrl is null or empty,
+
+or our imgErrored flag is true (onError),
+so the <img> branch is skipped and the fallback initials are rendered instead.
+
+The outer wrapper has extra padding, background (bg-gray-50), and rounded corners.
+
+tl;dr
+BrandedHeader always shows your logo via <img>.
+
+SidebarNav will only show <img> if userProfile.photoUrl is set and loads successfully; otherwise it falls back to a <span> of initials.
+
+That’s why you’re seeing initials in the avatar spot—even though your logo <img> works, your user’s photo never actually made it into the sidebar’s <img> tag. You need to ensure userProfile.photoUrl is populated and not triggering the onError path so that <img src={photoUrl}…/> actually renders instead of the initials.

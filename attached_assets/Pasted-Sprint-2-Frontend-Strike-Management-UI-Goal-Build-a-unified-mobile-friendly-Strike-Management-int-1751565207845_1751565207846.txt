@@ -1,0 +1,132 @@
+Sprint 2: Frontend Strike Management UI
+
+Goal
+Build a unified, mobile-friendly Strike Management interface for both staff and owners:
+
+Staff see their own active strikes, historical strikes and total points.
+
+Owners see a table of all staff strikes, with filters, search, and ability to adjust (add/remove/expire) strikes.
+
+1. Pages & Routes
+Staff → My Strikes (at /staff/strikes)
+
+Owner → Strike Management (under Workforce → “Strikes”)
+
+2. Components & Layout
+StrikeDashboardPage
+
+Staff mode:
+
+Top card: “Your Strike Points” (big number + status bar)
+
+List of active strikes (reason, points, date issued, expiresAt)
+
+“Details” button on each row opens a modal
+
+Owner mode:
+
+Table: columns [Staff Name] [Total Points] [Active Strikes] [Last Issued] [Actions]
+
+Filters: by staff, points ≥, active/inactive toggle
+
+“View” opens staff’s strike history modal
+
+“Adjust” opens a modal to add or deactivate strikes
+
+StrikeHistoryModal (always mounted, hidden by default)
+
+Header: includes “Close” icon
+
+Tabs: “History” / “Add Strike”
+
+History tab: paginated list of strikes with reasons, points, dates, status
+
+Add Strike tab (owners only): form
+
+Fields: Reason (dropdown), Points (number), Shift ID (optional), Notes (textarea), Expiry override (date)
+
+Buttons: “Save”, “Cancel”
+
+Console Logging
+
+On page init: console.log("🚀 StrikeDashboardPage init", { mode, userId })
+
+On API fetch success/failure, on modal open/close, on form submit: log action name, payload, response or error.
+
+3. Data & API Integration
+Use existing endpoint GET /api/staff/:userId/strikes?tenantId=… for history and totalPoints
+
+For owners: GET /api/staff-strikes?tenantId=…[&userId] (if new batch endpoint exists)
+
+POST /api/staff/:userId/strikes to create
+
+PUT /api/staff/:userId/strikes/:strikeId to update (deactivate or adjust)
+
+Wrap every call in a staffApi helper with consistent error handling and return types.
+
+4. Interaction & Behavior
+Page load:
+
+Fetch strikes, render loading skeleton
+
+On success, render cards/table; on failure, show error UI with “Retry” button
+
+Modal open:
+
+Instantly unhide modal DOM node (no dynamic import), then fetch history if needed
+
+console.log("ℹ️ Opening StrikeHistoryModal", { userId })
+
+Add Strike:
+
+Validate form, block submit if points > policy max + 1, show inline error
+
+On submit: console.log("✏️ Adding strike", formData)
+
+Call API, on success reload list & parent card; on error show toast
+
+Adjust Strike (owner):
+
+In history list, each row has “Deactivate” button when isActive
+
+On click: confirm dialog → call API PUT → reload list → log event
+
+5. Mobile-First & Accessibility
+All tables become stacked cards on ≤640 px
+
+Modals full-screen on mobile with sticky header/footer
+
+Buttons at least 44 px tall
+
+Use role, aria-modal, aria-label on modal containers
+
+Legend dots (where used) shrink to 8×8 px on mobile
+
+6. Test & Validation
+Unit tests for strikeApi helpers – mock fetch, test success & error.
+
+Component tests for:
+
+Rendering correct strikes for both modes
+
+Modal opens, tabs switch, form validation errors
+
+E2E (Cypress):
+
+Staff logs in → navigates to “My Strikes” → sees their points and history → attempts dismiss (fail)
+
+Owner logs in → visits “Strikes” → filters by user → opens modal → adds strike → sees updated total
+
+API failures → page shows retry button and console logs error
+
+7. Acceptance Criteria
+ Staff can view their own strikes and total points without page errors
+
+ Owner can view all staff strikes, filter, and page through history
+
+ Owner can add and deactivate strikes via modal, with console logs for every step
+
+ UI is responsive: tables collapse to cards, modals cover full viewport on small screens
+
+ All API calls go through staffApi and errors are handled gracefully
+

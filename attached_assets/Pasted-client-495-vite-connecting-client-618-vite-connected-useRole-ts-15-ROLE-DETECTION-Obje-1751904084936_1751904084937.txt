@@ -1,0 +1,518 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+AuthContext.tsx:39 ✅ AUTH_CHECK_SUCCESS Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+/api/time-entries:1 
+            
+            
+           Failed to load resource: the server responded with a status of 400 (Bad Request)
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+seat-based-subscription.tsx:604 🚀 INITIATING_SEAT_UPGRADE: seats to add: 5, current seats: 5
+seat-based-subscription.tsx:549 💳 CREATING_PAYMENT_INTENT: seatsToAdd: 5, tenantId: dialabeer
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: false, pendingSeats: 0, paymentAmount: 0
+seat-based-subscription.tsx:557 ✅ PAYMENT_INTENT_CREATED: full response: Object
+seat-based-subscription.tsx:558 ✅ PAYMENT_INTENT_CREATED: clientSecret available, amount: £15.00, seats: 5
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: false, elements: false
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+subscription:1 Unable to download payment manifest "https://pay.google.com/about/redirect/".
+controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1 [Stripe.js] The following payment method types are not activated:
+
+- link
+- revolut_pay
+- klarna
+
+They will be displayed in test mode, but hidden in live mode. Please activate the payment method types in your dashboard (https://dashboard.stripe.com/settings/payment_methods) and ensure your account is enabled for any preview features that you are trying to use.
+warn @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1 [Stripe.js] You have not registered or verified the domain, so the following payment methods are not enabled in the Payment Element: 
+
+- apple_pay
+
+Please follow https://stripe.com/docs/payments/payment-methods/pmd-registration to register and verify the domain.
+warn @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+subscription:1 Each dictionary in the list "icons" should contain a non-empty UTF8 string field "sizes".
+subscription:1 Each dictionary in the list "icons" should contain a non-empty UTF8 string field "type".
+hcaptcha.html:14  
+StripeCheckout.tsx:29 💳 SUBMITTING_STRIPE_PAYMENT: amount: £15.00, seats: 5
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+hook.js:608 ❌ STRIPE_PAYMENT_ERROR: Object
+overrideMethod @ hook.js:608
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+StripeCheckout.tsx:29 💳 SUBMITTING_STRIPE_PAYMENT: amount: £15.00, seats: 5
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+hook.js:608 ❌ STRIPE_PAYMENT_EXCEPTION: IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+overrideMethod @ hook.js:608
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+stripe.js:1 Uncaught (in promise) IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+StripeCheckout.tsx:29 💳 SUBMITTING_STRIPE_PAYMENT: amount: £15.00, seats: 5
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+hook.js:608 ❌ STRIPE_PAYMENT_EXCEPTION: IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+overrideMethod @ hook.js:608
+useRole.ts:15 🔑 ROLE_DETECTION: Object
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+stripe.js:1 Uncaught (in promise) IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+StripeCheckout.tsx:29 💳 SUBMITTING_STRIPE_PAYMENT: amount: £15.00, seats: 5
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+StripeCheckout.tsx:55 ❌ STRIPE_PAYMENT_EXCEPTION: IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+overrideMethod @ hook.js:608
+handleSubmit @ StripeCheckout.tsx:55
+await in handleSubmit
+callCallback2 @ chunk-RPCDYKBN.js?v=a3dc7acf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=a3dc7acf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=a3dc7acf:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=a3dc7acf:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=a3dc7acf:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=a3dc7acf:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=a3dc7acf:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=a3dc7acf:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=a3dc7acf:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=a3dc7acf:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=a3dc7acf:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=a3dc7acf:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=a3dc7acf:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=a3dc7acf:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=a3dc7acf:5449
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+stripe.js:1 Uncaught (in promise) IntegrationError: You specified "never" for fields.billing_details.address.postal_code when creating the payment Element, but did not pass confirmParams.payment_method_data.billing_details.address.postal_code when calling stripe.confirmPayment(). If you opt out of collecting data via the payment Element using the fields option, the data must be passed in when calling stripe.confirmPayment().
+    at lf (stripe.js:1:515651)
+    at e.<anonymous> (stripe.js:1:524804)
+    at e._handleMessage (stripe.js:1:72099)
+    at stripe.js:1:522772
+lf @ stripe.js:1
+(anonymous) @ stripe.js:1
+(anonymous) @ stripe.js:1
+(anonymous) @ stripe.js:1
+shared-52bde51db9135adabfcaed2c8db801ae.js:1 Fetch finished loading: POST "https://r.stripe.com/b".
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+e @ shared-52bde51db9135…caed2c8db801ae.js:1
+c @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+log @ shared-52bde51db9135…caed2c8db801ae.js:1
+log @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+Promise.then
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+Promise.then
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+Promise.then
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+Promise.then
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+Promise.then
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+Promise.then
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+confirmPaymentIntent @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+n @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+a @ shared-52bde51db9135…caed2c8db801ae.js:1
+i @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+value @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+shared-52bde51db9135adabfcaed2c8db801ae.js:1 Fetch finished loading: POST "https://r.stripe.com/b".
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+e @ shared-52bde51db9135…caed2c8db801ae.js:1
+c @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+setTimeout
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135…caed2c8db801ae.js:1
+value @ shared-52bde51db9135…caed2c8db801ae.js:1
+log @ shared-52bde51db9135…caed2c8db801ae.js:1
+log @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+value @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+value @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+client:223 [vite] hot updated: /src/pages/seat-based-subscription.tsx
+client:223 [vite] hot updated: /src/index.css?v=sI6In_C0BxdtIUO5p35Zj
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx?t=1751903680207:1437 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+@react-refresh:267 Unsupported prop change on Elements: You cannot change the `stripe` prop after setting it. Error Component Stack
+    at Elements2 (@stripe_react-stripe-js.js?v=a3dc7acf:284:28)
+    at div (<anonymous>)
+    at _c9 (card.tsx:62:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Presence (chunk-VALKHY5Q.js?v=a3dc7acf:24:11)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:173:13
+    at _c5 (tabs.tsx:41:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:51:7
+    at div (<anonymous>)
+    at SeatBasedSubscription (seat-based-subscription.tsx?t=1751903680207:517:24)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at div (<anonymous>)
+    at main (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at ProtectedRoutes (App.tsx:53:51)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at Router (App.tsx:144:48)
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=a3dc7acf:61:5)
+    at AuthProvider (AuthContext.tsx:26:32)
+    at QueryClientProvider (@tanstack_react-query.js?v=a3dc7acf:2805:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+(anonymous) @ @stripe_react-stripe-js.js?v=a3dc7acf:321
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=a3dc7acf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=a3dc7acf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=a3dc7acf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=a3dc7acf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=a3dc7acf:9119
+flushSync @ chunk-RPCDYKBN.js?v=a3dc7acf:18959
+scheduleRefresh @ chunk-RPCDYKBN.js?v=a3dc7acf:20004
+p.scheduleRefresh @ renderer.js:994
+(anonymous) @ @react-refresh:267
+performReactRefresh @ @react-refresh:256
+(anonymous) @ @react-refresh:677
+setTimeout
+(anonymous) @ @react-refresh:666
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:728
+(anonymous) @ seat-based-subscription.tsx:1571
+(anonymous) @ client:34
+(anonymous) @ client:218
+(anonymous) @ client:193
+queueUpdate @ client:193
+await in queueUpdate
+(anonymous) @ client:642
+handleMessage @ client:640
+(anonymous) @ client:550
+client:223 [vite] hot updated: /src/pages/seat-based-subscription.tsx
+client:223 [vite] hot updated: /src/index.css?v=sI6In_C0BxdtIUO5p35Zj
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx?t=1751903760571:1480 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+@react-refresh:267 Unsupported prop change on Elements: You cannot change the `stripe` prop after setting it. Error Component Stack
+    at Elements2 (@stripe_react-stripe-js.js?v=a3dc7acf:284:28)
+    at div (<anonymous>)
+    at _c9 (card.tsx:62:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Presence (chunk-VALKHY5Q.js?v=a3dc7acf:24:11)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:173:13
+    at _c5 (tabs.tsx:41:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:51:7
+    at div (<anonymous>)
+    at SeatBasedSubscription (seat-based-subscription.tsx?t=1751903760571:517:24)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at div (<anonymous>)
+    at main (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at ProtectedRoutes (App.tsx:53:51)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at Router (App.tsx:144:48)
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=a3dc7acf:61:5)
+    at AuthProvider (AuthContext.tsx:26:32)
+    at QueryClientProvider (@tanstack_react-query.js?v=a3dc7acf:2805:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+(anonymous) @ @stripe_react-stripe-js.js?v=a3dc7acf:321
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=a3dc7acf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=a3dc7acf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=a3dc7acf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=a3dc7acf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=a3dc7acf:9119
+flushSync @ chunk-RPCDYKBN.js?v=a3dc7acf:18959
+scheduleRefresh @ chunk-RPCDYKBN.js?v=a3dc7acf:20004
+p.scheduleRefresh @ renderer.js:994
+(anonymous) @ @react-refresh:267
+performReactRefresh @ @react-refresh:256
+(anonymous) @ @react-refresh:677
+setTimeout
+(anonymous) @ @react-refresh:666
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:728
+(anonymous) @ seat-based-subscription.tsx?t=1751903680207:1571
+(anonymous) @ client:34
+(anonymous) @ client:218
+(anonymous) @ client:193
+queueUpdate @ client:193
+await in queueUpdate
+(anonymous) @ client:642
+handleMessage @ client:640
+(anonymous) @ client:550
+client:223 [vite] hot updated: /src/pages/seat-based-subscription.tsx
+client:223 [vite] hot updated: /src/index.css?v=sI6In_C0BxdtIUO5p35Zj
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx:808 🎨 MODAL_RENDER_CHECK: clientSecret: true, pendingSeats: 5, paymentAmount: 1500
+StripeCheckout.tsx:19 🎨 STRIPE_CHECKOUT_RENDER: seatsToAdd: 5, totalAmount: 1500, stripe: true, elements: true
+@react-refresh:267 Unsupported prop change on Elements: You cannot change the `stripe` prop after setting it. Error Component Stack
+    at Elements2 (@stripe_react-stripe-js.js?v=a3dc7acf:284:28)
+    at div (<anonymous>)
+    at _c9 (card.tsx:62:6)
+    at div (<anonymous>)
+    at _c (card.tsx:8:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Presence (chunk-VALKHY5Q.js?v=a3dc7acf:24:11)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:173:13
+    at _c5 (tabs.tsx:41:6)
+    at div (<anonymous>)
+    at chunk-AXMZZQ2X.js?v=a3dc7acf:42:13
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at @radix-ui_react-tabs.js?v=a3dc7acf:51:7
+    at div (<anonymous>)
+    at SeatBasedSubscription (seat-based-subscription.tsx:346:24)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at div (<anonymous>)
+    at main (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at ProtectedRoutes (App.tsx:53:51)
+    at Route (wouter.js?v=a3dc7acf:323:16)
+    at Switch (wouter.js?v=a3dc7acf:379:17)
+    at Router (App.tsx:144:48)
+    at Provider (chunk-OXZDJRWN.js?v=a3dc7acf:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=a3dc7acf:61:5)
+    at AuthProvider (AuthContext.tsx:26:32)
+    at QueryClientProvider (@tanstack_react-query.js?v=a3dc7acf:2805:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+(anonymous) @ @stripe_react-stripe-js.js?v=a3dc7acf:321
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=a3dc7acf:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=a3dc7acf:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=a3dc7acf:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=a3dc7acf:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=a3dc7acf:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=a3dc7acf:19416
+commitRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=a3dc7acf:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=a3dc7acf:9119
+flushSync @ chunk-RPCDYKBN.js?v=a3dc7acf:18959
+scheduleRefresh @ chunk-RPCDYKBN.js?v=a3dc7acf:20004
+p.scheduleRefresh @ renderer.js:994
+(anonymous) @ @react-refresh:267
+performReactRefresh @ @react-refresh:256
+(anonymous) @ @react-refresh:677
+setTimeout
+(anonymous) @ @react-refresh:666
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:728
+(anonymous) @ seat-based-subscription.tsx?t=1751903760571:1614
+(anonymous) @ client:34
+(anonymous) @ client:218
+(anonymous) @ client:193
+queueUpdate @ client:193
+await in queueUpdate
+(anonymous) @ client:642
+handleMessage @ client:640
+(anonymous) @ client:550
+client:223 [vite] hot updated: /src/pages/workforce.tsx
+client:223 [vite] hot updated: /src/index.css?v=sI6In_C0BxdtIUO5p35Zj
+client:223 [vite] hot updated: /src/pages/owner-dashboard.tsx
+client:223 [vite] hot updated: /src/index.css?v=sI6In_C0BxdtIUO5p35Zj
+client:560 [vite] server connection lost. Polling for restart...
+client:736 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/ 502 (Bad Gateway)
+ping @ client:736
+waitForSuccessfulPing @ client:749
+(anonymous) @ client:561
+ 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/owner/subscription 502 (Bad Gateway)
+(anonymous) @ /@vite/client:562
+ Fetch failed loading: GET "https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/".
+ping @ /@vite/client:736
+waitForSuccessfulPing @ /@vite/client:749
+(anonymous) @ /@vite/client:561
+Navigated to https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/owner/subscription
+favicon.ico:1 
+            
+            
+           GET https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/favicon.ico 502 (Bad Gateway)

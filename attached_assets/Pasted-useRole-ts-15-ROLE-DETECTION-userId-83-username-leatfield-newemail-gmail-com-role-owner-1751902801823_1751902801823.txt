@@ -1,0 +1,42 @@
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx:438 🚀 INITIATING_SEAT_UPGRADE: seats to add: 1, current seats: 5
+seat-based-subscription.tsx:383 💳 CREATING_PAYMENT_INTENT: seatsToAdd: 1, tenantId: dialabeer
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+seat-based-subscription.tsx:390 ✅ PAYMENT_INTENT_CREATED: clientSecret available, amount: £NaN, seats: undefined
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+useRole.ts:15 🔑 ROLE_DETECTION: {userId: 83, username: 'leatfield+newemail@gmail.com', role: 'owner', userRole: 'owner', tenantId: 'dialabeer', …}
+queryClient.ts:18 Fetch finished loading: POST "https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev/api/subscription/create-payment-intent".
+apiRequest @ queryClient.ts:18
+mutationFn @ seat-based-subscription.tsx:384
+fn @ @tanstack_react-query.js?v=a3dc7acf:1189
+run @ @tanstack_react-query.js?v=a3dc7acf:494
+start @ @tanstack_react-query.js?v=a3dc7acf:536
+execute @ @tanstack_react-query.js?v=a3dc7acf:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=a3dc7acf:2630
+(anonymous) @ @tanstack_react-query.js?v=a3dc7acf:3295
+handleAddSeats @ seat-based-subscription.tsx:439
+onClick @ seat-based-subscription.tsx:736
+callCallback2 @ chunk-RPCDYKBN.js?v=a3dc7acf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=a3dc7acf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=a3dc7acf:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=a3dc7acf:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=a3dc7acf:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=a3dc7acf:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=a3dc7acf:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=a3dc7acf:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=a3dc7acf:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=a3dc7acf:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=a3dc7acf:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=a3dc7acf:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=a3dc7acf:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=a3dc7acf:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=a3dc7acf:5449
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".
+Fetch finished loading: GET "<URL>".

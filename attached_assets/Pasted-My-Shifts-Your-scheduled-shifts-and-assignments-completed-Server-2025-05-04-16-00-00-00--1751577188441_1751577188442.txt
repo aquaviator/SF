@@ -1,0 +1,408 @@
+My Shifts
+Your scheduled shifts and assignments
+
+completed
+Server
+2025-05-04 • 16:00 - 00:00
+📍 Bar Area
+Server shift at Bar Area
+cancelled
+Head Chef
+2025-05-06 • 16:00 - 00:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+clocked_out
+Head Chef
+2025-05-07 • 08:00 - 16:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+completed
+Server
+2025-05-07 • 00:00 - 08:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Manager
+2025-05-09 • 16:00 - 00:00
+📍 Main Dining Room
+Manager shift at Main Dining Room
+cancelled
+Bartender
+2025-05-09 • 00:00 - 08:00
+📍 Private Dining
+Bartender shift at Private Dining
+completed
+Head Chef
+2025-05-10 • 00:00 - 08:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+completed
+Manager
+2025-05-13 • 16:00 - 00:00
+📍 Private Dining
+Manager shift at Private Dining
+completed
+Server
+2025-05-14 • 00:00 - 08:00
+📍 Private Dining
+Server shift at Private Dining
+completed
+Manager
+2025-05-15 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+cancelled
+Server
+2025-05-16 • 00:00 - 08:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Server
+2025-05-17 • 00:00 - 08:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Bartender
+2025-05-18 • 08:00 - 16:00
+📍 Bar Area
+Bartender shift at Bar Area
+cancelled
+Server
+2025-05-19 • 08:00 - 16:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Bartender
+2025-05-19 • 16:00 - 00:00
+📍 Private Dining
+Bartender shift at Private Dining
+completed
+Server
+2025-05-19 • 00:00 - 08:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Head Chef
+2025-05-23 • 08:00 - 16:00
+📍 Private Dining
+Head Chef shift at Private Dining
+completed
+Head Chef
+2025-05-23 • 16:00 - 00:00
+📍 Bar Area
+Head Chef shift at Bar Area
+completed
+Bartender
+2025-05-23 • 00:00 - 08:00
+📍 Bar Area
+Bartender shift at Bar Area
+completed
+Head Chef
+2025-05-25 • 00:00 - 08:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+completed
+Manager
+2025-05-26 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+completed
+Server
+2025-05-28 • 16:00 - 00:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Manager
+2025-05-29 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+completed
+Server
+2025-05-30 • 08:00 - 16:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Bartender
+2025-05-30 • 00:00 - 08:00
+📍 Main Dining Room
+Bartender shift at Main Dining Room
+completed
+Manager
+2025-05-31 • 16:00 - 00:00
+📍 Private Dining
+Manager shift at Private Dining
+completed
+Server
+2025-06-01 • 16:00 - 00:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Bartender
+2025-06-02 • 00:00 - 08:00
+📍 Private Dining
+Bartender shift at Private Dining
+completed
+Bartender
+2025-06-03 • 16:00 - 00:00
+📍 Bar Area
+Bartender shift at Bar Area
+completed
+Server
+2025-06-04 • 08:00 - 16:00
+📍 Private Dining
+Server shift at Private Dining
+clocked_out
+Manager
+2025-06-04 • 16:00 - 00:00
+📍 Bar Area
+Manager shift at Bar Area
+completed
+Server
+2025-06-05 • 08:00 - 16:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+clocked_out
+Bartender
+2025-06-05 • 00:00 - 08:00
+📍 Private Dining
+Bartender shift at Private Dining
+completed
+Server
+2025-06-06 • 16:00 - 00:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Server
+2025-06-09 • 08:00 - 16:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+completed
+Bartender
+2025-06-09 • 16:00 - 00:00
+📍 Private Dining
+Bartender shift at Private Dining
+clocked_out
+Bartender
+2025-06-11 • 08:00 - 16:00
+📍 Main Dining Room
+Bartender shift at Main Dining Room
+completed
+Head Chef
+2025-06-11 • 00:00 - 08:00
+📍 Private Dining
+Head Chef shift at Private Dining
+cancelled
+Manager
+2025-06-13 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+completed
+Head Chef
+2025-06-14 • 16:00 - 00:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+completed
+Server
+2025-06-14 • 00:00 - 08:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Bartender
+2025-06-15 • 16:00 - 00:00
+📍 Bar Area
+Bartender shift at Bar Area
+completed
+Server
+2025-06-16 • 16:00 - 00:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Manager
+2025-06-17 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+clocked_out
+Head Chef
+2025-06-18 • 00:00 - 08:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+completed
+Server
+2025-06-19 • 08:00 - 16:00
+📍 Bar Area
+Server shift at Bar Area
+completed
+Head Chef
+2025-06-19 • 16:00 - 00:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+clocked_out
+Manager
+2025-06-20 • 16:00 - 00:00
+📍 Bar Area
+Manager shift at Bar Area
+completed
+Manager
+2025-06-21 • 16:00 - 00:00
+📍 Private Dining
+Manager shift at Private Dining
+completed
+Bartender
+2025-06-23 • 08:00 - 16:00
+📍 Private Dining
+Bartender shift at Private Dining
+completed
+Head Chef
+2025-06-29 • 08:00 - 16:00
+📍 Private Dining
+Head Chef shift at Private Dining
+clocked_out
+Server
+2025-06-29 • 00:00 - 08:00
+📍 Private Dining
+Server shift at Private Dining
+completed
+Bartender
+2025-06-30 • 16:00 - 00:00
+📍 Main Dining Room
+Bartender shift at Main Dining Room
+completed
+Head Chef
+2025-07-02 • 00:00 - 08:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+clocked_in
+Head Chef
+2025-07-03 • 08:00 - 16:00
+📍 Bar Area
+Head Chef shift at Bar Area
+assigned
+Bartender
+2025-07-03 • 16:00 - 00:00
+📍 Main Dining Room
+Bartender shift at Main Dining Room
+confirmed
+Bartender
+2025-07-05 • 16:00 - 00:00
+📍 Bar Area
+Bartender shift at Bar Area
+confirmed
+Manager
+2025-07-06 • 00:00 - 08:00
+📍 Private Dining
+Manager shift at Private Dining
+confirmed
+Head Chef
+2025-07-07 • 00:00 - 08:00
+📍 Private Dining
+Head Chef shift at Private Dining
+confirmed
+Head Chef
+2025-07-08 • 08:00 - 16:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+confirmed
+Bartender
+2025-07-09 • 08:00 - 16:00
+📍 Private Dining
+Bartender shift at Private Dining
+confirmed
+Manager
+2025-07-10 • 08:00 - 16:00
+📍 Bar Area
+Manager shift at Bar Area
+confirmed
+Manager
+2025-07-12 • 08:00 - 16:00
+📍 Main Dining Room
+Manager shift at Main Dining Room
+confirmed
+Bartender
+2025-07-12 • 16:00 - 00:00
+📍 Main Dining Room
+Bartender shift at Main Dining Room
+assigned
+Bartender
+2025-07-13 • 00:00 - 08:00
+📍 Bar Area
+Bartender shift at Bar Area
+confirmed
+Head Chef
+2025-07-13 • 00:00 - 08:00
+📍 Private Dining
+Head Chef shift at Private Dining
+assigned
+Head Chef
+2025-07-15 • 08:00 - 16:00
+📍 Bar Area
+Head Chef shift at Bar Area
+confirmed
+Server
+2025-07-15 • 16:00 - 00:00
+📍 Main Dining Room
+Server shift at Main Dining Room
+confirmed
+Head Chef
+2025-07-16 • 00:00 - 08:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+assigned
+Bartender
+2025-07-17 • 08:00 - 16:00
+📍 Private Dining
+Bartender shift at Private Dining
+confirmed
+Head Chef
+2025-07-18 • 08:00 - 16:00
+📍 Bar Area
+Head Chef shift at Bar Area
+confirmed
+Bartender
+2025-07-18 • 00:00 - 08:00
+📍 Bar Area
+Bartender shift at Bar Area
+confirmed
+Head Chef
+2025-07-19 • 16:00 - 00:00
+📍 Main Dining Room
+Head Chef shift at Main Dining Room
+assigned
+Server
+2025-07-21 • 08:00 - 16:00
+📍 Private Dining
+Server shift at Private Dining
+assigned
+Manager
+2025-07-22 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+confirmed
+Server
+2025-07-22 • 00:00 - 08:00
+📍 Private Dining
+Server shift at Private Dining
+confirmed
+Server
+2025-07-25 • 08:00 - 16:00
+📍 Bar Area
+Server shift at Bar Area
+confirmed
+Server
+2025-07-25 • 16:00 - 00:00
+📍 Private Dining
+Server shift at Private Dining
+assigned
+Manager
+2025-07-25 • 00:00 - 08:00
+📍 Bar Area
+Manager shift at Bar Area
+assigned
+Head Chef
+2025-07-31 • 16:00 - 00:00
+📍 Bar Area
+Head Chef shift at Bar Area
+confirmed
+Bartender
+2025-07-31 • 00:00 - 08:00
+📍 Private Dining
+Bartender shift at Private Dining

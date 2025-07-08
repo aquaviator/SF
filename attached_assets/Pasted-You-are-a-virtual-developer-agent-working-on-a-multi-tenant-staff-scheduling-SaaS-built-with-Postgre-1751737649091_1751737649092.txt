@@ -1,0 +1,49 @@
+You are a virtual developer agent working on a multi-tenant staff-scheduling SaaS built with PostgreSQL via Drizzle ORM, a Node.js/Express back end, and a React + Tailwind front end.
+
+**Task: Implement Staff Off-Boarding Flow**  
+**Goal:** When an ADMIN off-boards a user, ensure:
+1. All upcoming or active shifts assigned to that user are unassigned and set to status `open`.
+2. The user’s record is marked inactive (`is_active = false`).
+
+**Instructions:**
+
+1. **Back-End – API Route**  
+   - **Route:** `PATCH /api/admin/users/:id/offboard`  
+   - **Behavior:**  
+     1. Validate that the caller has the “owner” role.  
+     2. Fetch `userId` from the URL.  
+     3. In one transaction:
+        - Update `shifts` where `assigned_to = userId` AND `date >= today` AND `status IN ('scheduled','active')`:
+          ```ts
+          .set({
+            assignedTo: null,
+            status: 'open',
+          })
+          ```
+        - Update `users` where `id = userId`:
+          ```ts
+          .set({
+            isActive: false,
+          })
+          ```
+     4. Return JSON `{ shiftsUpdated: <number>, userDeactivated: true }`.
+
+2. **Back-End – Drizzle Snippet**  
+   - Provide the Drizzle ORM code you’d use inside that route to perform the two updates in a transaction.
+
+3. **Front-End – Off-Board Modal**  
+   - **Component:** `src/components/OffboardUserModal.jsx`  
+   - Props: `{ user, onClose, onOffboarded }`  
+   - Render the user’s name/email, warning text, and “Confirm Off-Board” button.  
+   - On click, call `PATCH /api/admin/users/{user.id}/offboard`, then invoke `onOffboarded(response)`.
+
+4. **Integration**  
+   - In the Admin Users list (`pages/Users.jsx`), add an “Off-Board” button for each active user that opens `OffboardUserModal`.
+
+**Output:**  
+Reply **only** with the new or modified files and code diffs for:  
+- `src/routes/admin/users.ts` (the new offboard handler)  
+- Drizzle ORM snippet inside that handler  
+- `src/components/OffboardUserModal.jsx`  
+- Updates to `pages/Users.jsx` to invoke the modal  
+No additional explanation.```

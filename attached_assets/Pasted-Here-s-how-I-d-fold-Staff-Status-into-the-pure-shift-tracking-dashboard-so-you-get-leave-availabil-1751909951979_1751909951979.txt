@@ -1,0 +1,103 @@
+Here’s how I’d fold Staff Status into the pure shift-tracking dashboard—so you get leave & availability alongside your Open/Assigned/Swap/Cancel/Confirmed flow.
+
+1. Quick KPIs (Top Strip)
+Widget	Example	What It Tells You
+Total Staff	11 (+2 MoM)	Headcount and month-over-month change
+Staff Utilisation	90 %	% of staff available (not on leave/sick)
+Open Opportunities	40	Shifts broadcast; waiting for pickup
+Assigned Shifts	12	Invites sent; awaiting acceptance
+Confirmed Shifts	14	Locked-in slots
+Swap Requests	5	Staff-initiated shifts to be swapped
+Cancel Requests	3	Pending cancellation approvals
+
+Staff Utilisation = (Total Staff – Staff Off Today) / Total Staff. Click it to drill into who’s out and why.
+
+2. Staff Status Panel
+Name	Status	Dates	Notes
+JO	Holiday	Wed Jul 9	Booked next Wednesday
+Steve	Sick Leave	Mon Jul 7 (today)	Awaiting doctor’s note
+Maria	Training	Tue Jul 8 – Thu Jul 10	Off-site workshop
+Ahmed	Personal Leave	Fri Jul 11	Family emergency
+
+Colour tags:
+
+💚 Available
+
+🟡 Pending return (e.g. sick without note)
+
+🔴 Unavailable (holiday, training, leave)
+
+“Off Today” summary: 2 out of 11 → 18 % off → 82 % utilisation (or 90 % in your ideal case).
+
+3. Status Definitions & Workflow
+Status	Definition	Owner Actions
+Open→Opportunity	Shift broadcast to staff pool.	Send targeted invites or auto-offer.
+Assigned	Individual has been notified but hasn’t accepted yet.	Check deadlines; remind or reassign as needed.
+Swap Pending	Staff A owns it but wants to swap with Staff B.	Review candidates; approve or reassign.
+Cancel Pending	Staff A asked to cancel entirely; slot may revert to Open.	Approve cancellation; rebroadcast as Open.
+Confirmed	Staff member has accepted; shift is locked in.	Check conflicts; send reminders; mark completed.
+
+4. Month-Ahead Calendar (July 2025)
+Colour Legend by % Covered (all non-Open states count as covered):
+
+🟢 ≥ 90 % covered
+
+🟠 50–90 % covered
+
+🔴 < 50 % covered
+
+Hover a day to see:
+• 10 Open • 2 Assigned • 2 Swap • 1 Cancel • 4 Confirmed
+• 2 staff off (18 %) → 82 % utilisation
+
+5. Role-by-Day Matrix (Week 1: Jul 7–13)
+Role	Mon 7/7	Tue 7/8	Wed–Sun 7/9–13
+Manager	✓ (2)	⧗ (1 Confirmed, 1 Assigned)	⧗⧗ (2 Open)
+Supervisor	✓ (3)	⧗ (2 Confirmed, 1 Swap)	⧗ (3 Open)
+Team Member	✓ (5)	⧗ (2 Confirmed, 2 Assigned, 1 Cancel)	⧗⧗⧗ (5 Open)
+
+✓(n) = all Confirmed
+
+⧗ = mixed states; hover to see breakdown: Open (O), Assigned (A), Swap (S), Cancel (C), Confirmed (✔)
+
+6. Daily Shift List (Next 3 Days)
+Tue 7/8
+Supervisor: 1 Assigned ⏳, 1 Confirmed ✔
+
+Team Member: 2 Open ⭕, 1 Swap Pending 🔄
+
+Wed 7/9
+Manager: 1 Open ⭕, 1 Assigned ⏳
+
+Supervisor: 1 Confirmed ✔, 1 Swap Pending 🔄
+
+Team Member: 3 Open ⭕, 2 Cancel Pending ❌
+
+Thu 7/10
+Manager: 1 Confirmed ✔, 1 Cancel Pending ❌
+
+Supervisor: 2 Confirmed ✔
+
+Team Member: 1 Assigned ⏳, 1 Swap Pending 🔄
+
+Actions: Remind, Confirm, Approve/Decline, or Re-broadcast at one click.
+
+7. Alerts & Next Steps
+Low Utilisation Alert: If Staff Utilisation < 80 % → “Review leave & coverage.”
+
+Stale Assigned (> 12 h no response) → “Send reminder or reassign.”
+
+High Swap/Cancel Rates → “Investigate underlying issues.”
+
+Click an alert to take bulk actions or message affected staff directly.
+
+8. Live Activity Feed
+Time	Shift	Old State → New State	By
+16:19	Manager – Jul 9	Open → Assigned	User 116
+15:42	TeamMember – Jul 8	Assigned → Confirmed	User 119
+14:05	Supervisor – Jul 7	Confirmed → Swap Pending	User 118
+13:19	JO – Jul 9 Holiday	Available → Holiday	Self-serve
+
+Filter by role, date, or user; undo any change or send follow-up messages.
+
+With Staff Status built in, you see not just your shift states but who’s available, who’s away (holiday, sick, training), and exactly how that impacts your overall utilisation—so nothing slips through the cracks.

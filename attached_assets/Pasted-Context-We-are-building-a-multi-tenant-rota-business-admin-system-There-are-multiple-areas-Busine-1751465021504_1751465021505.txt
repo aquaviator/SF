@@ -1,0 +1,162 @@
+Context:
+We are building a multi-tenant rota/business admin system. There are multiple areas (Business Settings, Staff, Policies, Holidays, Scheduling, etc.) that have buttons, forms, values, and stats.
+
+Problems Discovered:
+Many buttons (Add Role, Add Department, Add Location, Save, etc.) do nothing (no network/API, no visible effect, no modal—dead click).
+
+Placeholder/test data is shown without marking (e.g. “Total Shifts Allocated: 16”), so users/testers can’t tell what is real.
+
+Many PATCH/POST API routes error (400/404) or never fire at all (see error logs below).
+
+Profile/sidebar/user details do not update dynamically after changes.
+
+Staff/owner profile picture/logo upload not implemented or not reflected.
+
+Department dropdown is not dynamic from CRUD source.
+
+Deleting staff does not trigger an audit modal for reason (should log e.g. "Fired," "Resigned," "Unhired," etc).
+
+No CRUD for holiday entitlement, and no Holiday Journal for owner to view upcoming leave/sickness.
+
+Scheduling page can crash on undefined data: “Cannot read properties of undefined (reading 'length')”.
+
+Audit trail missing—no way to see what was changed and whether it was persisted.
+
+No info for user if a feature is test only, not yet implemented, or uses placeholder data.
+
+Your Task (as Dev):
+1. Fix All Broken/Dead Buttons
+Every button, menu item, or action must:
+
+A. Wire up to real API/action, or...
+
+B. If not yet functional, open a modal stating:
+
+“This feature is not yet implemented. [optional: Describe intended function].”
+
+C. If disabled, add tooltip:
+
+“Feature not yet implemented.”
+
+2. Mark All Placeholder/Test Data
+Any stat or field not persisted in the DB must display as
+
+“Total Shifts Allocated: 16 (placeholder)”
+
+or: “Holiday Entitlement: 24 (test value)”
+
+or: “Upcoming Shifts: 6 (TODO)”
+
+Use clear formatting (gray text, small, italic, info icon, etc).
+
+3. Dynamic Profile/Sidebar Updates
+Ensure all sidebar/profile/account data (name, company, logo, role, profile photo) updates immediately when changed.
+
+Staff and owner can upload profile pictures via modal. Show confirmation and instantly update UI.
+
+Owner/company logo upload required; visible in all appropriate areas.
+
+Staff see their photo/avatar in lists and modals.
+
+4. Departments/Locations Dynamic CRUD
+Department dropdowns/lists must be dynamically sourced from CRUD department data, not static.
+
+Owner manages departments/locations via Settings (CRUD interface).
+
+When a new department/location is added or renamed, all dropdowns update live.
+
+5. Staff Deletion/Exit Modal
+Deleting/removing a staff member must open a modal:
+
+Select reason: “Fired,” “Resigned,” “Not Hired,” “Left Voluntarily,” “Role Ended,” etc.
+
+Optionally add a note.
+
+Reason and note are logged/audited.
+
+6. Holiday CRUD + Holiday Journal
+Add CRUD for staff holiday entitlement per user/role.
+
+Add “Holiday Journal”/calendar to owner dashboard to see all upcoming holidays & sickness (with status).
+
+7. Scheduling Data Safeguard
+All table cells/components must gracefully handle undefined/null data, never crash (“Cannot read properties of undefined”).
+
+If data missing, show placeholder “(no data)” or fallback.
+
+8. Audit Trail & Persistence Feedback
+For every setting or data change, log/audit where the change is stored (user sees “Change saved. [Audit: saved to XYZ]”).
+
+If data is NOT persisted, modal must say:
+
+“This is placeholder/test data. Your change is not saved permanently.”
+
+9. Error Handling & Transparency
+All errors (API 400/404/etc.) must show user-friendly message, and log detailed error for developer inspection.
+
+Never “silent fail.” User always sees what happened, even if it’s “Feature not yet available.”
+
+10. Site-Wide Transparency Principle
+Every action must either work and persist, or explicitly state ‘TODO,’ ‘Placeholder,’ or ‘Not yet implemented.’
+
+Absolutely no dead buttons, magic values, or silent dummy data.
+
+All “magic numbers” must state their placeholder status.
+
+All modals, forms, and fields must be honest about their state.
+
+Errors to Review/Fix (from logs):
+Buttons in Business Settings, Policies, Operating Hours, Departments, Roles, Locations:
+
+No network traffic, nothing happens.
+
+Fix: Wire up, or modal “Not yet implemented.”
+
+PATCH/POST errors:
+
+PATCH /api/job-roles/1 404
+
+PATCH /api/job-roles/3 404
+
+POST /api/shift-policies 404
+
+PUT /api/shifts/undefined 404
+
+GET /api/operating-hours 400
+
+Any new API endpoint should handle test/mock data with explicit user feedback.
+
+Scheduling.tsx crash:
+
+“Cannot read properties of undefined (reading 'length')”
+
+Table renders must handle missing/null/undefined data robustly.
+
+ACCEPTANCE CRITERIA / TESTING:
+ All buttons have a function or give a clear “not implemented” modal/tooltip.
+
+ All dummy values are visibly marked “(placeholder)/(test value)/(TODO)” site-wide.
+
+ All data changes persist or show clear feedback when not possible.
+
+ No page or modal can crash due to undefined/null data.
+
+ Profile/sidebar reflects real-time changes and uploads.
+
+ All dynamic dropdowns/lists (departments, roles, locations) update instantly from CRUD.
+
+ Holiday CRUD & journal/calendar implemented.
+
+ All deletions/terminations show reason modal & are audited.
+
+ User always knows if what they’re seeing is real, TODO, or fake data.
+
+ Devs/testers can verify all above by visually reviewing the UI—no ambiguity left.
+
+EXTRA (optional for Devs):
+Use a reusable <PlaceholderIndicator/> component for placeholder values.
+
+Consider a global “Feature TODO” provider to manage not-implemented feature flags across app.
+
+Site-wide audit: as a pre-launch task, every view, button, and value is reviewed for this principle.
+

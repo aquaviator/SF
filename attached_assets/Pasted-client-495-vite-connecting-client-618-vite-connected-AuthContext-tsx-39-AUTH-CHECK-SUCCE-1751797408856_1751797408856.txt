@@ -1,0 +1,60 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+AuthContext.tsx:39 ✅ AUTH_CHECK_SUCCESS Object
+/api/time-entries:1 
+            
+            
+           Failed to load resource: the server responded with a status of 400 (Bad Request)
+profile.tsx:124 Personal profile data loaded: Object
+out-4.5.44.js:1 XHR finished loading: POST "https://m.stripe.com/6".
+(anonymous) @ out-4.5.44.js:1
+i @ out-4.5.44.js:1
+s @ out-4.5.44.js:1
+(anonymous) @ out-4.5.44.js:1
+(anonymous) @ out-4.5.44.js:1
+Promise.then
+S @ out-4.5.44.js:1
+y @ out-4.5.44.js:1
+E @ out-4.5.44.js:1
+e.onload @ inner.html:1
+script
+(anonymous) @ inner.html:1
+(anonymous) @ inner.html:1
+out-4.5.44.js:1 XHR finished loading: POST "https://m.stripe.com/6".
+(anonymous) @ out-4.5.44.js:1
+i @ out-4.5.44.js:1
+s @ out-4.5.44.js:1
+h @ out-4.5.44.js:1
+e @ inner.html:1
+out-4.5.44.js:1 XHR finished loading: POST "https://m.stripe.com/6".
+(anonymous) @ out-4.5.44.js:1
+i @ out-4.5.44.js:1
+s @ out-4.5.44.js:1
+(anonymous) @ out-4.5.44.js:1
+(anonymous) @ out-4.5.44.js:1
+Promise.then
+S @ out-4.5.44.js:1
+y @ out-4.5.44.js:1
+E @ out-4.5.44.js:1
+e @ inner.html:1
+shared-52bde51db9135adabfcaed2c8db801ae.js:1 Fetch finished loading: POST "https://r.stripe.com/b".
+(anonymous) @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+e @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+c @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+setTimeout
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+(anonymous) @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+value @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+log @ shared-52bde51db9135adabfcaed2c8db801ae.js:1
+log @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+value @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+value @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1
+(anonymous) @ controller-with-preconnect-e0721a5fd37acf455c81d78da89aab65.js:1

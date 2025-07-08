@@ -1,0 +1,86 @@
+You’re definitely moving in the right direction: you’ve collapsed your two‐step “pick file → uploadPhoto()” flow into a single handler buried inside your PhotoUpload callback, and you’re immediately funneling the returned URL into your React-Query mutation. That will eliminate the dead‐end uploadPhoto helper and the dangling photoFile state, and it gives instant feedback on success or failure.
+
+A few more tweaks and clean-ups to consider:
+
+Remove unused handlers & state
+You still have handlePhotoChange, uploadPhoto, the photoFile state, uploadingPhoto, and pendingPhotoUrl sitting around—even though your JSX only drives PhotoUpload. You can safely delete those bits now that you’ve centralized everything in the inline onImageChange.
+
+Loading / disable state
+Right now you’re not surfacing any spinner or “uploading…” state on your avatar component. Consider tying a boolean (e.g. isUploadingPhoto) to your mutation’s isLoading or isPending, and passing that down so the user sees that the avatar is in flight.
+
+Error handling
+If your backend rejects (e.g. file too big, bad mime-type), make sure PhotoUpload can bubble errors up so you can toast() them. Right now you optimistically call updateMutation.mutate(), but if the URL is bogus or expired you may end up persisting a bad value.
+
+Optimistic UI
+You already update the form’s photoUrl right away, but consider rolling back if the mutation errors. React-Query’s useMutation supports onMutate/onError/onSettled hooks for that pattern.
+
+Cohesive API helper
+If you still want to use your apiRequest wrapper, make it smart enough to accept either a JSON body or a FormData. It should detect instanceof FormData and then skip setting Content-Type: application/json, so you can do
+
+ts
+Copy
+Edit
+apiRequest("POST", `/api/users/${user.id}/photo`, formData)
+without falling back to fetch() manually.
+
+Cleanup console logs
+Once it’s working, strip out the console.log(…) noise—especially the ones that reveal password, tenantId, or other sensitive bits whenever you do a full update.
+
+Minimal cleanup suggestion
+ts
+Copy
+Edit
+export default function Profile() {
+  // …all the existing state/hooks…
+
+  const photoUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const data = new FormData();
+      data.append("photo", file);
+      data.append("userId", String(user?.id));
+      // Let apiRequest detect FormData and skip JSON headers:
+      const res = await apiRequest("POST", `/api/users/${user?.id}/photo`, data);
+      if (!res.ok) throw new Error("Upload failed");
+      return res.json() as Promise<{ photoUrl: string }>;
+    },
+    onSuccess: ({ photoUrl }) => {
+      toast({ title: "Success", description: "Photo updated!" });
+      // reuse your existing mutation flow
+      handleDirectPhotoChange(photoUrl);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  });
+
+  return (
+    {/* … */}
+    <PhotoUpload
+      type="avatar"
+      currentImage={userData?.photoUrl}
+      isLoading={photoUploadMutation.isLoading}
+      onFileSelect={(file) => photoUploadMutation.mutate(file)}
+      size="md"
+    />
+    {/* … */}
+  );
+}
+This dumps all the extra state (photoFile, pendingPhotoUrl, etc.)
+
+Keeps all file‐upload logic in one useMutation
+
+Reuses your existing direct‐URL flow for storing the final photoUrl
+
+Exposes a loading prop so PhotoUpload can show a spinner or disable itself
+
+With those changes in place, your photo‐upload path will be both simple and bullet-proof. Let me know if you need any help wiring up the FormData-detecting logic in apiRequest!
+
+
+
+
+
+
+
+
+
+Ask ChatGPT

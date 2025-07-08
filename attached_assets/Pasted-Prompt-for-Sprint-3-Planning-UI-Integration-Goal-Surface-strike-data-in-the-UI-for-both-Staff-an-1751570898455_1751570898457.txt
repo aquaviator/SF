@@ -1,0 +1,81 @@
+Prompt for Sprint 3 Planning & UI Integration
+
+Goal: Surface strike data in the UI for both Staff and Owner, integrate live updates, and scope out Sprint 3 tasks.
+
+1. UI Placement & Component Breakdown
+Staff “My Work” Area
+
+My Strikes (new tab below “Holiday Requests”):
+
+Summary Card: “My Strike Points: X / Y max”
+
+StrikeHistoryList: chronological list (date, reason, points, status)
+
+Reset Countdown: “Next reset in Z days”
+
+Alert Banner if points ≥ threshold
+
+Alert Banner (global in My Work):
+
+“You have X strike points. You cannot claim new shifts until Y/YYYY.”
+
+Owner “Workforce” Area
+
+Workforce Overview (new section next to “Staff Status”):
+
+StrikeSummaryCard: total staff over threshold, staff at 0 points
+
+StrikeTable column in existing “Performance Metrics” table
+
+High-Risk Alerts: banner listing staff with points ≥ 75% of max
+
+Compliance & Strikes Dashboard (enhanced):
+
+Filterable table of all staff strikes (with last 30 days view)
+
+Bulk actions: view detail, deactivate strike, add manual strike
+
+2. Data Integration & Live Updates
+WebSocket Hook: useStrikeEvents()
+
+Emits events: STRIKE_ADDED, STRIKE_RESET, CLAIM_GUARD_BLOCKED
+
+Updates UI in real time without refresh
+
+staffApi.owner.getStrikes(userId) & staffApi.staff.getMyStrikes()
+
+Already implemented; wire them into new components
+
+Console Logging:
+
+LOAD_MY_STRIKES, LOAD_STAFF_STRIKES, STRIKE_EVENT_RECEIVED
+
+3. Responsive & Accessibility
+Desktop: table with sortable columns
+
+Mobile: card-stack list
+
+Touch Targets: 44 px min on buttons
+
+ARIA: role=”alert” on banners, aria-label on close buttons
+
+4. Acceptance Criteria
+Staff sees accurate personal strike count and history under “My Strikes”
+
+Owner sees strike columns in workforce table and high-risk alerts
+
+Live updates push new strikes/ resets without full page reload
+
+All interactions pass WCAG 2.1 AA (keyboard, screen-reader)
+
+No regressions in existing pages
+
+5. Sprint 3 Backlog
+Task	Owner	Estimate	Notes
+Add “My Strikes” tab & components (Staff)	Frontend	3d	Wireframe, API wiring, tests
+Enhance “Workforce” overview (Owner)	Frontend	2d	Insert cards & table columns
+Implement useStrikeEvents() WebSocket hook	Backend/FE	2d	Socket setup, event handlers
+Cook up alert banners & modals	Frontend	1.5d	Accessibility, dismissible
+E2E tests for Staff & Owner UIs	QA	2d	Cypress scenarios for live events
+Accessibility audit & fixes	QA/FE	1d	ARIA roles, focus management
+Update documentation & changelog	Docs	0.5d	New routes, components

@@ -1,0 +1,39 @@
+Sprint 3: Staff “My Shifts” Refactor and Live Operations Enhancements
+
+1. **Staff “My Shifts” Refactor**
+   - Group shifts into tabs: “Today,” “This Week (Mon–Sun),” “Upcoming,” “Completed.”
+   - Render each shift as a minimal card showing:
+     - Status badge (completed, cancelled, clocked_out, etc.)
+     - Role initials
+     - Date • Time
+     - Location
+   - Add an escalation countdown on “Upcoming” cards (e.g. “Swap until 2h 15m before start”).
+   - Pre-mount a detail modal (hidden by default, focus-trapped) that opens on card click and offers Duplicate/Create/Delete actions—log every open/close and button click.
+
+2. **Staff Time Tracking Improvements**
+   - Sync “Current Status” and “Time Worked” live with the API.
+   - Flag overdue shifts in real time if now > scheduled end + buffer (show “Overdue”).
+   - Surface missed clock-in/out warnings in the UI based on buffer policies.
+   - Refresh staff UI immediately when an owner override occurs.
+
+3. **Owner “Live Operations” Expansion**
+   - Add a “Who’s Working Now” table at top of /owner/operations showing:
+     | Name | Role | Clock-In | Scheduled End | Status | Actions (Override) |
+   - Update the “Time Tracking” panel to reflect active time entries.
+   - In each row, include inline “Adjust Clock-In” and “Force Clock-Out” buttons.
+   - Add an “Escalations” panel listing policy breaches (late starts, no-shows, overdue).
+   - Ensure all modals are pre-mounted, ARIA compliant, keyboard-navigable, and log their lifecycle.
+
+4. **Policy & Strike UI Integration**
+   - On **Staff** “My Work,” add a “My Strikes” widget with total points and link to “My Strikes” tab.
+   - On **Owner** Live Operations, add a “Policy Violations” summary with quick-fix links.
+
+**Logging & Testing Requirements:**
+- Console‐log every API request/response, modal open/close, and button click.
+- Write Jest unit tests and Cypress E2E tests covering:
+  - Grouped shift tabs and card interactions.
+  - Countdown and policy‐driven disablement of swap/cancel buttons.
+  - Live Operations table updates and override actions.
+  - Real-time flagging of overdue/missing time entries.
+
+Please implement step 1 first (Staff “My Shifts” refactor). Provide a commit summary and evidence of console logs and test results.

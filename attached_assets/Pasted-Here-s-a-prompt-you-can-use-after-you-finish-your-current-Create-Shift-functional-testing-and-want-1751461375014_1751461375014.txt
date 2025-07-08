@@ -1,0 +1,92 @@
+Here’s a prompt you can use after you finish your current “Create Shift” functional testing and want the agent to properly implement full CRUD in the Calendar Day view, as well as copy/duplicate/add/delete actions and assignment fixes. This also instructs the agent to fix all errors you found (like the API 404/400s, missing handler, and “assignment staff” dropdown not updating), and ensures DRY, robust code for both calendar and list views.
+
+Prompt:
+Next Task: Robust CRUD in Calendar Day View (and Fix All Current Shift CRUD Issues)
+
+1. Context:
+
+The “Create Shift” function is currently broken.
+
+API requests for edit/delete/create shifts are returning 404/400s (likely due to bad endpoints or missing/undefined IDs in the request).
+
+The Calendar Day modal does not allow full CRUD (Create, Read, Update, Delete), copy/duplicate, or assignment editing.
+
+There is no way to select assigned staff when “Assignment Type” is set to “Assigned Staff.”
+
+The list view and calendar view must use consistent code and behavior for all shift actions.
+
+Assignment options: “Assigned Staff” should present a staff dropdown, “Open” should allow an opportunity to be claimed by any eligible staff.
+
+Staff/owner experience: Owners can manage all shifts, staff can view/accept/decline or claim open shifts.
+
+2. Requirements:
+
+Fix all Shift CRUD API calls:
+
+Ensure correct endpoints, all necessary IDs in the route/params, and that requests do not send “undefined” in the URL.
+
+All errors (404, 400) should be fully debugged and resolved.
+
+Calendar Day View:
+
+When clicking a calendar day, open a modal with a list of all shifts for that day.
+
+For each shift:
+
+Show shift details
+
+Buttons for: Edit, Delete, Duplicate/Copy
+
+Clicking “Edit” opens a prefilled modal, updates shift on save.
+
+Clicking “Delete” shows a custom confirmation modal (not browser alert!) and deletes on confirm.
+
+Clicking “Duplicate/Copy” allows creating a new shift with all fields prefilled from that shift.
+
+Shift Modal (Create/Edit):
+
+When assignment type is “Assigned Staff,” show a dropdown of available staff to select.
+
+When “Open,” do not require staff selection (anyone can claim).
+
+All staff and assignment data to be loaded dynamically.
+
+All CRUD operations must update both list view and calendar immediately after change.
+
+Bulk actions:
+
+If “Create Template” is used to generate many shifts, ensure shifts are properly bulk-created and all appear in both views.
+
+Error Handling:
+
+Any failed API call or invalid form input shows a friendly, styled error (not just console.log or browser alerts).
+
+If API returns 404/400, show exactly what failed.
+
+Testing/Validation:
+
+You do NOT need to build automated tests until manual functional tests pass.
+
+After implementation, print a checklist of features to manually verify.
+
+3. Deliverables:
+
+Working code with all CRUD actions in Calendar Day view and Shift List view
+
+Copy/duplicate functionality in both views
+
+Staff assignment dropdown working for assigned shifts
+
+Error handling for all CRUD failures
+
+Clear functional checklist for me to test
+
+4. Constraints:
+
+Do NOT break any existing features in scheduling or assignment modules
+
+Code should be DRY: no duplicated modal logic or shift forms between list and calendar
+
+No automated tests needed for this cycle; focus on working features and clear UI/UX
+
+After you finish, tell me exactly which manual tests I should run for each new/fixed feature.

@@ -1,0 +1,51 @@
+Agent Shifts, let’s fix the “Error Profile Data not loaded” bug and add a loading‐state so the form never renders before data is available—and then prove it with automated tests:
+
+1. **Fetch & Loading State**  
+   - In `src/pages/profile.tsx`, add:  
+     ```ts
+     const [userData, setUserData] = useState<User | null>(null);
+     const [loading, setLoading] = useState(true);
+     useEffect(() => {
+       apiRequest('GET', `/api/staff/${user.id}`)
+         .then(data => setUserData(data))
+         .finally(() => setLoading(false));
+     }, [user.id]);
+     if (loading) return <Spinner />;        // show spinner until ready
+     if (!userData) return <ErrorPage msg="Failed to load profile" />;
+     ```
+   - Pass `defaultValues={userData}` into your React Hook Form so the modal form always has the existing data.
+
+2. **Update Submit Logic**  
+   - Ensure on submit you merge `userData` with form values (as before) and call the PUT.
+   - No more manual “Error Profile Data not loaded” throw.
+
+3. **Enhance ProfilePage.test.tsx**  
+   - Mock the GET `/api/staff/1` to resolve with a full user object.  
+   - Render `<ProfilePage />` and assert:  
+     • `<Spinner>` shows initially, then disappears.  
+     • The “Edit Profile” button is enabled only after loading.  
+     • No “Error Profile Data not loaded” message ever appears.  
+   - Keep your existing test for the PUT call intact.
+
+4. **Run & Capture Tests**  
+   - Execute only the profile tests:  
+     ```
+     npx jest --testPathPattern=ProfilePage.test.tsx --silent
+     ```
+   - Include the pass/fail log in your report.
+
+5. **Lint & Full Pipeline**  
+   - Run `npm run lint` (zero errors/warnings)  
+   - Run `npm test` (no failures/timeouts)
+
+6. **Commit**  
+   - Stage changes and commit with message:  
+     ```
+     fix(profile): add data fetch & loading state to ProfilePage
+     ```
+   - Husky/lint-staged should block if anything fails.
+
+7. **Deviation Report**  
+   - List any deviations (new Spinner component, changed error handling, test adjustments).
+
+Please execute steps 1–6, include the Jest output for ProfilePage.test, and then provide your Deviation Report.```

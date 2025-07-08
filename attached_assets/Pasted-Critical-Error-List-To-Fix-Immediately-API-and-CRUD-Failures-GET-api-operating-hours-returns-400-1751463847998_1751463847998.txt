@@ -1,0 +1,83 @@
+Critical Error List: To Fix Immediately
+API and CRUD Failures:
+
+GET /api/operating-hours returns 400 Bad Request or 404 Not Found
+→ Confirm payload/params, ensure route exists and is robust against bad data.
+→ On 400s, log request payload and add UI feedback if data is invalid.
+
+PATCH /api/job-roles/:id returns 404 Not Found
+→ Patch fails (role updates do nothing); double-check if role exists, ensure dynamic ID, and backend route handler.
+
+POST /api/shift-policies returns 404 Not Found
+→ Cannot create policies; ensure endpoint exists and wiring is complete.
+
+PATCH /api/job-roles/:id (again, for role edits) returns 404
+→ Same as above; confirm both FE and BE use correct, valid ID.
+
+PUT /api/shifts/undefined (note “undefined”)
+→ Bug: shift ID is not passed, resulting in 404.
+→ Check modal/form logic, make sure selected shift ID is always present before update, and guard on backend.
+
+DELETE /api/shifts?tenantId=acme-corp/5 returns 404 Not Found
+→ Deletion of shifts failing; check if the shift ID is properly parsed, and if endpoint matches expected query params.
+
+POST /api/business-profile returns 404 Not Found
+→ Business profile updates aren’t wired to a valid endpoint.
+
+Business Profile UI states “Updated” even when backend fails
+→ Alert/notification system not hooked to actual result. Only show success on real success; surface error message otherwise.
+
+Create Role does nothing
+→ Modal or form not wired to backend/endpoint is missing or broken. Fix or wire up.
+
+Delete staff does not work
+→ Same as above; modal should include “reason for deletion” and update backend accordingly. Reasons could include “fired,” “not hired,” “left company,” etc. Always confirm before deleting.
+
+Dynamic Dropdown/CRUD Issues:
+
+Department dropdown is static, not dynamic
+→ Should reflect Department CRUD (list is managed by owner, changes reflected instantly in dropdown).
+
+Staff invitation/activation
+→ Confirm if invite sends activation email. If not, wire this up so every add sends email with activation link.
+
+Profile & Sidebar/Avatar Issues:
+
+SidebarNav not updating on info change
+→ Owner/staff details, business name, and role badge must update instantly when profile/business info changes.
+
+No logo or profile picture uploads for owner/staff
+→ Add upload + preview/crop for business logo and all users’ avatars (owner “mugshot” and staff avatar/profile pic).
+
+Staff avatar/character upload
+→ Modal flow (no extra info needed, just upload).
+
+Other Missing/Incomplete Features:
+
+No CRUD for Holiday Entitlements
+→ Add full create, read, update, delete for staff holidays/leave.
+
+No Holiday Journal for owner
+→ Dashboard section for upcoming staff holidays, sick days, with at-a-glance log.
+
+Technical/UX Requirements
+All failed API calls should surface an actionable error in UI, not just in console.
+
+All modals (delete, create, edit) should have clear loading, success, error states.
+
+Dropdowns (department, roles) must be fully dynamic—populated from live CRUD endpoints.
+
+Profile completion must be tracked (optional: “Profile 85% complete” widget).
+
+After profile or logo update, SidebarNav and all relevant UI must re-render immediately.
+
+Owner and staff avatar upload should support preview, cropping, file type validation.
+
+All success/failure notifications should be based on real backend response.
+
+Acceptance Criteria:
+No console errors during all standard CRUD flows.
+UI always matches backend state.
+All dropdowns are dynamic.
+All avatars/logos/profile info update in real time across UI.
+Delete and invite actions trigger confirmation, email (for invite), and reason capture (for delete).

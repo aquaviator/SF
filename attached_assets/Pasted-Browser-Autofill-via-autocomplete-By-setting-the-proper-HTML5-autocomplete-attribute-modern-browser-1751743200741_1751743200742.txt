@@ -1,0 +1,105 @@
+Browser Autofill via autocomplete
+By setting the proper HTML5 autocomplete attribute, modern browsers will offer your users their saved email or website entries:
+
+html
+Copy
+Edit
+<form>
+  <!-- email will trigger the browser’s stored-email suggestions -->
+  <label for="email">Email</label>
+  <input
+    type="email"
+    id="email"
+    name="email"
+    autocomplete="email"
+    placeholder="you@example.com"
+  />
+
+  <!-- url will trigger the browser’s saved-website suggestions -->
+  <label for="website">Website</label>
+  <input
+    type="url"
+    id="website"
+    name="website"
+    autocomplete="url"
+    placeholder="https://"
+  />
+</form>
+Pros: Zero JavaScript, users see exactly what they’ve saved in Chrome/Firefox/Edge.
+
+Cons: Only works if users have stored credentials/URLs in their browser.
+
+2. Domain-Completion via <datalist>
+If you want to give inline suggestions—say, common email domains or TLDs—you can pair your input with a <datalist>:
+
+html
+Copy
+Edit
+<label for="email">Email</label>
+<input
+  type="email"
+  id="email"
+  name="email"
+  list="email-domains"
+  placeholder="alice@"
+  autocomplete="off"
+/>
+<datalist id="email-domains">
+  <option value="@gmail.com">
+  <option value="@yahoo.com">
+  <option value="@outlook.com">
+  <option value="@company.com">
+</datalist>
+As soon as the user types alice@, the dropdown shows @gmail.com, @yahoo.com etc., letting them pick instead of typing the rest.
+
+You can do the same for URLs (e.g. suggest .com, .io, .co.uk).
+
+3. JavaScript Type-Ahead Libraries
+For richer, “Google-style” predictive suggestions—perhaps even pulled dynamically from your user base or a company-domain database—you can drop in a tiny autocomplete library:
+
+Awesomplete (~2 KB)
+
+Typeahead.js (with Bloodhound engine)
+
+AutoComplete.js
+
+html
+Copy
+Edit
+<input id="email" placeholder="you@example.com" />
+<script src="autoComplete.min.js"></script>
+<script>
+new autoComplete({
+  selector: "#email",
+  minChars: 1,
+  source: term => {
+    const domains = ["gmail.com","yahoo.com","outlook.com"];
+    const [local, maybeDomain] = term.split("@");
+    if (!maybeDomain) return domains.map(d => `${local}@${d}`);
+    return domains
+      .filter(d => d.startsWith(maybeDomain))
+      .map(d => `${local}@${d}`);
+  }
+});
+</script>
+Pros: Highly customizable, can fetch suggestions via AJAX (e.g. your company’s directory or Clearbit’s domain API).
+
+Cons: Extra dependency and a few lines of setup.
+
+4. Mobile-First Input Optimization
+On mobile especially, you can hint the keyboard layout:
+
+html
+Copy
+Edit
+<input type="email" inputmode="email" />
+<input type="url" inputmode="url" />
+This ensures the “@”, “.”, and “/” keys are more accessible on iOS/Android keyboards.
+
+Which to Use?
+Quickest: autocomplete="email" / autocomplete="url" — no extra code.
+
+Lightweight inline hints: <datalist> for common domains or TLDs.
+
+Advanced: A JavaScript type-ahead library if you need cross-field or dynamic suggestions (e.g. letting users pick from your company’s existing user list or domain registry).
+
