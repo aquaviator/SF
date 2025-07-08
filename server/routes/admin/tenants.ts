@@ -46,7 +46,7 @@ export function setupAdminTenantRoutes(app: Express) {
           createdAt: tenants.created_at,
           userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
-          seatsUsed: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain} AND is_active = true)`,
+          seatsUsed: sql<number>`COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
           seatsIncluded: sql<number>`COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 5)`,
         })
         .from(tenants);
