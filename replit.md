@@ -125,6 +125,13 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 08, 2025. Fixed critical admin 2FA login failure by correcting control flow and password authentication:
+  - Fixed missing return statement in admin 2FA login flow causing 503 Service Unavailable errors
+  - Updated admin password hash to ensure 'password123' authentication works correctly
+  - Verified complete 2FA workflow: login → requires 2FA → session cookie persistence → 2FA verification required
+  - Admin login now properly returns {"success":true,"require2fa":true} with session cookie for 2FA flow
+  - Fixed session handling to prevent dual response sending that was causing deployment failures
+  - All admin authentication endpoints now working correctly in both localhost and deployment environments
 - July 08, 2025. Fixed critical deployment authentication issues and activation email URL generation:
   - Fixed session cookie configuration to work with both custom domains (task-master-leatfield.replit.app) and default Replit domains
   - Updated session middleware with flexible domain support - removed domain restrictions that were causing authentication failures

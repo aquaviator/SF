@@ -113,6 +113,7 @@ export function setupAdminAuthRoutes(app: Express) {
             });
           }
         });
+        return; // CRITICAL: Exit here to prevent continuing to non-2FA flow
       }
 
       // No 2FA required - mark as fully authenticated

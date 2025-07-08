@@ -1,0 +1,67 @@
+index-C_emoQfl.js:48 
+            
+            
+           GET https://task-master-leatfield.replit.app/api/auth/me 401 (Unauthorized)
+Be @ index-C_emoQfl.js:48
+i @ index-C_emoQfl.js:493
+(anonymous) @ index-C_emoQfl.js:493
+Tb @ index-C_emoQfl.js:40
+Zu @ index-C_emoQfl.js:40
+U_ @ index-C_emoQfl.js:40
+ql @ index-C_emoQfl.js:38
+OX @ index-C_emoQfl.js:40
+sc @ index-C_emoQfl.js:40
+j6 @ index-C_emoQfl.js:40
+w @ index-C_emoQfl.js:25
+_ @ index-C_emoQfl.js:25
+index-C_emoQfl.js:48 
+            
+            
+           GET https://task-master-leatfield.replit.app/api/auth/me 401 (Unauthorized)
+Be @ index-C_emoQfl.js:48
+i @ index-C_emoQfl.js:493
+(anonymous) @ index-C_emoQfl.js:493
+Tb @ index-C_emoQfl.js:40
+Zu @ index-C_emoQfl.js:40
+U_ @ index-C_emoQfl.js:40
+ql @ index-C_emoQfl.js:38
+OX @ index-C_emoQfl.js:40
+sc @ index-C_emoQfl.js:40
+j6 @ index-C_emoQfl.js:40
+w @ index-C_emoQfl.js:25
+_ @ index-C_emoQfl.js:25
+index-C_emoQfl.js:623 
+            
+            
+           POST https://task-master-leatfield.replit.app/api/admin/login 503 (Service Unavailable)
+c @ index-C_emoQfl.js:623
+QY @ index-C_emoQfl.js:37
+ZY @ index-C_emoQfl.js:37
+JY @ index-C_emoQfl.js:37
+d_ @ index-C_emoQfl.js:37
+P3 @ index-C_emoQfl.js:37
+(anonymous) @ index-C_emoQfl.js:37
+xT @ index-C_emoQfl.js:40
+ZF @ index-C_emoQfl.js:37
+Lw @ index-C_emoQfl.js:37
+HC @ index-C_emoQfl.js:37
+pQ @ index-C_emoQfl.js:37
+index-C_emoQfl.js:623 ❌ ADMIN_LOGIN_ERROR {error: SyntaxError: Unexpected token 'S', "Service Unavailable" is not valid JSON}
+overrideMethod @ hook.js:608
+c @ index-C_emoQfl.js:623
+await in c
+QY @ index-C_emoQfl.js:37
+ZY @ index-C_emoQfl.js:37
+JY @ index-C_emoQfl.js:37
+d_ @ index-C_emoQfl.js:37
+P3 @ index-C_emoQfl.js:37
+(anonymous) @ index-C_emoQfl.js:37
+xT @ index-C_emoQfl.js:40
+ZF @ index-C_emoQfl.js:37
+Lw @ index-C_emoQfl.js:37
+HC @ index-C_emoQfl.js:37
+pQ @ index-C_emoQfl.js:37
+favicon.ico:1 
+            
+            
+           GET https://task-master-leatfield.replit.app/favicon.ico 500 (Internal Server Error)
