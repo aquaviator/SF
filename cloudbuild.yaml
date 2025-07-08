@@ -1,40 +1,45 @@
 steps:
+# 1) Build the Docker image from your hello-world Dockerfile
 - name: 'gcr.io/cloud-builders/docker'
   args:
-  - 'build'
-  - '-t'
-  - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
-  - '-f'
-  - 'apps/hello-world/Dockerfile'
-  - 'apps/hello-world'
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
+    - '-f'
+    - 'apps/hello-world/Dockerfile'
+    - 'apps/hello-world'
 
+# 2) Push the image up to gcr.io
 - name: 'gcr.io/cloud-builders/docker'
   args:
-  - 'push'
-  - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
+    - 'push'
+    - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
 
+# 3) Deploy to Cloud Run, with secrets injected
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   secretEnv:
-  - DATABASE_URL
-  - DB_PASSWORD
+    - DATABASE_URL
+    - DB_PASSWORD
   entrypoint: bash
   args:
-  - -c
-  - |
-    gcloud run deploy ${_SERVICE} \
-      --image gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID \
-      --region ${_REGION} \
-      --platform managed \
-      --allow-unauthenticated \
-      --set-env-vars DATABASE_URL=$$DATABASE_URL,DB_PASSWORD=$$DB_PASSWORD
+    - -c
+    - |
+      gcloud run deploy ${_SERVICE} \
+        --image gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID \
+        --region ${_REGION} \
+        --platform managed \
+        --allow-unauthenticated \
+        --set-env-vars DATABASE_URL=$$DATABASE_URL,DB_PASSWORD=$$DB_PASSWORD
 
+# Tell Cloud Build how to fetch your Secret Manager secrets
 availableSecrets:
   secretManager:
-  - versionName: projects/shiftflow-a6db0/secrets/DATABASE_URL/versions/latest
-    env: DATABASE_URL
-  - versionName: projects/shiftflow-a6db0/secrets/DB_PASSWORD/versions/latest
-    env: DB_PASSWORD
+    - versionName: projects/shiftflow-a6db0/secrets/DATABASE_URL/versions/latest
+      env: DATABASE_URL
+    - versionName: projects/shiftflow-a6db0/secrets/DB_PASSWORD/versions/latest
+      env: DB_PASSWORD
 
+# Default substitutions (overridden by CLI flags or trigger configs)
 substitutions:
   _SERVICE: "sf-test"
   _REGION:  "europe-west1"
