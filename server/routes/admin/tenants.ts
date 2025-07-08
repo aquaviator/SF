@@ -615,17 +615,17 @@ export function setupAdminTenantRoutes(app: Express) {
           id: users.id,
           username: users.username,
           email: users.email,
-          firstName: users.first_name,
-          lastName: users.last_name,
+          firstName: users.firstName,
+          lastName: users.lastName,
           role: users.role,
-          isActive: users.is_active,
-          lastLogin: users.last_login,
-          createdAt: users.created_at,
-          updatedAt: users.updated_at
+          isActive: users.isActive,
+          lastLogin: users.lastLogin,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt
         })
         .from(users)
-        .where(eq(users.tenant_id, tenant.subdomain))
-        .orderBy(users.created_at);
+        .where(eq(users.tenantId, tenant.subdomain))
+        .orderBy(users.createdAt);
 
       console.log('✅ TENANT_USERS_FETCHED', { tenantId, userCount: tenantUsers.length, timestamp: new Date() });
       
@@ -660,15 +660,15 @@ export function setupAdminTenantRoutes(app: Express) {
         .update(users)
         .set({
           email,
-          first_name: firstName,
-          last_name: lastName,
+          firstName,
+          lastName,
           role,
-          is_active: isActive,
-          updated_at: new Date()
+          isActive,
+          updatedAt: new Date()
         })
         .where(and(
           eq(users.id, userId),
-          eq(users.tenant_id, tenant.subdomain)
+          eq(users.tenantId, tenant.subdomain)
         ))
         .returning();
 
@@ -708,7 +708,7 @@ export function setupAdminTenantRoutes(app: Express) {
         .delete(users)
         .where(and(
           eq(users.id, userId),
-          eq(users.tenant_id, tenant.subdomain)
+          eq(users.tenantId, tenant.subdomain)
         ))
         .returning();
 
