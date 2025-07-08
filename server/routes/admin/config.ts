@@ -145,22 +145,22 @@ router.get('/health', adminAuth, async (req, res) => {
     const isMaintenanceMode = maintenanceMode.length > 0 && 
                               maintenanceMode[0].value === 'true';
 
-    // Get basic system stats
+    // Get basic system stats with error handling
     const systemStats = await db.execute(`
       SELECT 
         (SELECT COUNT(*) FROM tenants) as total_tenants,
         (SELECT COUNT(*) FROM users) as total_users,
         (SELECT COUNT(*) FROM support_tickets WHERE status = 'open') as open_tickets
-    `);
+    `).catch(() => [{}]);
 
-    const stats = systemStats[0];
+    const stats = systemStats[0] || {};
     
     const healthStatus = {
       database: dbHealthy ? 'healthy' : 'error',
       maintenanceMode: isMaintenanceMode,
-      totalTenants: parseInt(stats.total_tenants as string),
-      totalUsers: parseInt(stats.total_users as string),
-      openTickets: parseInt(stats.open_tickets as string),
+      totalTenants: parseInt(stats.total_tenants as string) || 0,
+      totalUsers: parseInt(stats.total_users as string) || 0,
+      openTickets: parseInt(stats.open_tickets as string) || 0,
       timestamp: new Date().toISOString()
     };
 

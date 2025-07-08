@@ -136,11 +136,20 @@ export function AnalyticsSettings() {
       if (!response.ok) throw new Error('Failed to fetch revenue data');
       
       const data = await response.json();
-      setRevenueData(data);
+      // Ensure all numeric values are valid
+      const validatedData = Array.isArray(data) ? data.map(item => ({
+        ...item,
+        revenue: isNaN(item.revenue) ? 0 : Number(item.revenue),
+        subscriptions: isNaN(item.subscriptions) ? 0 : Number(item.subscriptions),
+        avgSeats: isNaN(item.avgSeats) ? 0 : Number(item.avgSeats)
+      })) : [];
+      setRevenueData(validatedData);
       
-      console.log('✅ REVENUE_DATA_FETCHED', { count: data.length, timestamp: new Date() });
+      console.log('✅ REVENUE_DATA_FETCHED', { count: validatedData.length, timestamp: new Date() });
     } catch (error) {
       console.error('❌ REVENUE_DATA_ERROR', { error });
+      // Set empty array on error to prevent chart issues
+      setRevenueData([]);
     }
   };
 
@@ -353,7 +362,7 @@ export function AnalyticsSettings() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueData}>
+              <BarChart data={revenueData.filter(item => !isNaN(item.revenue) && item.revenue >= 0)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />

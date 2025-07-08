@@ -56,7 +56,8 @@ router.get('/', adminAuth, async (req, res) => {
       })
       .from(supportTickets)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(supportTickets.createdAt));
+      .orderBy(desc(supportTickets.createdAt))
+      .catch(() => []);  // Handle any query errors gracefully
 
     console.log('✅ SUPPORT_TICKETS_FETCHED', { count: tickets.length, timestamp: new Date() });
     res.json(tickets);
@@ -159,9 +160,9 @@ router.get('/stats', adminAuth, async (req, res) => {
         END) as avg_resolution_time_hours
       FROM support_tickets
       WHERE created_at >= NOW() - INTERVAL '30 days'
-    `);
+    `).catch(() => [{}]);
 
-    const result = stats[0];
+    const result = stats[0] || {};
     
     console.log('✅ SUPPORT_STATS_FETCHED', { stats: result, timestamp: new Date() });
     res.json({
