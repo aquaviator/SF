@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { createAdminAuthHook } from "@/hooks/useAdminAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,9 @@ import {
   Shield,
   Settings,
   Database,
-  Globe
+  Globe,
+  LogOut,
+  Loader2
 } from "lucide-react";
 
 interface DashboardStats {
@@ -41,16 +45,29 @@ interface DashboardStats {
 }
 
 export default function SiteAdminPortal() {
+  const [, setLocation] = useLocation();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const useAdminAuth = createAdminAuthHook();
+  const { admin, isLoading: authLoading, isAuthenticated, logout } = useAdminAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation('/admin/login');
+    }
+  }, [authLoading, isAuthenticated, setLocation]);
 
   // Fetch dashboard statistics
   const { data: dashboardStats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['/api/admin/dashboard', refreshTrigger],
     queryFn: async () => {
-      const response = await fetch('/api/admin/dashboard');
+      const response = await fetch('/api/admin/dashboard', {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch dashboard data');
       return response.json();
     },
+    enabled: isAuthenticated,
   });
 
   const handleDataUpdate = () => {
@@ -75,7 +92,8 @@ export default function SiteAdminPortal() {
     }
   };
 
-  if (isLoading) {
+  // Show loading for both auth and data
+  if (authLoading || (!isAuthenticated && authLoading) || (isAuthenticated && isLoading)) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -94,6 +112,11 @@ export default function SiteAdminPortal() {
     );
   }
 
+  // Don't render portal if not authenticated (redirecting)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 space-y-6">
@@ -108,11 +131,21 @@ export default function SiteAdminPortal() {
               </p>
             </div>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <Badge variant="outline" className="gap-2">
               <Crown className="h-4 w-4 text-yellow-600" />
-              Super Admin Access
+              {admin?.role.replace('_', ' ').toUpperCase()} - {admin?.username}
             </Badge>
+            <button
+              onClick={async () => {
+                await logout();
+                setLocation('/admin/login');
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
           </div>
         </div>
 
