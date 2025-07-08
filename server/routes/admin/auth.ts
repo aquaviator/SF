@@ -140,8 +140,18 @@ export function setupAdminAuthRoutes(app: Express) {
   app.get('/api/admin/me', async (req, res) => {
     try {
       const session = req.session as any;
+      const domain = req.get('host');
+      
+      console.log('🔍 ADMIN_AUTH_CHECK', { 
+        sessionId: session.id?.substring(0, 8) + '...', 
+        adminId: session.adminId,
+        domain,
+        hasAdminSession: !!session.adminId,
+        timestamp: new Date() 
+      });
 
       if (!session.adminId) {
+        console.log('❌ ADMIN_AUTH_CHECK_NO_SESSION', { domain, timestamp: new Date() });
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
@@ -151,6 +161,7 @@ export function setupAdminAuthRoutes(app: Express) {
         .limit(1);
 
       if (!admin.length || !admin[0].isActive) {
+        console.log('❌ ADMIN_AUTH_CHECK_NOT_FOUND', { adminId: session.adminId, domain, timestamp: new Date() });
         session.adminId = undefined;
         return res.status(401).json({ message: 'Admin account not found or inactive' });
       }
@@ -159,6 +170,7 @@ export function setupAdminAuthRoutes(app: Express) {
 
       // Check 2FA status
       if (adminUser.is2faEnabled && !session.is2faVerified) {
+        console.log('🔐 ADMIN_AUTH_CHECK_2FA_REQUIRED', { adminId: adminUser.id, domain, timestamp: new Date() });
         return res.json({
           admin: {
             id: adminUser.id,
@@ -168,6 +180,14 @@ export function setupAdminAuthRoutes(app: Express) {
           require2fa: true
         });
       }
+
+      console.log('✅ ADMIN_AUTH_CHECK_SUCCESS', { 
+        adminId: adminUser.id, 
+        username: adminUser.username, 
+        role: adminUser.role,
+        domain,
+        timestamp: new Date() 
+      });
 
       res.json({
         admin: {

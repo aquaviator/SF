@@ -203,22 +203,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/auth/me', async (req, res) => {
     try {
+      const sessionId = req.session.id;
+      const userId = req.session.userId;
+      const domain = req.get('host');
+      
+      console.log('🔍 AUTH_CHECK', { 
+        sessionId: sessionId?.substring(0, 8) + '...', 
+        userId, 
+        domain,
+        hasSession: !!req.session.userId,
+        timestamp: new Date() 
+      });
+
       if (!req.session.userId) {
+        console.log('❌ AUTH_CHECK_NO_SESSION', { domain, timestamp: new Date() });
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
       const user = await storage.getUser(req.session.userId);
       
       if (!user) {
+        console.log('❌ AUTH_CHECK_USER_NOT_FOUND', { userId, domain, timestamp: new Date() });
         req.session.destroy(() => {});
         return res.status(401).json({ message: 'User not found' });
       }
+
+      console.log('✅ AUTH_CHECK_SUCCESS', { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role, 
+        domain,
+        timestamp: new Date() 
+      });
 
       // Return user data (without password)
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('❌ AUTH_CHECK_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: 'Internal server error' });
     }
   });
