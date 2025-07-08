@@ -90,17 +90,16 @@ export function setupAdminTenantRoutes(app: Express) {
           activeUsers: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenant.subdomain} AND is_active = true)`,
           lastActivity: sql<string>`(
             SELECT MAX(created_at) FROM (
-              SELECT created_at FROM shifts WHERE tenant_id = ${tenant.subdomain}
-              UNION ALL
               SELECT created_at FROM time_entries WHERE tenant_id = ${tenant.subdomain}
               UNION ALL
               SELECT created_at FROM activity_logs WHERE tenant_id = ${tenant.subdomain}
             ) activities
           )`,
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenant.subdomain}), 'inactive')`,
-          subscriptionPlan: sql<string>`COALESCE((SELECT plan_type FROM subscriptions WHERE tenant_id = ${tenant.subdomain}), 'free')`,
+          subscriptionPlan: sql<string>`COALESCE((SELECT plan_id FROM subscriptions WHERE tenant_id = ${tenant.subdomain}), 'free')`,
           seatsIncluded: sql<number>`COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = ${tenant.subdomain}), 5)`,
-          revenue: sql<number>`COALESCE((SELECT SUM(amount) FROM usage_metrics WHERE tenant_id = ${tenant.subdomain}), 0)`,
+          seatsUsed: sql<number>`COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = ${tenant.subdomain}), 0)`,
+          revenue: sql<number>`COALESCE((SELECT SUM(staff_used * 3) FROM usage_metrics WHERE tenant_id = ${tenant.subdomain}), 0)`,
         })
         .from(sql`(SELECT 1) as dummy`);
 
@@ -112,7 +111,7 @@ export function setupAdminTenantRoutes(app: Express) {
           createdAt: tenant.created_at,
           userCount: metrics.activeUsers,
           subscriptionStatus: metrics.subscriptionStatus,
-          seatsUsed: metrics.activeUsers,
+          seatsUsed: metrics.seatsUsed,
           seatsIncluded: metrics.seatsIncluded,
         },
         revenue: metrics.revenue,
@@ -152,11 +151,11 @@ export function setupAdminTenantRoutes(app: Express) {
           shiftCount: sql<number>`(SELECT COUNT(*) FROM shifts WHERE tenant_id = ${tenants.subdomain})`,
           lastActivity: sql<string>`(
             SELECT MAX(created_at) FROM (
-              SELECT created_at FROM shifts WHERE tenant_id = ${tenants.subdomain}
-              UNION ALL
               SELECT created_at FROM time_entries WHERE tenant_id = ${tenants.subdomain}
               UNION ALL
               SELECT created_at FROM holiday_requests WHERE tenant_id = ${tenants.subdomain}
+              UNION ALL
+              SELECT created_at FROM activity_logs WHERE tenant_id = ${tenants.subdomain}
             ) activities
           )`,
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
@@ -432,7 +431,7 @@ export function setupAdminTenantRoutes(app: Express) {
             tenant.id,
             `"${tenant.name}"`,
             tenant.subdomain,
-            tenant.createdAt.toISOString().split('T')[0],
+            tenant.created_at.toISOString().split('T')[0],
             userCount.count,
             shiftCount.count,
             userCount.count + shiftCount.count,
