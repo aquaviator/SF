@@ -5315,6 +5315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setup2FARoutes(app);
   setupAdminSeatPricingRoutes(app);
   
+  // Setup admin profile routes
+  const { adminProfileRoutes } = await import("./routes/admin/profile");
+  app.use("/api/admin/profile", adminProfileRoutes);
+  
   // Setup additional admin module routes
   app.use('/api/admin/support', supportRoutes);
   app.use('/api/admin/config', configRoutes);  

@@ -12,6 +12,7 @@ import { SupportManagement } from "@/components/site-admin/SupportManagement";
 import { ConfigManagement } from "@/components/site-admin/ConfigManagement";
 import { DomainManagement } from "@/components/site-admin/DomainManagement";
 import { AnalyticsSettings } from "@/components/site-admin/AnalyticsSettings";
+import { AdminProfile } from "@/components/site-admin/AdminProfile";
 import { 
   Users, 
   DollarSign, 
@@ -24,7 +25,8 @@ import {
   Database,
   Globe,
   LogOut,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 
 interface DashboardStats {
@@ -287,9 +289,9 @@ export default function SiteAdminPortal() {
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Settings</span>
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Profile</span>
             </TabsTrigger>
           </TabsList>
 
@@ -321,8 +323,8 @@ export default function SiteAdminPortal() {
             <AnalyticsSettings />
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-6">
-            <ConfigManagement />
+          <TabsContent value="profile" className="mt-6">
+            <AdminProfile />
           </TabsContent>
         </Tabs>
       </div>
