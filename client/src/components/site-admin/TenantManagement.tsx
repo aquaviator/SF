@@ -44,10 +44,10 @@ interface Tenant {
   name: string;
   subdomain: string;
   createdAt: string;
-  userCount: number;
-  subscriptionStatus: "active" | "trial" | "expired" | "cancelled";
-  seatsUsed: number;
-  seatsIncluded: number;
+  userCount?: number;
+  subscriptionStatus?: "active" | "trial" | "expired" | "cancelled" | "inactive";
+  seatsUsed?: number;
+  seatsIncluded?: number;
 }
 
 interface TenantDetails {
@@ -103,8 +103,8 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
     enabled: !!selectedTenant,
   });
 
-  const tenants = tenantsData?.tenants || [];
-  const pagination = tenantsData?.pagination || { page: 1, limit: 50, total: 0, pages: 1 };
+  const tenants = Array.isArray(tenantsData) ? tenantsData : [];
+  const pagination = { page: 1, limit: 50, total: tenants.length, pages: 1 };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -191,7 +191,7 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
               <TrendingUp className="h-4 w-4 text-green-600" />
               <div>
                 <p className="text-2xl font-bold">
-                  {tenants.filter(t => t.subscriptionStatus === 'active').length}
+                  {tenants.filter(t => (t.subscriptionStatus || 'inactive') === 'active').length}
                 </p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
@@ -205,7 +205,7 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
               <Calendar className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-2xl font-bold">
-                  {tenants.filter(t => t.subscriptionStatus === 'trial').length}
+                  {tenants.filter(t => (t.subscriptionStatus || 'inactive') === 'trial').length}
                 </p>
                 <p className="text-sm text-muted-foreground">On Trial</p>
               </div>
@@ -219,7 +219,7 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <div>
                 <p className="text-2xl font-bold">
-                  {tenants.filter(t => t.seatsUsed > t.seatsIncluded).length}
+                  {tenants.filter(t => (t.seatsUsed || 0) > (t.seatsIncluded || 5)).length}
                 </p>
                 <p className="text-sm text-muted-foreground">Over Limit</p>
               </div>
@@ -271,22 +271,22 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4 text-muted-foreground" />
-                          {tenant.userCount}
+                          {tenant.userCount || 0}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className={`font-medium ${getUtilizationColor(tenant.seatsUsed / tenant.seatsIncluded)}`}>
-                            {tenant.seatsUsed} / {tenant.seatsIncluded} seats
+                          <div className={`font-medium ${getUtilizationColor((tenant.seatsUsed || 0) / (tenant.seatsIncluded || 5))}`}>
+                            {tenant.seatsUsed || 0} / {tenant.seatsIncluded || 5} seats
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {Math.round((tenant.seatsUsed / tenant.seatsIncluded) * 100)}% utilized
+                            {Math.round(((tenant.seatsUsed || 0) / (tenant.seatsIncluded || 5)) * 100)}% utilized
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusColor(tenant.subscriptionStatus)}>
-                          {tenant.subscriptionStatus}
+                        <Badge variant={getStatusColor(tenant.subscriptionStatus || 'inactive')}>
+                          {tenant.subscriptionStatus || 'inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell>
