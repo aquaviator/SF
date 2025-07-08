@@ -4448,41 +4448,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // In a real app, use bcrypt to compare passwords
-      // For now, compare directly (not secure)
-      if (user.password !== password) {
+      // Compare password using bcrypt
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        console.log('❌ LOGIN_FAILED_INVALID_PASSWORD', { email, timestamp: new Date() });
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create session (simplified)
-      const sessionToken = crypto.randomBytes(32).toString('hex');
-      
-      // Set secure HTTP-only cookie
-      res.cookie('session_token', sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      // Store user in session
+      req.session.userId = user.id;
+      req.session.tenantId = user.tenant_id;
 
       console.log(`✅ USER_LOGIN`, { 
         userId: user.id,
         email: user.email,
         role: user.role,
-        tenantId: user.tenantId,
+        tenantId: user.tenant_id,
         timestamp: new Date() 
       });
 
       res.json({ 
-        message: "Login successful",
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          tenantId: user.tenantId,
-        }
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenant_id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: user.is_active,
+        photoUrl: user.photo_url
       });
     } catch (error) {
       console.error('❌ LOGIN_ERROR', { error: error.message, timestamp: new Date() });
@@ -4493,18 +4487,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get Current User API
   app.get("/api/auth/me", async (req, res) => {
     try {
-      const sessionToken = req.cookies.session_token;
+      console.log('🔍 AUTH_CHECK', { 
+        sessionId: req.sessionID?.substring(0, 8) + '...',
+        userId: req.session?.userId,
+        domain: req.get('host'),
+        hasSession: !!req.session?.userId,
+        timestamp: new Date()
+      });
 
-      if (!sessionToken) {
+      if (!req.session?.userId) {
+        console.log('❌ AUTH_CHECK_NO_SESSION', { 
+          domain: req.get('host'),
+          timestamp: new Date()
+        });
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // In a real app, store sessions in database/redis
-      // For now, this is a simplified implementation
-      // You would validate the session token here
+      // Get user from database using session userId
+      const user = await storage.getUserById(req.session.userId);
       
-      // For now, just return unauthorized to force login
-      return res.status(401).json({ message: "Session validation not implemented" });
+      if (!user) {
+        console.log('❌ AUTH_CHECK_USER_NOT_FOUND', { 
+          userId: req.session.userId,
+          timestamp: new Date()
+        });
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Return user data (excluding password)
+      const userData = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenant_id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: user.is_active,
+        photoUrl: user.photo_url
+      };
+
+      console.log('✅ AUTH_CHECK_SUCCESS', { 
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        tenantId: user.tenant_id,
+        timestamp: new Date()
+      });
+
+      res.json(userData);
     } catch (error) {
       console.error('❌ AUTH_CHECK_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: "Authentication check failed" });
@@ -4514,10 +4545,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Logout API
   app.post("/api/auth/logout", async (req, res) => {
     try {
-      // Clear session cookie
-      res.clearCookie('session_token');
+      const userId = req.session?.userId;
       
-      console.log(`✅ USER_LOGOUT`, { timestamp: new Date() });
+      // Destroy session
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('❌ SESSION_DESTROY_ERROR', { error: err.message, timestamp: new Date() });
+        }
+      });
+      
+      // Clear session cookie
+      res.clearCookie('connect.sid');
+      
+      console.log(`✅ USER_LOGOUT`, { userId, timestamp: new Date() });
       
       res.json({ message: "Logout successful" });
     } catch (error) {
