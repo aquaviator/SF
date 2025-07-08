@@ -1,0 +1,86 @@
+ShiftFlo’s Site-Admin Portal empowers platform super-admins, finance, support, and marketing teams to manage every facet of the multi-tenant SaaS from one unified interface. Beyond CRUD on core data, it includes powerful tools for billing oversight, user support, marketing campaigns, analytics, and safe tenant decommissioning. All technical wiring—from database migrations to React components to scheduled jobs—will be orchestrated automatically by the Replit AI agent once given this conceptual blueprint.
+
+1. Platform & Security Management
+Site Admin Accounts: Super-admins, support, finance, marketing roles with granular permissions.
+
+Domain Configuration: Manage URLs used in emails and system links per environment (prod, staging, dev).
+
+Global Settings: Toggle feature flags, adjust platform-wide defaults (e.g., default trial length).
+
+2. Pricing & Revenue Tools
+Seat Pricing: Single seat-based plan at £3.00/seat/month—editable via UI.
+
+Promo Codes & Campaigns: Create discount codes with percentage/fixed value, usage limits, tenant restrictions, and time-limited marketing campaigns.
+
+Subscriptions & Billing: View and adjust tenant subscriptions (seat counts, billing cycles), inspect billing history, generate and email invoices, handle refunds.
+
+Usage Metrics: Monitor seat utilization, shift volume, and storage usage per tenant.
+
+3. Tenant & Customer Oversight
+Tenant Directory: Search and filter all customer organizations by status (active, trial, suspended).
+
+Subscription Health: Real-time view of seats used vs. seats purchased, with alerts when tenants exceed or under-utilize seats.
+
+Seat Allocation: Track active, invited, and suspended staff seats; prevent over-provisioning.
+
+Tenant Cleanup:
+
+Pre-Flight Report: Show row-counts of all tenant-scoped tables.
+
+One-Click Deletion: Safely purge a tenant and cascade-delete all related data.
+
+Scheduled Auto-Cleanup: Nightly job to remove tenants inactive for a configurable period (e.g., 90 days).
+
+4. Support & Communications
+Support Tickets: Capture tenant/user issues, assign to support admins, track status and resolution.
+
+Mailing List Management: View and export emails collected from landing pages and campaigns.
+
+Landing Page Configuration: JSON-driven PageBuilder to edit public landing page content per tenant, with live preview.
+
+5. Analytics & Audit
+Activity Logs: Immutable audit trail of all admin actions (user management, billing changes, cleanup events).
+
+Platform KPIs: Dashboard of registrations, conversions (trial→paid), churn rates, revenue growth over time.
+
+Export & Reporting: CSV/JSON export of any table or dashboard chart for offline analysis.
+
+6. Role-Based Access
+Super Admin: Full access to all modules, including tenant cleanup and domain settings.
+
+Finance Admin: Pricing, subscriptions, invoices, usage metrics, billing history.
+
+Support Admin: Tickets, tenant/user lookup, activity logs.
+
+Marketing Admin: Promo codes, campaigns, mailing list, landing pages.
+
+7. User Interface & Workflow
+Sidebar Navigation with clear sections: “Platform,” “Pricing & Revenue,” “Tenants,” “Support,” “Marketing,” “Analytics,” “Cleanup.”
+
+CRUD Tables: Paginated, searchable lists with in-row actions (edit, delete, view).
+
+Detail Panels & Modals: Contextual forms for editing records, viewing reports, confirming destructive actions.
+
+Notifications & Toasters: Success/error feedback for all operations.
+
+Scheduled Jobs Dashboard: Monitor nightly seat-compliance and tenant-cleanup runs, view recent job results.
+
+8. Automations & Scheduling
+Seat Compliance Job: Daily check to flag tenants exceeding purchased seats, auto-email warnings.
+
+Tenant Auto-Cleanup: Nightly removal of tenants inactive beyond threshold, with audit logging.
+
+Promo Campaign Scheduler: Activate/deactivate campaigns at scheduled times.
+
+Next Steps for the Agent
+Scaffold or verify Drizzle ORM schema with cascade deletes.
+
+Generate Express API routes under /api/admin/* with role middleware.
+
+Build React pages/components under client/src/pages/admin and hook into existing layout.
+
+Implement email templates in Gmail SMTP util.
+
+Wire up cron jobs for compliance and cleanup.
+
+Deliver a polished, fully functional Site-Admin portal end-to-end—no manual wiring required.

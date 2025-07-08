@@ -39,6 +39,7 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
+import SiteAdminPortal from "@/pages/site-admin";
 import PageBuilder from "@/pages/page-builder";
 import Help from "@/pages/help";
 import PublicHelp from "@/pages/public-help";
@@ -128,6 +129,7 @@ function PublicRoutes() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/portal" component={SiteAdminPortal} />
       <Route path="/admin/page-builder" component={PageBuilder} />
       
       {/* Public pages for logged-out users */}

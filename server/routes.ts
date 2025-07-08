@@ -14,6 +14,9 @@ import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
 import { setupAdminSeatPricingRoutes } from "./routes/admin/seat-pricing";
+import { setupAdminTenantRoutes } from "./routes/admin/tenants";
+import { setupAdminPricingRoutes } from "./routes/admin/pricing";
+import { setupAdminDomainRoutes } from "./routes/admin/domains";
 import { setupSeatPricingRoutes } from "./routes/seat-pricing";
 import { adminAuth, requireRole } from "./middleware/adminAuth";
 
@@ -5320,6 +5323,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAdminAuthRoutes(app);
   setup2FARoutes(app);
   setupAdminSeatPricingRoutes(app);
+  setupAdminTenantRoutes(app);
+  setupAdminPricingRoutes(app);
+  setupAdminDomainRoutes(app);
   setupSeatPricingRoutes(app);
 
   const httpServer = createServer(app);
