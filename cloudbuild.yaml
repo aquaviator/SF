@@ -1,0 +1,38 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
+  - '.'
+
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'push'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
+
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  secretEnv:
+  - DATABASE_URL
+  - DB_PASSWORD
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    gcloud run deploy ${_SERVICE} \
+      --image gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID \
+      --region ${_REGION} \
+      --platform managed \
+      --allow-unauthenticated \
+      --set-env-vars DATABASE_URL=$$DATABASE_URL,DB_PASSWORD=$$DB_PASSWORD
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/shiftflow-a6db0/secrets/DATABASE_URL/versions/latest
+    env: DATABASE_URL
+  - versionName: projects/shiftflow-a6db0/secrets/DB_PASSWORD/versions/latest
+    env: DB_PASSWORD
+
+substitutions:
+  _SERVICE: "sf-test"
+  _REGION:  "europe-west1"
