@@ -24,6 +24,7 @@ import { supportRoutes } from "./routes/admin/support";
 import { configRoutes } from "./routes/admin/config";
 import { domainRoutes } from "./routes/admin/domains";
 import { analyticsRoutes } from "./routes/admin/analytics";
+import staffBulkImportRoutes from "./routes/staff-bulk-import";
 
 declare module 'express-session' {
   interface SessionData {
@@ -5331,6 +5332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAdminPricingRoutes(app);
   // setupAdminDomainRoutes(app); // Using direct router mounting instead
   setupSeatPricingRoutes(app);
+  
+  // Staff bulk import routes
+  app.use('/api/staff', staffBulkImportRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

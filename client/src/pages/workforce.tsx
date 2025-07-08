@@ -27,7 +27,8 @@ import {
   UserX,
   Edit,
   Trash2,
-  UserCheck
+  UserCheck,
+  Upload
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import type { User } from "@shared/schema";
@@ -35,6 +36,7 @@ import { OffboardUserModal } from "@/components/OffboardUserModal";
 import { DeleteUserModal } from "@/components/DeleteUserModal";
 import { ReinstateUserModal } from "@/components/ReinstateUserModal";
 import { queryClient } from "@/lib/queryClient";
+import CSVImport from "@/components/CSVImport";
 
 const staffFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -651,7 +653,7 @@ export default function Workforce() {
       </div>
 
       <Tabs defaultValue="staff" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 gap-1">
+        <TabsList className="grid w-full grid-cols-5 gap-1">
           <TabsTrigger value="staff" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
             <Users className="w-4 h-4 shrink-0" />
             <span className="truncate">Active</span>
@@ -659,6 +661,10 @@ export default function Workforce() {
           <TabsTrigger value="inactive" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
             <UserX className="w-4 h-4 shrink-0" />
             <span className="truncate">Inactive</span>
+          </TabsTrigger>
+          <TabsTrigger value="csv-import" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
+            <Upload className="w-4 h-4 shrink-0" />
+            <span className="truncate">Import</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-1 p-2 text-xs md:text-sm min-h-[44px]">
             <TrendingUp className="w-4 h-4 shrink-0" />
@@ -790,6 +796,25 @@ export default function Workforce() {
               </div>
             }
           />
+        </TabsContent>
+        
+        <TabsContent value="csv-import" className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">Bulk Staff Import</h3>
+              <p className="text-sm text-gray-600">Import multiple staff members from a CSV file</p>
+            </div>
+            <CSVImport 
+              onImportComplete={() => {
+                // Refresh staff data
+                queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
+                toast({
+                  title: "Success",
+                  description: "Staff list updated with new imports",
+                });
+              }}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="holidays" className="space-y-6">
