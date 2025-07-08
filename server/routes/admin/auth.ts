@@ -64,6 +64,19 @@ export function setupAdminAuthRoutes(app: Express) {
       }
 
       const session = req.session as any;
+      const domain = req.get('host');
+      const userAgent = req.get('user-agent');
+      
+      console.log('🔐 ADMIN_LOGIN_SESSION_SETUP', {
+        username: admin.username,
+        adminId: admin.id,
+        domain,
+        userAgent,
+        realIP: req.get('x-forwarded-for') || req.connection.remoteAddress,
+        sessionId: session.id?.substring(0, 8) + '...',
+        timestamp: new Date()
+      });
+      
       session.adminId = admin.id;
 
       // If 2FA is enabled, don't mark as fully authenticated yet
@@ -77,13 +90,27 @@ export function setupAdminAuthRoutes(app: Express) {
           timestamp: new Date()
         });
 
-        return res.json({
-          success: true,
-          require2fa: true,
-          admin: {
-            id: admin.id,
-            username: admin.username,
-            role: admin.role
+        // Save session and respond
+        req.session.save((err) => {
+          if (err) {
+            console.error('❌ ADMIN_SESSION_SAVE_ERROR', { error: err.message, adminId: admin.id });
+            return res.status(500).json({ message: 'Session save failed' });
+          } else {
+            console.log('✅ ADMIN_SESSION_SAVED', { 
+              adminId: admin.id, 
+              sessionId: req.session.id?.substring(0, 8) + '...',
+              timestamp: new Date() 
+            });
+            
+            res.json({
+              success: true,
+              require2fa: true,
+              admin: {
+                id: admin.id,
+                username: admin.username,
+                role: admin.role
+              }
+            });
           }
         });
       }
@@ -95,17 +122,38 @@ export function setupAdminAuthRoutes(app: Express) {
         adminId: admin.id,
         username: admin.username,
         role: admin.role,
+        domain,
+        sessionId: session.id?.substring(0, 8) + '...',
         timestamp: new Date()
       });
 
-      res.json({
-        success: true,
-        admin: {
-          id: admin.id,
-          username: admin.username,
-          email: admin.email,
-          role: admin.role,
-          is2faEnabled: admin.is2faEnabled
+      // Force session save and respond with explicit cookie setting
+      req.session.save((err) => {
+        if (err) {
+          console.error('❌ ADMIN_SESSION_SAVE_ERROR', { error: err.message, adminId: admin.id });
+          return res.status(500).json({ message: 'Session save failed' });
+        } else {
+          console.log('✅ ADMIN_SESSION_SAVED', { 
+            adminId: admin.id, 
+            sessionId: req.session.id?.substring(0, 8) + '...',
+            domain: req.get('host'),
+            userAgent: req.get('User-Agent'),
+            timestamp: new Date() 
+          });
+          
+          // Don't manually set cookie - let express-session handle it
+          // The middleware will automatically set the cookie properly
+          
+          res.json({
+            success: true,
+            admin: {
+              id: admin.id,
+              username: admin.username,
+              email: admin.email,
+              role: admin.role,
+              is2faEnabled: admin.is2faEnabled
+            }
+          });
         }
       });
     } catch (error) {
@@ -147,6 +195,8 @@ export function setupAdminAuthRoutes(app: Express) {
         adminId: session.adminId,
         domain,
         hasAdminSession: !!session.adminId,
+        cookieHeader: req.headers.cookie?.substring(0, 50) + '...',
+        userAgent: req.headers['user-agent']?.substring(0, 50) + '...',
         timestamp: new Date() 
       });
 

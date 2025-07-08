@@ -124,19 +124,35 @@ async function getActiveDomain(): Promise<string> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session middleware with flexible domain support
+  // CORS configuration for deployment
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
+  // Session middleware with deployment-friendly configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-key',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: false, // Back to false to prevent unnecessary sessions
+    name: 'connect.sid', // Use standard session name
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
+      secure: false, // Keep false for both development and Replit deployment
+      httpOnly: false, // Set to false for debugging deployment cookie issues
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
-      // Don't set domain - let it work with any domain
-      domain: undefined
-    }
+      sameSite: 'lax', // Changed back to 'lax' for better compatibility
+      domain: undefined, // Let cookies work with any domain
+      path: '/' // Ensure cookies are sent for all paths
+    },
+    // Use default memory store with debugging
   }));
 
   // Setup admin authentication and 2FA routes
