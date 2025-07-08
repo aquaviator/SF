@@ -4023,7 +4023,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send activation email with dynamic domain
       try {
         const activeDomain = await getActiveDomain();
-        await sendActivationEmail(email, activationToken, activeDomain);
+        // Strip protocol from domain before passing to email function
+        const cleanDomain = activeDomain.replace(/^https?:\/\//, '');
+        await sendActivationEmail(email, activationToken, cleanDomain);
         console.log(`✅ ACTIVATION_EMAIL_SENT`, { email, domain: activeDomain, timestamp: new Date() });
       } catch (emailError) {
         console.error(`❌ EMAIL_SEND_FAILED`, { error: emailError.message, email, timestamp: new Date() });

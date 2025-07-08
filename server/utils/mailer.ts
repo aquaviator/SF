@@ -14,6 +14,14 @@ export async function sendActivationEmail(email: string, activationToken: string
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
   const activationLink = `${protocol}://${activeDomain}/activate?token=${activationToken}`;
   
+  console.log('📧 ACTIVATION_EMAIL_DEBUG', {
+    email,
+    activeDomain,
+    protocol,
+    activationLink,
+    timestamp: new Date()
+  });
+  
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,
     to: email,
