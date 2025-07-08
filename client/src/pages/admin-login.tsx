@@ -42,11 +42,18 @@ export default function AdminLogin() {
 
       if (response.ok) {
         console.log('✅ ADMIN_LOGIN_SUCCESS', { username });
-        toast({
-          title: "Login Successful",
-          description: "Welcome to ShiftFlo Site Admin Portal",
-        });
-        setLocation('/site-admin');
+        
+        if (data.require2fa) {
+          // 2FA required - redirect to 2FA verification
+          setLocation("/admin/2fa-verify");
+        } else {
+          // Login successful - redirect to admin dashboard
+          toast({
+            title: "Login Successful",
+            description: "Welcome to ShiftFlo Site Admin Portal",
+          });
+          setLocation('/site-admin');
+        }
       } else {
         console.log('❌ ADMIN_LOGIN_FAILED', { username, error: data.message });
         toast({

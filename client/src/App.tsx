@@ -45,6 +45,9 @@ import Help from "@/pages/help";
 import PublicHelp from "@/pages/public-help";
 import ConfirmEmail from "@/pages/confirm-email";
 import CheckEmail from "@/pages/check-email";
+import ForgotPassword from "@/pages/forgot-password";
+import Admin2FASetup from "@/pages/admin-2fa-setup";
+import Admin2FAVerify from "@/pages/admin-2fa-verify";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -115,6 +118,7 @@ function PublicRoutes() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/business-registration" component={BusinessRegistration} />
       <Route path="/register" component={BusinessRegistration} />
       <Route path="/registration-success" component={RegistrationSuccess} />
@@ -126,6 +130,8 @@ function PublicRoutes() {
       
       {/* Admin Portal Routes */}
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/2fa-setup" component={Admin2FASetup} />
+      <Route path="/admin/2fa-verify" component={Admin2FAVerify} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/site-admin" component={SiteAdminPortal} />
       <Route path="/admin/page-builder" component={PageBuilder} />
