@@ -4,38 +4,44 @@ import { db as database } from '../../db';
 import { siteAdmins } from '../../../shared/schema';
 import { eq } from 'drizzle-orm';
 
-// Simple admin login function for single admin account
+// Database-based admin login function
 async function adminLogin(username: string, password: string) {
   try {
-    // For simplicity, use hardcoded admin credentials
-    if (username === 'admin' && password === 'password123') {
-      // Get or create the admin user in database
-      let admin = await database.select()
-        .from(siteAdmins)
-        .where(eq(siteAdmins.username, 'admin'))
-        .limit(1);
+    // Get admin user from database
+    const admin = await database.select()
+      .from(siteAdmins)
+      .where(eq(siteAdmins.username, username))
+      .limit(1);
 
-      if (!admin.length) {
-        // Create the admin user if it doesn't exist
-        const hashedPassword = await bcrypt.hash('password123', 10);
-        const [newAdmin] = await database.insert(siteAdmins)
-          .values({
-            username: 'admin',
-            email: 'admin@shiftflo.com',
-            password: hashedPassword,
-            role: 'super_admin',
-            isActive: true,
-            is2faEnabled: false
-          })
-          .returning();
-        return newAdmin;
-      }
-
-      return admin[0];
+    if (!admin.length) {
+      console.log('❌ ADMIN_NOT_FOUND', { username, timestamp: new Date() });
+      return null;
     }
-    return null;
+
+    const adminUser = admin[0];
+
+    // Check if admin is active
+    if (!adminUser.isActive) {
+      console.log('❌ ADMIN_INACTIVE', { username, timestamp: new Date() });
+      return null;
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, adminUser.password);
+    if (!isValidPassword) {
+      console.log('❌ ADMIN_INVALID_PASSWORD', { username, timestamp: new Date() });
+      return null;
+    }
+
+    console.log('✅ ADMIN_AUTHENTICATION_SUCCESS', { 
+      username, 
+      adminId: adminUser.id,
+      timestamp: new Date() 
+    });
+
+    return adminUser;
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error('❌ ADMIN_LOGIN_ERROR', { error: error.message, username, timestamp: new Date() });
     return null;
   }
 }

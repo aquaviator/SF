@@ -124,14 +124,18 @@ async function getActiveDomain(): Promise<string> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session middleware
+  // Session middleware with flexible domain support
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+      // Don't set domain - let it work with any domain
+      domain: undefined
     }
   }));
 
@@ -158,16 +162,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
+      console.log('🔑 LOGIN_ATTEMPT', { email, domain: req.get('host'), timestamp: new Date() });
+
       // Find user by email (using getUserByUsername since we store email as username)
       const user = await storage.getUserByUsername(email);
       
       if (!user) {
+        console.log('❌ LOGIN_FAILED_USER_NOT_FOUND', { email, timestamp: new Date() });
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
       // Check password using bcrypt
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
+        console.log('❌ LOGIN_FAILED_INVALID_PASSWORD', { email, timestamp: new Date() });
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
@@ -175,11 +183,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.tenantId = user.tenantId;
 
+      console.log('✅ LOGIN_SUCCESS', { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role, 
+        tenantId: user.tenantId,
+        domain: req.get('host'),
+        timestamp: new Date() 
+      });
+
       // Return user data (without password)
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ LOGIN_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: 'Internal server error' });
     }
   });

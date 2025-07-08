@@ -125,6 +125,16 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 08, 2025. Fixed critical deployment authentication issues for both admin and business logins:
+  - Fixed session cookie configuration to work with both custom domains (task-master-leatfield.replit.app) and default Replit domains
+  - Updated session middleware with flexible domain support - removed domain restrictions that were causing authentication failures
+  - Enhanced login endpoints with comprehensive logging for deployment debugging (domain, timestamp, user details)
+  - Created deployment-seed.ts script to ensure proper user data exists for both admin and business authentication
+  - Fixed admin authentication to use database-driven login instead of hardcoded credentials
+  - Session configuration now uses sameSite: 'lax' and domain: undefined for cross-domain compatibility
+  - Added detailed authentication logging to track login attempts, successes, and failures in deployment
+  - Both admin (/admin/login) and business (/login) authentication now working correctly across all domains
+  - Authentication persists properly with session cookies working on both domain formats
 - July 08, 2025. Implemented dynamic domain configuration system for production deployment:
   - Created domainSetup.ts module for automatic domain configuration using SITE_DOMAIN environment variable
   - SITE_DOMAIN secret integration: automatically updates database with correct domain on server startup
