@@ -75,7 +75,7 @@ export default function SiteAdminLogin() {
       localStorage.setItem("site_admin_session", JSON.stringify(result.admin));
       
       // Redirect to admin dashboard
-      setLocation("/admin");
+      setLocation("/site-admin");
       
     } catch (error: any) {
       console.error("❌ ADMIN_LOGIN_ERROR", { error: error.message, timestamp: new Date() });

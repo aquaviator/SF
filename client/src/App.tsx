@@ -127,7 +127,7 @@ function PublicRoutes() {
       {/* Admin Portal Routes */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin" component={SiteAdminPortal} />
+      <Route path="/site-admin" component={SiteAdminPortal} />
       <Route path="/admin/page-builder" component={PageBuilder} />
       
       {/* Public pages for logged-out users */}
