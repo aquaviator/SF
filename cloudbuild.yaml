@@ -1,5 +1,5 @@
 steps:
-# 1) Build the Docker image from your hello-world Dockerfile
+# 1) Build the Docker image
 - name: 'gcr.io/cloud-builders/docker'
   args:
     - 'build'
@@ -9,17 +9,14 @@ steps:
     - 'apps/hello-world/Dockerfile'
     - 'apps/hello-world'
 
-# 2) Push the image up to gcr.io
+# 2) Push the image
 - name: 'gcr.io/cloud-builders/docker'
   args:
     - 'push'
     - 'gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID'
 
-# 3) Deploy to Cloud Run, with secrets injected
+# 3) Deploy to Cloud Run, attaching secrets at runtime
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  secretEnv:
-    - DATABASE_URL
-    - DB_PASSWORD
   entrypoint: bash
   args:
     - -c
@@ -29,17 +26,9 @@ steps:
         --region ${_REGION} \
         --platform managed \
         --allow-unauthenticated \
-        --set-env-vars DATABASE_URL=$$DATABASE_URL,DB_PASSWORD=$$DB_PASSWORD
+        --update-secrets \
+          DATABASE_URL=DATABASE_URL:latest,DB_PASSWORD=DB_PASSWORD:latest
 
-# Tell Cloud Build how to fetch your Secret Manager secrets
-availableSecrets:
-  secretManager:
-    - versionName: projects/shiftflow-a6db0/secrets/DATABASE_URL/versions/latest
-      env: DATABASE_URL
-    - versionName: projects/shiftflow-a6db0/secrets/DB_PASSWORD/versions/latest
-      env: DB_PASSWORD
-
-# Default substitutions (overridden by CLI flags or trigger configs)
 substitutions:
   _SERVICE: "sf-test"
   _REGION:  "europe-west1"
