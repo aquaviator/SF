@@ -517,4 +517,108 @@ export function setupAdminTenantRoutes(app: Express) {
       res.status(500).json({ message: 'Failed to fetch tenants' });
     }
   });
+
+  // PUT /api/admin/tenants/:id - Update tenant information
+  app.put('/api/admin/tenants/:id', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const tenantId = parseInt(req.params.id);
+      const { name, subdomain, status, seatsIncluded } = req.body;
+      
+      console.log('🔧 UPDATING_TENANT', { 
+        tenantId, 
+        adminId: req.admin?.id, 
+        changes: { name, subdomain, status, seatsIncluded },
+        timestamp: new Date() 
+      });
+
+      // Update tenant
+      const [updatedTenant] = await db
+        .update(tenants)
+        .set({ 
+          name: name || undefined,
+          subdomain: subdomain || undefined 
+        })
+        .where(eq(tenants.id, tenantId))
+        .returning();
+
+      if (!updatedTenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Update subscription status if provided
+      if (status || seatsIncluded) {
+        await db
+          .insert(subscriptions)
+          .values({
+            tenantId: updatedTenant.subdomain,
+            status: status || 'active',
+            seatsIncluded: seatsIncluded || 5,
+            planType: 'basic',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .onConflictDoUpdate({
+            target: subscriptions.tenantId,
+            set: {
+              status: status || subscriptions.status,
+              seatsIncluded: seatsIncluded || subscriptions.seatsIncluded,
+              updatedAt: new Date()
+            }
+          });
+      }
+
+      console.log('✅ TENANT_UPDATED', { tenantId, timestamp: new Date() });
+
+      res.json(updatedTenant);
+    } catch (error) {
+      console.error('❌ TENANT_UPDATE_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: 'Failed to update tenant' });
+    }
+  });
+
+  // DELETE /api/admin/tenants/:id - Delete single tenant
+  app.delete('/api/admin/tenants/:id', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const tenantId = parseInt(req.params.id);
+      
+      console.log('🗑️ DELETING_SINGLE_TENANT', { 
+        tenantId, 
+        adminId: req.admin?.id, 
+        timestamp: new Date() 
+      });
+
+      // Get tenant first
+      const [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, tenantId));
+
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Delete all tenant data (cascade deletes will handle relationships)
+      await db.delete(users).where(eq(users.tenantId, tenant.subdomain));
+      await db.delete(shifts).where(eq(shifts.tenantId, tenant.subdomain));
+      await db.delete(timeEntries).where(eq(timeEntries.tenantId, tenant.subdomain));
+      await db.delete(holidayRequests).where(eq(holidayRequests.tenantId, tenant.subdomain));
+      await db.delete(assignments).where(eq(assignments.tenantId, tenant.subdomain));
+      await db.delete(swapRequests).where(eq(swapRequests.tenantId, tenant.subdomain));
+      await db.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenant.subdomain));
+      await db.delete(staffStrikes).where(eq(staffStrikes.tenantId, tenant.subdomain));
+      await db.delete(usageMetrics).where(eq(usageMetrics.tenantId, tenant.subdomain));
+      await db.delete(seatAllocation).where(eq(seatAllocation.tenantId, tenant.subdomain));
+      await db.delete(subscriptions).where(eq(subscriptions.tenantId, tenant.subdomain));
+
+      // Finally delete the tenant record itself
+      await db.delete(tenants).where(eq(tenants.id, tenantId));
+
+      console.log('✅ SINGLE_TENANT_DELETED', { tenantId, subdomain: tenant.subdomain, timestamp: new Date() });
+
+      res.json({ message: 'Tenant deleted successfully' });
+    } catch (error) {
+      console.error('❌ SINGLE_TENANT_DELETE_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: 'Failed to delete tenant' });
+    }
+  });
 }

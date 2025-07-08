@@ -21,6 +21,12 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Card,
   CardContent,
@@ -35,9 +41,21 @@ import {
   TrendingUp,
   AlertTriangle,
   Eye,
+  Edit,
+  Trash2,
   DollarSign,
   Activity
 } from "lucide-react";
+
+// Validation schema for tenant editing
+const tenantEditSchema = z.object({
+  name: z.string().min(1, "Company name is required"),
+  subdomain: z.string().min(1, "Subdomain is required").regex(/^[a-z0-9-]+$/, "Subdomain must contain only lowercase letters, numbers, and hyphens"),
+  status: z.enum(["active", "trial", "expired", "cancelled", "inactive"]),
+  seatsIncluded: z.number().min(1, "Must have at least 1 seat").max(1000, "Maximum 1000 seats allowed")
+});
+
+type TenantEditForm = z.infer<typeof tenantEditSchema>;
 
 interface Tenant {
   id: number;
@@ -73,6 +91,8 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -127,6 +147,108 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
     setSelectedTenant(tenant);
     setShowDetails(true);
   };
+
+  const handleEditTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setShowDeleteDialog(true);
+  };
+
+  // Form for tenant editing
+  const form = useForm<TenantEditForm>({
+    resolver: zodResolver(tenantEditSchema),
+    defaultValues: {
+      name: "",
+      subdomain: "",
+      status: "active",
+      seatsIncluded: 5
+    }
+  });
+
+  // Update tenant mutation
+  const updateTenantMutation = useMutation({
+    mutationFn: async (data: TenantEditForm & { id: number }) => {
+      const response = await fetch(`/api/admin/tenants/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Failed to update tenant');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/tenants'] });
+      setShowEditModal(false);
+      toast({
+        title: "Success",
+        description: "Tenant updated successfully"
+      });
+      onUpdate?.();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete tenant mutation
+  const deleteTenantMutation = useMutation({
+    mutationFn: async (tenantId: number) => {
+      const response = await fetch(`/api/admin/tenants/${tenantId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete tenant');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/tenants'] });
+      setShowDeleteDialog(false);
+      setSelectedTenant(null);
+      toast({
+        title: "Success",
+        description: "Tenant deleted successfully"
+      });
+      onUpdate?.();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const onSubmitEdit = (data: TenantEditForm) => {
+    if (selectedTenant) {
+      updateTenantMutation.mutate({ ...data, id: selectedTenant.id });
+    }
+  };
+
+  const confirmDelete = () => {
+    if (selectedTenant) {
+      deleteTenantMutation.mutate(selectedTenant.id);
+    }
+  };
+
+  // Set form values when editing a tenant
+  useEffect(() => {
+    if (selectedTenant && showEditModal) {
+      form.reset({
+        name: selectedTenant.name,
+        subdomain: selectedTenant.subdomain,
+        status: selectedTenant.subscriptionStatus || "inactive",
+        seatsIncluded: selectedTenant.seatsIncluded || 5
+      });
+    }
+  }, [selectedTenant, showEditModal, form]);
 
   if (isLoading) {
     return (
@@ -290,14 +412,32 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(tenant)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Details
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetails(tenant)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Details
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTenant(tenant)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteTenant(tenant)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -456,6 +596,133 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Tenant Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Tenant</DialogTitle>
+            <DialogDescription>
+              Update tenant information and subscription settings
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitEdit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subdomain"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subdomain</FormLabel>
+                    <FormControl>
+                      <Input placeholder="company-subdomain" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subscription Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="seatsIncluded"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seats Included</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        max="1000" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateTenantMutation.isPending}
+                >
+                  {updateTenantMutation.isPending ? "Updating..." : "Update Tenant"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedTenant?.name}"? This will permanently remove all tenant data including users, shifts, and subscription information. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteTenantMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTenantMutation.isPending ? "Deleting..." : "Delete Tenant"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
