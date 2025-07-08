@@ -39,6 +39,9 @@ export function setupAdminPricingRoutes(app: Express) {
       const [newPricing] = await db
         .insert(seatPricing)
         .values({
+          tierName: `Tier ${Math.floor(pricePerSeat / 100)}`,
+          minSeats: 1,
+          maxSeats: 100,
           pricePerSeat,
           features,
           isActive: isActive ?? true,

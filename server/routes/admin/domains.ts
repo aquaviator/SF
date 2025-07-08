@@ -15,7 +15,13 @@ router.get('/', adminAuth, async (req, res) => {
     });
 
     const domains = await db
-      .select()
+      .select({
+        id: domainConfig.id,
+        environment: domainConfig.name,
+        domain: domainConfig.baseUrl,
+        isActive: domainConfig.isActive,
+        createdAt: domainConfig.createdAt
+      })
       .from(domainConfig)
       .orderBy(domainConfig.createdAt);
 
@@ -47,7 +53,7 @@ router.post('/', adminAuth, async (req, res) => {
     const existingDomain = await db
       .select()
       .from(domainConfig)
-      .where(eq(domainConfig.environment, environment))
+      .where(eq(domainConfig.name, environment))
       .limit(1);
 
     if (existingDomain.length > 0) {
@@ -59,8 +65,8 @@ router.post('/', adminAuth, async (req, res) => {
     const [newDomain] = await db
       .insert(domainConfig)
       .values({
-        environment,
-        domain,
+        name: environment,
+        baseUrl: domain,
         isActive: true
       })
       .returning();
@@ -71,7 +77,16 @@ router.post('/', adminAuth, async (req, res) => {
       timestamp: new Date() 
     });
     
-    res.json(newDomain);
+    // Return in expected format
+    const response = {
+      id: newDomain.id,
+      environment: newDomain.name,
+      domain: newDomain.baseUrl,
+      isActive: newDomain.isActive,
+      createdAt: newDomain.createdAt
+    };
+    
+    res.json(response);
   } catch (error) {
     console.error('❌ CREATE_DOMAIN_CONFIG_ERROR', { error: error.message });
     res.status(500).json({ message: 'Failed to create domain configuration' });
@@ -95,9 +110,8 @@ router.put('/:id', adminAuth, async (req, res) => {
     const [updatedDomain] = await db
       .update(domainConfig)
       .set({
-        domain,
-        isActive,
-        updatedAt: new Date()
+        baseUrl: domain,
+        isActive
       })
       .where(eq(domainConfig.id, domainId))
       .returning();
