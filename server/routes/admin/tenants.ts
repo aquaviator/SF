@@ -43,7 +43,7 @@ export function setupAdminTenantRoutes(app: Express) {
           id: tenants.id,
           name: tenants.name,
           subdomain: tenants.subdomain,
-          createdAt: tenants.createdAt,
+          createdAt: tenants.created_at,
           userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
           seatsUsed: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain} AND is_active = true)`,
@@ -55,7 +55,7 @@ export function setupAdminTenantRoutes(app: Express) {
         query = query.where(sql.raw(whereConditions.join(' AND ')));
       }
 
-      const tenantsData = await query.orderBy(desc(tenants.createdAt));
+      const tenantsData = await query.orderBy(desc(tenants.created_at));
 
       console.log('✅ TENANTS_FETCHED', { count: tenantsData.length, timestamp: new Date() });
 
@@ -109,7 +109,7 @@ export function setupAdminTenantRoutes(app: Express) {
           id: tenant.id,
           name: tenant.name,
           subdomain: tenant.subdomain,
-          createdAt: tenant.createdAt,
+          createdAt: tenant.created_at,
           userCount: metrics.activeUsers,
           subscriptionStatus: metrics.subscriptionStatus,
           seatsUsed: metrics.activeUsers,
@@ -147,7 +147,7 @@ export function setupAdminTenantRoutes(app: Express) {
           id: tenants.id,
           name: tenants.name,
           subdomain: tenants.subdomain,
-          createdAt: tenants.createdAt,
+          createdAt: tenants.created_at,
           userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
           shiftCount: sql<number>`(SELECT COUNT(*) FROM shifts WHERE tenant_id = ${tenants.subdomain})`,
           lastActivity: sql<string>`(
@@ -162,7 +162,7 @@ export function setupAdminTenantRoutes(app: Express) {
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
         })
         .from(tenants)
-        .orderBy(desc(tenants.createdAt));
+        .orderBy(desc(tenants.created_at));
 
       // Calculate additional metrics
       const enrichedTenants = await Promise.all(tenantsData.map(async (tenant) => {
@@ -478,14 +478,14 @@ export function setupAdminTenantRoutes(app: Express) {
           id: tenants.id,
           name: tenants.name,
           subdomain: tenants.subdomain,
-          createdAt: tenants.createdAt,
+          createdAt: tenants.created_at,
           userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
           subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
           seatsUsed: sql<number>`COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
           seatsIncluded: sql<number>`COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
         })
         .from(tenants)
-        .orderBy(desc(tenants.createdAt))
+        .orderBy(desc(tenants.created_at))
         .limit(Number(limit))
         .offset(offset);
 
