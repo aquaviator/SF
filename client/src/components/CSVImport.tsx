@@ -293,7 +293,7 @@ export default function CSVImport({ onImportComplete }: CSVImportProps) {
               </div>
             </div>
 
-            {importResult.errors.length > 0 && (
+            {importResult.errors && importResult.errors.length > 0 && (
               <div className="space-y-2">
                 <Label>Errors:</Label>
                 <div className="bg-red-50 p-3 rounded-lg">

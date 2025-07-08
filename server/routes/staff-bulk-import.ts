@@ -123,6 +123,7 @@ router.post('/bulk-import', async (req, res) => {
         const newUser = await storage.createUser({
           username: email,
           email,
+          password: 'TEMPORARY_PLACEHOLDER', // Will be set during activation
           firstName: userData.firstName,
           lastName: userData.lastName,
           role: 'staff',
