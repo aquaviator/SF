@@ -1,0 +1,220 @@
+index-pjek4c1e.js:623 ✅ ADMIN_LOGIN_SUCCESS {username: 'admin'}
+index-pjek4c1e.js:623 Fetch finished loading: POST "https://task-master-leatfield.replit.app/api/admin/login".
+c @ index-pjek4c1e.js:623
+QY @ index-pjek4c1e.js:37
+ZY @ index-pjek4c1e.js:37
+JY @ index-pjek4c1e.js:37
+d_ @ index-pjek4c1e.js:37
+P3 @ index-pjek4c1e.js:37
+(anonymous) @ index-pjek4c1e.js:37
+xT @ index-pjek4c1e.js:40
+ZF @ index-pjek4c1e.js:37
+Lw @ index-pjek4c1e.js:37
+HC @ index-pjek4c1e.js:37
+pQ @ index-pjek4c1e.js:37
+Navigated to https://task-master-leatfield.replit.app/site-admin
+index-pjek4c1e.js:493 🔑 ROLE_DETECTION: {userId: undefined, username: undefined, role: 'staff', userRole: undefined, tenantId: undefined, …}
+index-pjek4c1e.js:48 
+            
+            
+           GET https://task-master-leatfield.replit.app/api/auth/me 401 (Unauthorized)
+Be @ index-pjek4c1e.js:48
+i @ index-pjek4c1e.js:493
+(anonymous) @ index-pjek4c1e.js:493
+Tb @ index-pjek4c1e.js:40
+Zu @ index-pjek4c1e.js:40
+U_ @ index-pjek4c1e.js:40
+ql @ index-pjek4c1e.js:38
+OX @ index-pjek4c1e.js:40
+sc @ index-pjek4c1e.js:40
+j6 @ index-pjek4c1e.js:40
+w @ index-pjek4c1e.js:25
+_ @ index-pjek4c1e.js:25
+index-pjek4c1e.js:493 ❌ AUTH_CHECK_FAILED Error: 401: {"message":"Not authenticated"}
+    at i5 (index-pjek4c1e.js:48:42800)
+    at async Be (index-pjek4c1e.js:48:43033)
+    at async i (index-pjek4c1e.js:493:57290)
+index-pjek4c1e.js:493 🔑 ROLE_DETECTION: {userId: undefined, username: undefined, role: 'staff', userRole: undefined, tenantId: undefined, …}
+index-pjek4c1e.js:48 Fetch failed loading: GET "https://task-master-leatfield.replit.app/api/auth/me".
+Be @ index-pjek4c1e.js:48
+i @ index-pjek4c1e.js:493
+(anonymous) @ index-pjek4c1e.js:493
+Tb @ index-pjek4c1e.js:40
+Zu @ index-pjek4c1e.js:40
+U_ @ index-pjek4c1e.js:40
+ql @ index-pjek4c1e.js:38
+OX @ index-pjek4c1e.js:40
+sc @ index-pjek4c1e.js:40
+j6 @ index-pjek4c1e.js:40
+w @ index-pjek4c1e.js:25
+_ @ index-pjek4c1e.js:25
+index-pjek4c1e.js:623 
+            
+            
+           GET https://task-master-leatfield.replit.app/api/admin/me 401 (Unauthorized)
+i @ index-pjek4c1e.js:623
+(anonymous) @ index-pjek4c1e.js:623
+Tb @ index-pjek4c1e.js:40
+Zu @ index-pjek4c1e.js:40
+(anonymous) @ index-pjek4c1e.js:40
+w @ index-pjek4c1e.js:25
+_ @ index-pjek4c1e.js:25
+index-pjek4c1e.js:623 🔐 ADMIN_AUTH_FAILED {status: 401}
+index-pjek4c1e.js:623 Fetch failed loading: GET "https://task-master-leatfield.replit.app/api/admin/me".
+i @ index-pjek4c1e.js:623
+(anonymous) @ index-pjek4c1e.js:623
+Tb @ index-pjek4c1e.js:40
+Zu @ index-pjek4c1e.js:40
+(anonymous) @ index-pjek4c1e.js:40
+w @ index-pjek4c1e.js:25
+_ @ index-pjek4c1e.js:25
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: GET "https://js.stripe.com/v3/.deploy_status_henson.json".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+g @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+36836 @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e.O @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: GET "https://js.stripe.com/v3/.deploy_status_henson.json".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+g @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+log @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+log @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+36836 @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e.O @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: GET "https://js.stripe.com/v3/fingerprinted/data/countries_en-GB-919c91fad2788750937cae126d4af487.json".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+p @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+n @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+a @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+n @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+a @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: GET "https://js.stripe.com/v3/fingerprinted/data/en-GB-641758f7dfae9f5fb3dd757455c6b39b.json".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+s @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+n @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+a @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+n @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+a @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+i @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: POST "https://r.stripe.com/b".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+setTimeout
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+Promise.then
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+value @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+36836 @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e.O @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+shared-c5908d4962867d61de6832b9c53f889b.js:1 Fetch finished loading: POST "https://r.stripe.com/b".
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+e @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+c @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+setTimeout
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+(anonymous) @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+Promise.then
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+value @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+log @ shared-c5908d4962867d61de6832b9c53f889b.js:1
+log @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+36836 @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+e.O @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
+(anonymous) @ controller-with-preconnect-4c767800f9d2d13407df4bdd2ff54fab.js:1
