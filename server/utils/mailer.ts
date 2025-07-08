@@ -11,12 +11,15 @@ const transporter = nodemailer.createTransport({
 
 export async function sendActivationEmail(email: string, activationToken: string, domain?: string) {
   const activeDomain = domain || await getDomainFromDatabase();
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  // Always use HTTPS for deployment domains, HTTP only for localhost
+  const isLocalhost = activeDomain.includes('localhost');
+  const protocol = isLocalhost ? 'http' : 'https';
   const activationLink = `${protocol}://${activeDomain}/activate?token=${activationToken}`;
   
   console.log('📧 ACTIVATION_EMAIL_DEBUG', {
     email,
     activeDomain,
+    isLocalhost,
     protocol,
     activationLink,
     timestamp: new Date()
@@ -45,7 +48,7 @@ export async function sendActivationEmail(email: string, activationToken: string
 
 export async function sendEmailChangeConfirmation(email: string, token: string, domain?: string) {
   const activeDomain = domain || await getDomainFromDatabase();
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const protocol = activeDomain.includes('localhost') ? 'http' : 'https';
   const confirmLink = `${protocol}://${activeDomain}/confirm-email?token=${token}`;
   
   const mailOptions = {
@@ -71,7 +74,7 @@ export async function sendEmailChangeConfirmation(email: string, token: string, 
 
 export async function sendPasswordResetEmail(email: string, token: string, domain?: string) {
   const activeDomain = domain || await getDomainFromDatabase();
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const protocol = activeDomain.includes('localhost') ? 'http' : 'https';
   const resetLink = `${protocol}://${activeDomain}/reset-password?token=${token}`;
   
   const mailOptions = {
