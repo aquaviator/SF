@@ -472,7 +472,7 @@ export function DomainManagement() {
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(domain.updatedAt).toLocaleDateString()}
+                        {domain.updatedAt ? new Date(domain.updatedAt).toLocaleDateString() : 'Never'}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
