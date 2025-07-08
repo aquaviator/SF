@@ -362,7 +362,9 @@ export function AnalyticsSettings() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueData.filter(item => !isNaN(item.revenue) && item.revenue >= 0)}>
+              <BarChart data={revenueData.length > 0 ? revenueData.filter(item => 
+                item && typeof item.revenue === 'number' && !isNaN(item.revenue) && item.revenue >= 0
+              ) : []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
