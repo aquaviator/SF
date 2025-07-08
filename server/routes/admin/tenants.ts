@@ -611,21 +611,10 @@ export function setupAdminTenantRoutes(app: Express) {
 
       // Get all users for this tenant
       const tenantUsers = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          role: users.role,
-          isActive: users.isActive,
-          lastLogin: users.lastLogin,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt
-        })
+        .select()
         .from(users)
         .where(eq(users.tenantId, tenant.subdomain))
-        .orderBy(users.createdAt);
+        .orderBy(users.id);
 
       console.log('✅ TENANT_USERS_FETCHED', { tenantId, userCount: tenantUsers.length, timestamp: new Date() });
       
