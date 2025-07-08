@@ -125,6 +125,18 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 08, 2025. Completed comprehensive security enhancement with 2FA and password reset systems:
+  - Implemented Two-Factor Authentication (2FA) for Site Admin portal with TOTP token generation using speakeasy package
+  - Added QR code generation for authenticator app setup at /admin/2fa-setup with manual entry fallback
+  - Created complete 2FA verification flow at /admin/2fa-verify with secure token validation (2-minute window)
+  - Enhanced admin login to automatically redirect to 2FA verification when enabled for account security
+  - Implemented email-based forgot password system for regular users with secure 24-hour token expiration
+  - Added forgot password form at /forgot-password with comprehensive validation and email confirmation
+  - Fixed database schema alignment using totpSecret field (not twoFaSecret) for TOTP secret storage
+  - Added password reset API endpoints with proper token generation and email delivery system
+  - Enhanced security with proper session management and authentication flow validation
+  - Both 2FA and forgot password systems fully tested and operational with comprehensive error handling
+  - API testing confirmed: QR code generation, token validation, email delivery, and secure authentication workflows
 - July 07, 2025. Fixed critical data inconsistency between Seat Management and Workforce sections:
   - Fixed DatabaseStorage.getStaffByTenant method to properly filter for staff role only instead of returning all users
   - Resolved discrepancy where Seat Management showed incorrect active/pending counts vs Workforce totals
