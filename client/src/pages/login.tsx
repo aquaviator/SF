@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [, setLocation] = useLocation();
+  const { login } = useAuth();
 
   // Populate email from URL parameters (e.g., from activation redirect)
   useEffect(() => {
@@ -32,16 +34,15 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("POST", "/api/auth/login", {
-        email,
-        password,
-      });
+      const result = await login(email, password);
       
-      // Login successful, get user data and refresh auth context
-      const userData = await response.json();
-      
-      // Force page reload to refresh authentication state
-      window.location.href = userData.role === 'owner' ? '/owner/dashboard' : '/dashboard';
+      if (result.success) {
+        // Login successful, redirect to appropriate dashboard
+        // The AuthContext will handle setting the user state
+        setLocation('/owner/dashboard'); // Default redirect, AuthContext will handle role-based routing
+      } else {
+        setError(result.error || "Login failed");
+      }
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
