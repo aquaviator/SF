@@ -125,6 +125,17 @@ Agent Shifts is a mobile-first, multi-tenant shift-rostering SaaS application bu
 - **Commit Gating**: Husky prevents commits that break tests or linting
 
 ## Changelog
+- July 08, 2025. Implemented dynamic domain configuration system for production deployment:
+  - Created domainSetup.ts module for automatic domain configuration using SITE_DOMAIN environment variable
+  - SITE_DOMAIN secret integration: automatically updates database with correct domain on server startup
+  - Domain format handling: properly cleans domain input (removes protocol/trailing slash) and stores as "site.com"
+  - Email system integration: all email links (activation, password reset, email change) now use configured domain
+  - Production/development environment support: automatically configures HTTPS for production, HTTP for development
+  - Database schema alignment: fixed domain_config table to use correct field names (name, baseUrl, isActive)
+  - Comprehensive logging: startup domain configuration with detailed console output for debugging
+  - Fallback system: graceful handling when SITE_DOMAIN not set, uses localhost for development
+  - Email service enhancement: sendActivationEmail, sendPasswordResetEmail, sendEmailChangeConfirmation now use dynamic domain
+  - Deployment-ready: system automatically configures correct domain URLs for all email links when deployed
 - July 08, 2025. Completed comprehensive security enhancement with 2FA and password reset systems:
   - Implemented Two-Factor Authentication (2FA) for Site Admin portal with TOTP token generation using speakeasy package
   - Added QR code generation for authenticator app setup at /admin/2fa-setup with manual entry fallback

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getDomainFromDatabase } from '../setup/domainSetup';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -8,8 +9,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendActivationEmail(email: string, activationToken: string, domain: string) {
-  const activationLink = `${domain}/activate?token=${activationToken}`;
+export async function sendActivationEmail(email: string, activationToken: string, domain?: string) {
+  const activeDomain = domain || await getDomainFromDatabase();
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const activationLink = `${protocol}://${activeDomain}/activate?token=${activationToken}`;
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,
@@ -32,8 +35,10 @@ export async function sendActivationEmail(email: string, activationToken: string
   await transporter.sendMail(mailOptions);
 }
 
-export async function sendEmailChangeConfirmation(email: string, token: string, domain: string) {
-  const confirmLink = `${domain}/confirm-email?token=${token}`;
+export async function sendEmailChangeConfirmation(email: string, token: string, domain?: string) {
+  const activeDomain = domain || await getDomainFromDatabase();
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const confirmLink = `${protocol}://${activeDomain}/confirm-email?token=${token}`;
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,
@@ -56,8 +61,10 @@ export async function sendEmailChangeConfirmation(email: string, token: string, 
   await transporter.sendMail(mailOptions);
 }
 
-export async function sendPasswordResetEmail(email: string, token: string, domain: string) {
-  const resetLink = `${domain}/reset-password?token=${token}`;
+export async function sendPasswordResetEmail(email: string, token: string, domain?: string) {
+  const activeDomain = domain || await getDomainFromDatabase();
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const resetLink = `${protocol}://${activeDomain}/reset-password?token=${token}`;
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,

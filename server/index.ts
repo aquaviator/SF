@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { cronScheduler } from "./cron-scheduler";
+import { setupDomainConfiguration } from "./setup/domainSetup";
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -38,6 +39,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Setup domain configuration on startup
+  await setupDomainConfiguration();
+  
   const server = await registerRoutes(app);
 
   // JSON-only catch for missing API endpoints
