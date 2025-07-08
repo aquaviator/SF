@@ -1,0 +1,69 @@
+# Cloud Build configuration for ShiftFlo deployment
+steps:
+  # Install dependencies
+  - name: 'node:18'
+    entrypoint: 'npm'
+    args: ['install']
+    
+  # Build the application
+  - name: 'node:18'
+    entrypoint: 'npm'
+    args: ['run', 'build']
+    
+  # Run database migrations
+  - name: 'node:18'
+    entrypoint: 'npm'
+    args: ['run', 'db:push']
+    env:
+      - 'DATABASE_URL=${_DATABASE_URL}'
+    
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/shiftflo:$BUILD_ID',
+      '-t', 'gcr.io/$PROJECT_ID/shiftflo:latest',
+      '.'
+    ]
+    
+  # Push to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/shiftflo:$BUILD_ID']
+    
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/shiftflo:latest']
+    
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'run', 'deploy', 'shiftflo-test',
+      '--image=gcr.io/$PROJECT_ID/shiftflo:$BUILD_ID',
+      '--region=us-central1',
+      '--platform=managed',
+      '--allow-unauthenticated',
+      '--port=5000',
+      '--memory=1Gi',
+      '--cpu=1',
+      '--min-instances=0',
+      '--max-instances=10',
+      '--set-env-vars=NODE_ENV=production',
+      '--set-env-vars=DATABASE_URL=${_DATABASE_URL}',
+      '--set-env-vars=GOOGLE_DELEGATED_EMAIL=${_GOOGLE_DELEGATED_EMAIL}',
+      '--set-env-vars=GOOGLE_APP_PASSWORD=${_GOOGLE_APP_PASSWORD}',
+      '--set-env-vars=SITE_DOMAIN=${_SITE_DOMAIN}'
+    ]
+
+# Build configuration
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Timeout
+timeout: '1200s'
+
+# Substitutions (set these in Cloud Build trigger)
+substitutions:
+  _DATABASE_URL: 'postgresql://user:pass@host:port/db'
+  _GOOGLE_DELEGATED_EMAIL: 'your-email@gmail.com'
+  _GOOGLE_APP_PASSWORD: 'your-app-password'
+  _SITE_DOMAIN: 'your-domain.com'
