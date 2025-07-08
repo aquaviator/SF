@@ -62,12 +62,13 @@ router.get('/tables', adminAuth, async (req, res) => {
       ORDER BY t.table_name
     `);
     
-    const tables = tablesResult.map(row => ({
+    // Handle case where query might return different format
+    const tables = Array.isArray(tablesResult) ? tablesResult.map(row => ({
       tableName: row.table_name as string,
       recordCount: parseInt(row.record_count as string) || 0,
       tableSize: row.table_size as string,
       lastModified: new Date(row.last_modified as string).toISOString().replace('T', ' ').substring(0, 19)
-    }));
+    })) : [];
     
     res.json(tables);
   } catch (error) {

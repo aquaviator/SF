@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { TenantManagement } from "@/components/site-admin/TenantManagement";
 import { PricingManagement } from "@/components/site-admin/PricingManagement";
 import { DatabaseManagement } from "@/components/site-admin/DatabaseManagement";
-import { SiteConfiguration } from "@/components/site-admin/SiteConfiguration";
-import { SupportTickets } from "@/components/site-admin/SupportTickets";
+import { SupportManagement } from "@/components/site-admin/SupportManagement";
+import { ConfigManagement } from "@/components/site-admin/ConfigManagement";
+import { DomainManagement } from "@/components/site-admin/DomainManagement";
+import { AnalyticsSettings } from "@/components/site-admin/AnalyticsSettings";
 import { 
   Users, 
   DollarSign, 
@@ -304,68 +306,23 @@ export default function SiteAdminPortal() {
           </TabsContent>
 
           <TabsContent value="config" className="mt-6">
-            <SiteConfiguration />
+            <ConfigManagement />
           </TabsContent>
 
           <TabsContent value="domains" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-blue-600" />
-                  Domain Configuration
-                </CardTitle>
-                <CardDescription>
-                  Manage custom domains and subdomain routing for tenants
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Domain management interface will be implemented here
-                </div>
-              </CardContent>
-            </Card>
+            <DomainManagement />
           </TabsContent>
 
           <TabsContent value="support" className="mt-6">
-            <SupportTickets />
+            <SupportManagement />
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Platform Analytics
-                </CardTitle>
-                <CardDescription>
-                  Monitor platform performance, usage metrics, and growth trends
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Platform analytics dashboard will be implemented here
-                </div>
-              </CardContent>
-            </Card>
+            <AnalyticsSettings />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  Platform Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure global platform settings, integrations, and security
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Platform settings interface will be implemented here
-                </div>
-              </CardContent>
-            </Card>
+            <ConfigManagement />
           </TabsContent>
         </Tabs>
       </div>

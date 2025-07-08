@@ -16,10 +16,14 @@ import { setup2FARoutes } from "./routes/admin/2fa";
 import { setupAdminSeatPricingRoutes } from "./routes/admin/seat-pricing";
 import { setupAdminTenantRoutes } from "./routes/admin/tenants";
 import { setupAdminPricingRoutes } from "./routes/admin/pricing";
-import { setupAdminDomainRoutes } from "./routes/admin/domains";
+// import { setupAdminDomainRoutes } from "./routes/admin/domains"; // Legacy function not needed
 import { setupSeatPricingRoutes } from "./routes/seat-pricing";
 import { adminAuth, requireRole } from "./middleware/adminAuth";
 import adminDatabaseRoutes from "./routes/admin/database";
+import { supportRoutes } from "./routes/admin/support";
+import { configRoutes } from "./routes/admin/config";
+import { domainRoutes } from "./routes/admin/domains";
+import { analyticsRoutes } from "./routes/admin/analytics";
 
 declare module 'express-session' {
   interface SessionData {
@@ -5310,6 +5314,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setup2FARoutes(app);
   setupAdminSeatPricingRoutes(app);
   
+  // Setup additional admin module routes
+  app.use('/api/admin/support', supportRoutes);
+  app.use('/api/admin/config', configRoutes);  
+  app.use('/api/admin/domains', domainRoutes);
+  app.use('/api/admin/analytics', analyticsRoutes);
+  
   try {
     console.log('🔧 REGISTERING_TENANT_ROUTES', { timestamp: new Date() });
     setupAdminTenantRoutes(app);
@@ -5319,7 +5329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   setupAdminPricingRoutes(app);
-  setupAdminDomainRoutes(app);
+  // setupAdminDomainRoutes(app); // Using direct router mounting instead
   setupSeatPricingRoutes(app);
 
   const httpServer = createServer(app);

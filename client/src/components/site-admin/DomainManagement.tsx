@@ -1,98 +1,109 @@
 import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+  Globe, 
+  Plus, 
+  Edit, 
+  Trash2,
+  RefreshCw,
+  TestTube,
+  CheckCircle,
+  XCircle,
+  Clock
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Edit, Trash2, Globe, Check } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 interface DomainConfig {
   id: number;
-  name: string;
-  baseUrl: string;
+  environment: string;
+  domain: string;
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
+}
+
+interface DomainTestResult {
+  domain: string;
+  accessible: boolean;
+  responseTime: number;
+  sslValid: boolean;
+  testedAt: string;
 }
 
 const domainSchema = z.object({
-  name: z.string().min(1, "Environment name is required"),
-  baseUrl: z.string().url("Please enter a valid URL"),
-  isActive: z.boolean().default(false),
+  environment: z.enum(['development', 'staging', 'production']),
+  domain: z.string().min(1, "Domain is required").url("Must be a valid URL"),
 });
 
-type DomainForm = z.infer<typeof domainSchema>;
+const updateDomainSchema = z.object({
+  domain: z.string().min(1, "Domain is required").url("Must be a valid URL"),
+  isActive: z.boolean(),
+});
 
-interface DomainManagementProps {
-  onUpdate: () => void;
-}
-
-export function DomainManagement({ onUpdate }: DomainManagementProps) {
+export function DomainManagement() {
   const [domains, setDomains] = useState<DomainConfig[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDomain, setEditingDomain] = useState<DomainConfig | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [selectedDomain, setSelectedDomain] = useState<DomainConfig | null>(null);
+  const [testResults, setTestResults] = useState<Record<number, DomainTestResult>>({});
+  const [testingDomain, setTestingDomain] = useState<number | null>(null);
   const { toast } = useToast();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-    setValue,
-    watch,
-  } = useForm<DomainForm>({
+  const createForm = useForm({
     resolver: zodResolver(domainSchema),
     defaultValues: {
-      name: "",
-      baseUrl: "",
-      isActive: false,
+      environment: 'development' as const,
+      domain: '',
     },
   });
 
-  const watchIsActive = watch("isActive");
+  const updateForm = useForm({
+    resolver: zodResolver(updateDomainSchema),
+    defaultValues: {
+      domain: '',
+      isActive: true,
+    },
+  });
 
-  useEffect(() => {
-    loadDomains();
-  }, []);
-
-  const loadDomains = async () => {
+  const fetchDomains = async () => {
+    setIsLoading(true);
     try {
-      console.log("🌐 LOADING_DOMAINS", { timestamp: new Date() });
+      console.log('🌐 FETCHING_DOMAIN_CONFIGS', { timestamp: new Date() });
       
-      const response = await fetch("/api/admin/domains");
-      if (!response.ok) {
-        throw new Error("Failed to load domains");
-      }
+      const response = await fetch('/api/admin/domains', {
+        credentials: 'include'
+      });
       
-      const domainsData = await response.json();
-      setDomains(domainsData);
+      if (!response.ok) throw new Error('Failed to fetch domain configurations');
       
-      console.log("✅ DOMAINS_LOADED", { count: domainsData.length, timestamp: new Date() });
+      const domainData = await response.json();
+      setDomains(domainData);
+      
+      console.log('✅ DOMAIN_CONFIGS_FETCHED', { count: domainData.length, timestamp: new Date() });
     } catch (error) {
-      console.error("❌ DOMAINS_LOAD_ERROR", { error, timestamp: new Date() });
+      console.error('❌ DOMAIN_CONFIGS_ERROR', { error });
       toast({
-        title: "Error Loading Domains",
-        description: "Failed to load domain configurations.",
+        title: "Error",
+        description: "Failed to fetch domain configurations.",
         variant: "destructive",
       });
     } finally {
@@ -100,339 +111,464 @@ export function DomainManagement({ onUpdate }: DomainManagementProps) {
     }
   };
 
-  const handleCreateDomain = () => {
-    setEditingDomain(null);
-    reset({
-      name: "",
-      baseUrl: "",
-      isActive: false,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleEditDomain = (domain: DomainConfig) => {
-    setEditingDomain(domain);
-    reset({
-      name: domain.name,
-      baseUrl: domain.baseUrl,
-      isActive: domain.isActive,
-    });
-    setIsModalOpen(true);
-  };
-
-  const onSubmit = async (data: DomainForm) => {
+  const createDomain = async (data: z.infer<typeof domainSchema>) => {
     try {
-      const isEditing = !!editingDomain;
-      const url = isEditing 
-        ? `/api/admin/domains/${editingDomain.id}` 
-        : "/api/admin/domains";
-      const method = isEditing ? "PUT" : "POST";
-
-      console.log(`🌐 ${isEditing ? 'UPDATING' : 'CREATING'}_DOMAIN`, { 
-        domain: data, 
-        method, 
-        timestamp: new Date() 
-      });
-
-      const response = await fetch(url, {
-        method,
+      console.log('➕ CREATING_DOMAIN_CONFIG', { data, timestamp: new Date() });
+      
+      const response = await fetch('/api/admin/domains', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
-
+      
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || `Failed to ${isEditing ? 'update' : 'create'} domain`);
+        throw new Error(error.message || 'Failed to create domain configuration');
       }
-
-      const result = await response.json();
       
-      console.log(`✅ DOMAIN_${isEditing ? 'UPDATED' : 'CREATED'}`, { 
-        domainId: result.id, 
-        name: result.name, 
-        timestamp: new Date() 
-      });
-
+      const newDomain = await response.json();
+      
+      console.log('✅ DOMAIN_CONFIG_CREATED', { domainId: newDomain.id, timestamp: new Date() });
+      
       toast({
-        title: `Domain ${isEditing ? 'Updated' : 'Created'}`,
-        description: `Domain configuration "${data.name}" has been ${isEditing ? 'updated' : 'created'} successfully.`,
+        title: "Domain Created",
+        description: `Domain configuration for ${data.environment} created successfully.`,
       });
-
-      setIsModalOpen(false);
-      reset();
-      loadDomains();
-      onUpdate();
       
+      setIsCreateOpen(false);
+      createForm.reset();
+      fetchDomains();
     } catch (error: any) {
-      console.error(`❌ DOMAIN_${editingDomain ? 'UPDATE' : 'CREATE'}_ERROR`, { 
-        error: error.message, 
-        timestamp: new Date() 
-      });
-      
+      console.error('❌ CREATE_DOMAIN_CONFIG_ERROR', { error: error.message });
       toast({
-        title: `Error ${editingDomain ? 'Updating' : 'Creating'} Domain`,
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteDomain = async (domain: DomainConfig) => {
-    if (!confirm(`Are you sure you want to delete the "${domain.name}" domain configuration?`)) {
+  const updateDomain = async (data: z.infer<typeof updateDomainSchema>) => {
+    if (!selectedDomain) return;
+    
+    try {
+      console.log('🔄 UPDATING_DOMAIN_CONFIG', { 
+        domainId: selectedDomain.id, 
+        data, 
+        timestamp: new Date() 
+      });
+      
+      const response = await fetch(`/api/admin/domains/${selectedDomain.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) throw new Error('Failed to update domain configuration');
+      
+      const updatedDomain = await response.json();
+      
+      console.log('✅ DOMAIN_CONFIG_UPDATED', { 
+        domainId: updatedDomain.id, 
+        timestamp: new Date() 
+      });
+      
+      toast({
+        title: "Domain Updated",
+        description: "Domain configuration updated successfully.",
+      });
+      
+      setIsUpdateOpen(false);
+      setSelectedDomain(null);
+      updateForm.reset();
+      fetchDomains();
+    } catch (error: any) {
+      console.error('❌ UPDATE_DOMAIN_CONFIG_ERROR', { error: error.message });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteDomain = async (domainId: number, environment: string) => {
+    if (!confirm(`Are you sure you want to delete the ${environment} domain configuration?`)) {
       return;
     }
 
     try {
-      console.log("🗑️ DELETING_DOMAIN", { domainId: domain.id, name: domain.name, timestamp: new Date() });
+      console.log('🗑️ DELETING_DOMAIN_CONFIG', { domainId, timestamp: new Date() });
       
-      const response = await fetch(`/api/admin/domains/${domain.id}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/admin/domains/${domainId}`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete domain");
-      }
-
-      console.log("✅ DOMAIN_DELETED", { domainId: domain.id, timestamp: new Date() });
+      
+      if (!response.ok) throw new Error('Failed to delete domain configuration');
+      
+      console.log('✅ DOMAIN_CONFIG_DELETED', { domainId, timestamp: new Date() });
       
       toast({
         title: "Domain Deleted",
-        description: `Domain configuration "${domain.name}" has been deleted.`,
+        description: `${environment} domain configuration has been deleted.`,
       });
-
-      loadDomains();
-      onUpdate();
       
+      fetchDomains();
     } catch (error: any) {
-      console.error("❌ DOMAIN_DELETE_ERROR", { error: error.message, timestamp: new Date() });
-      
+      console.error('❌ DELETE_DOMAIN_CONFIG_ERROR', { error: error.message });
       toast({
-        title: "Error Deleting Domain",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const handleToggleActive = async (domain: DomainConfig) => {
+  const testDomain = async (domainId: number) => {
+    setTestingDomain(domainId);
     try {
-      console.log("🔄 TOGGLING_DOMAIN_STATUS", { 
-        domainId: domain.id, 
-        currentStatus: domain.isActive, 
-        timestamp: new Date() 
+      console.log('🧪 TESTING_DOMAIN_CONFIG', { domainId, timestamp: new Date() });
+      
+      const response = await fetch(`/api/admin/domains/${domainId}/test`, {
+        method: 'POST',
+        credentials: 'include',
       });
       
-      const response = await fetch(`/api/admin/domains/${domain.id}/toggle`, {
-        method: "PATCH",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to toggle domain status");
-      }
-
-      const result = await response.json();
+      if (!response.ok) throw new Error('Failed to test domain configuration');
       
-      console.log("✅ DOMAIN_STATUS_TOGGLED", { 
-        domainId: domain.id, 
-        newStatus: result.isActive, 
+      const testResult = await response.json();
+      
+      setTestResults(prev => ({
+        ...prev,
+        [domainId]: testResult
+      }));
+      
+      console.log('✅ DOMAIN_TEST_COMPLETED', { 
+        domainId,
+        result: testResult,
         timestamp: new Date() 
       });
       
       toast({
-        title: "Domain Status Updated",
-        description: `Domain "${domain.name}" is now ${result.isActive ? 'active' : 'inactive'}.`,
+        title: "Domain Test Completed",
+        description: `Domain test completed. Response time: ${testResult.responseTime}ms`,
       });
-
-      loadDomains();
-      onUpdate();
-      
     } catch (error: any) {
-      console.error("❌ DOMAIN_TOGGLE_ERROR", { error: error.message, timestamp: new Date() });
-      
+      console.error('❌ DOMAIN_TEST_ERROR', { error: error.message });
       toast({
-        title: "Error Updating Domain",
+        title: "Test Failed",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setTestingDomain(null);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted animate-pulse rounded-lg"></div>
-        ))}
-      </div>
-    );
-  }
+  const editDomain = (domain: DomainConfig) => {
+    setSelectedDomain(domain);
+    updateForm.reset({
+      domain: domain.domain,
+      isActive: domain.isActive,
+    });
+    setIsUpdateOpen(true);
+  };
+
+  const getEnvironmentColor = (environment: string) => {
+    switch (environment) {
+      case 'production': return 'destructive';
+      case 'staging': return 'default';
+      case 'development': return 'secondary';
+      default: return 'secondary';
+    }
+  };
+
+  useEffect(() => {
+    fetchDomains();
+  }, []);
+
+  useEffect(() => {
+    if (selectedDomain) {
+      updateForm.reset({
+        domain: selectedDomain.domain,
+        isActive: selectedDomain.isActive,
+      });
+    }
+  }, [selectedDomain, updateForm]);
 
   return (
     <div className="space-y-6">
-      {/* Actions Bar */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">Domain Configurations</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage environment-specific domain settings for email links and system URLs
-          </p>
-        </div>
-        <Button onClick={handleCreateDomain}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Domain
-        </Button>
+      {/* Domain Configuration Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Domains</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{domains.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Domains</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {domains.filter(d => d.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Production Ready</CardTitle>
+            <Globe className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {domains.filter(d => d.environment === 'production' && d.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Domains Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Environment</TableHead>
-              <TableHead>Base URL</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {domains.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No domain configurations found. Add your first domain to get started.
-                </TableCell>
-              </TableRow>
-            ) : (
-              domains.map((domain) => (
-                <TableRow key={domain.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{domain.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-sm bg-muted px-2 py-1 rounded">
-                      {domain.baseUrl}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={domain.isActive ? "default" : "secondary"}>
-                        {domain.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                      {domain.isActive && (
-                        <Check className="h-4 w-4 text-green-600" />
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(domain.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleActive(domain)}
-                      >
-                        {domain.isActive ? "Deactivate" : "Activate"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditDomain(domain)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteDomain(domain)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+      {/* Domain Management */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Domain Configurations</CardTitle>
+              <CardDescription>Manage domain configurations for different environments</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={fetchDomains} variant="outline" disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              
+              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Domain
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Domain Configuration</DialogTitle>
+                    <DialogDescription>
+                      Add a new domain configuration for an environment
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...createForm}>
+                    <form onSubmit={createForm.handleSubmit(createDomain)} className="space-y-4">
+                      <FormField
+                        control={createForm.control}
+                        name="environment"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Environment</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select environment" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="development">Development</SelectItem>
+                                <SelectItem value="staging">Staging</SelectItem>
+                                <SelectItem value="production">Production</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={createForm.control}
+                        name="domain"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Domain URL</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit">Create Domain</Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Environment</TableHead>
+                  <TableHead>Domain</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Test Results</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {domains.map((domain) => {
+                  const testResult = testResults[domain.id];
+                  return (
+                    <TableRow key={domain.id}>
+                      <TableCell>
+                        <Badge variant={getEnvironmentColor(domain.environment)}>
+                          {domain.environment}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{domain.domain}</TableCell>
+                      <TableCell>
+                        <Badge variant={domain.isActive ? "default" : "secondary"}>
+                          {domain.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {testResult ? (
+                          <div className="flex items-center gap-2">
+                            {testResult.accessible ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              {testResult.responseTime}ms
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not tested</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(domain.updatedAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => testDomain(domain.id)}
+                            disabled={testingDomain === domain.id}
+                          >
+                            {testingDomain === domain.id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <TestTube className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editDomain(domain)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteDomain(domain.id, domain.environment)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Create/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      {/* Update Domain Dialog */}
+      <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingDomain ? "Edit Domain Configuration" : "Add Domain Configuration"}
-            </DialogTitle>
+            <DialogTitle>Update Domain Configuration</DialogTitle>
             <DialogDescription>
-              Configure environment-specific domain settings for email links and system redirects.
+              Update the domain configuration for {selectedDomain?.environment}
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Environment Name</Label>
-              <Input
-                id="name"
-                placeholder="e.g. production, development, staging"
-                {...register("name")}
-                className={errors.name ? "border-red-500" : ""}
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="baseUrl">Base URL</Label>
-              <Input
-                id="baseUrl"
-                placeholder="https://yourdomain.replit.app"
-                {...register("baseUrl")}
-                className={errors.baseUrl ? "border-red-500" : ""}
-              />
-              {errors.baseUrl && (
-                <p className="text-sm text-red-500">{errors.baseUrl.message}</p>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={watchIsActive}
-                onCheckedChange={(checked) => setValue("isActive", checked)}
-              />
-              <Label htmlFor="isActive">Set as active environment</Label>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting 
-                  ? (editingDomain ? "Updating..." : "Creating...") 
-                  : (editingDomain ? "Update Domain" : "Create Domain")
-                }
-              </Button>
-            </div>
-          </form>
+          {selectedDomain && (
+            <Form {...updateForm}>
+              <form onSubmit={updateForm.handleSubmit(updateDomain)} className="space-y-4">
+                <FormField
+                  control={updateForm.control}
+                  name="domain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Domain URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={updateForm.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Active Status</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Enable this domain configuration
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsUpdateOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update Domain</Button>
+                </div>
+              </form>
+            </Form>
+          )}
         </DialogContent>
       </Dialog>
     </div>
