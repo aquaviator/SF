@@ -3,7 +3,7 @@ import {
   businessProfiles, jobRoles, locations, departments, operatingHours, shiftPolicies,
   analyticsReports, analyticsMetrics, activityLogs, subscriptions, seatPricing, seatAllocation,
   usageMetrics, invoices, billingInfo, timeEntries, performanceMetrics, holidayEntitlements,
-  staffStrikes, mailingList,
+  staffStrikes, mailingList, supportTickets,
   type User, type InsertUser, type Shift, type InsertShift, type Opportunity, type InsertOpportunity, 
   type SwapRequest, type InsertSwapRequest, type Assignment, type InsertAssignment, 
   type HolidayRequest, type InsertHolidayRequest, type ScheduleTemplate, type InsertScheduleTemplate, 
@@ -19,7 +19,7 @@ import {
   type MailingList, type InsertMailingList
 } from "../shared/schema";
 import { db as database } from './db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -230,6 +230,10 @@ export interface IStorage {
   // Mailing list operations
   addToMailingList(email: string, source?: string): Promise<MailingList>;
   getMailingListByEmail(email: string): Promise<MailingList | undefined>;
+
+  // Support ticket operations
+  getAllSupportTickets(): Promise<any[]>;
+  updateSupportTicket(id: number, updates: any): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -2280,6 +2284,20 @@ export class DatabaseStorage implements IStorage {
   // Mailing list operations
   async addToMailingList(email: string, source: string = "landing_page"): Promise<MailingList> {
     const result = await database.insert(mailingList).values({ email, source }).returning();
+    return result[0];
+  }
+
+  // Support ticket operations
+  async getAllSupportTickets(): Promise<any[]> {
+    const result = await database.select().from(supportTickets);
+    return result;
+  }
+
+  async updateSupportTicket(id: number, updates: any): Promise<any> {
+    const result = await database.update(supportTickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(supportTickets.id, id))
+      .returning();
     return result[0];
   }
 

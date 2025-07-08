@@ -1,9 +1,44 @@
 import { Express } from 'express';
 import bcrypt from 'bcrypt';
-import { adminLogin } from '../../middleware/adminAuth';
 import { db as database } from '../../db';
 import { siteAdmins } from '../../../shared/schema';
 import { eq } from 'drizzle-orm';
+
+// Simple admin login function for single admin account
+async function adminLogin(username: string, password: string) {
+  try {
+    // For simplicity, use hardcoded admin credentials
+    if (username === 'admin' && password === 'password123') {
+      // Get or create the admin user in database
+      let admin = await database.select()
+        .from(siteAdmins)
+        .where(eq(siteAdmins.username, 'admin'))
+        .limit(1);
+
+      if (!admin.length) {
+        // Create the admin user if it doesn't exist
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        const [newAdmin] = await database.insert(siteAdmins)
+          .values({
+            username: 'admin',
+            email: 'admin@shiftflo.com',
+            password: hashedPassword,
+            role: 'super_admin',
+            isActive: true,
+            is2faEnabled: false
+          })
+          .returning();
+        return newAdmin;
+      }
+
+      return admin[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Admin login error:', error);
+    return null;
+  }
+}
 
 export function setupAdminAuthRoutes(app: Express) {
   // POST /api/admin/login

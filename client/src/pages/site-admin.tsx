@@ -9,6 +9,7 @@ import { TenantManagement } from "@/components/site-admin/TenantManagement";
 import { PricingManagement } from "@/components/site-admin/PricingManagement";
 import { DatabaseManagement } from "@/components/site-admin/DatabaseManagement";
 import { SiteConfiguration } from "@/components/site-admin/SiteConfiguration";
+import { SupportTickets } from "@/components/site-admin/SupportTickets";
 import { 
   Users, 
   DollarSign, 
@@ -326,22 +327,7 @@ export default function SiteAdminPortal() {
           </TabsContent>
 
           <TabsContent value="support" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  Support Ticket Management
-                </CardTitle>
-                <CardDescription>
-                  Manage customer support requests and resolution workflow
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Support ticket management interface will be implemented here
-                </div>
-              </CardContent>
-            </Card>
+            <SupportTickets />
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
