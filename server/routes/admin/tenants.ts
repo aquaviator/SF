@@ -568,17 +568,17 @@ export function setupAdminTenantRoutes(app: Express) {
       }
 
       // Delete all tenant data (cascade deletes will handle relationships)
-      await db.delete(users).where(eq(users.tenantId, tenant.subdomain));
-      await db.delete(shifts).where(eq(shifts.tenantId, tenant.subdomain));
-      await db.delete(timeEntries).where(eq(timeEntries.tenantId, tenant.subdomain));
-      await db.delete(holidayRequests).where(eq(holidayRequests.tenantId, tenant.subdomain));
-      await db.delete(assignments).where(eq(assignments.tenantId, tenant.subdomain));
-      await db.delete(swapRequests).where(eq(swapRequests.tenantId, tenant.subdomain));
-      await db.delete(businessProfiles).where(eq(businessProfiles.tenantId, tenant.subdomain));
-      await db.delete(staffStrikes).where(eq(staffStrikes.tenantId, tenant.subdomain));
-      await db.delete(usageMetrics).where(eq(usageMetrics.tenantId, tenant.subdomain));
-      await db.delete(seatAllocation).where(eq(seatAllocation.tenantId, tenant.subdomain));
-      await db.delete(subscriptions).where(eq(subscriptions.tenantId, tenant.subdomain));
+      await db.delete(users).where(eq(users.tenant_id, tenant.subdomain));
+      await db.delete(shifts).where(eq(shifts.tenant_id, tenant.subdomain));
+      await db.delete(timeEntries).where(eq(timeEntries.tenant_id, tenant.subdomain));
+      await db.delete(holidayRequests).where(eq(holidayRequests.tenant_id, tenant.subdomain));
+      await db.delete(assignments).where(eq(assignments.tenant_id, tenant.subdomain));
+      await db.delete(swapRequests).where(eq(swapRequests.tenant_id, tenant.subdomain));
+      await db.delete(businessProfiles).where(eq(businessProfiles.tenant_id, tenant.subdomain));
+      await db.delete(staffStrikes).where(eq(staffStrikes.tenant_id, tenant.subdomain));
+      await db.delete(usageMetrics).where(eq(usageMetrics.tenant_id, tenant.subdomain));
+      await db.delete(seatAllocation).where(eq(seatAllocation.tenant_id, tenant.subdomain));
+      await db.delete(subscriptions).where(eq(subscriptions.tenant_id, tenant.subdomain));
 
       // Finally delete the tenant record itself
       await db.delete(tenants).where(eq(tenants.id, tenantId));
@@ -589,6 +589,139 @@ export function setupAdminTenantRoutes(app: Express) {
     } catch (error) {
       console.error('❌ SINGLE_TENANT_DELETE_ERROR', { error: error.message, timestamp: new Date() });
       res.status(500).json({ message: 'Failed to delete tenant' });
+    }
+  });
+
+  // GET /api/admin/tenants/:id/users - Get all users for a specific tenant
+  app.get('/api/admin/tenants/:id/users', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+    try {
+      const tenantId = parseInt(req.params.id);
+      
+      console.log('👥 FETCHING_TENANT_USERS', { tenantId, adminId: req.admin?.id, timestamp: new Date() });
+
+      // Get tenant info first
+      const [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, tenantId));
+
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Get all users for this tenant
+      const tenantUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          firstName: users.first_name,
+          lastName: users.last_name,
+          role: users.role,
+          isActive: users.is_active,
+          lastLogin: users.last_login,
+          createdAt: users.created_at,
+          updatedAt: users.updated_at
+        })
+        .from(users)
+        .where(eq(users.tenant_id, tenant.subdomain))
+        .orderBy(users.created_at);
+
+      console.log('✅ TENANT_USERS_FETCHED', { tenantId, userCount: tenantUsers.length, timestamp: new Date() });
+      
+      res.json(tenantUsers);
+    } catch (error) {
+      console.error('❌ TENANT_USERS_FETCH_ERROR', error);
+      res.status(500).json({ message: 'Failed to fetch tenant users' });
+    }
+  });
+
+  // PUT /api/admin/tenants/:tenantId/users/:userId - Update a user
+  app.put('/api/admin/tenants/:tenantId/users/:userId', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+    try {
+      const tenantId = parseInt(req.params.tenantId);
+      const userId = parseInt(req.params.userId);
+      const { email, firstName, lastName, role, isActive } = req.body;
+      
+      console.log('✏️ UPDATING_USER', { tenantId, userId, changes: req.body, adminId: req.admin?.id, timestamp: new Date() });
+
+      // Verify tenant exists
+      const [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, tenantId));
+
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Update user
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role,
+          is_active: isActive,
+          updated_at: new Date()
+        })
+        .where(and(
+          eq(users.id, userId),
+          eq(users.tenant_id, tenant.subdomain)
+        ))
+        .returning();
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      console.log('✅ USER_UPDATED', { tenantId, userId, timestamp: new Date() });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('❌ USER_UPDATE_ERROR', error);
+      res.status(500).json({ message: 'Failed to update user' });
+    }
+  });
+
+  // DELETE /api/admin/tenants/:tenantId/users/:userId - Delete a user
+  app.delete('/api/admin/tenants/:tenantId/users/:userId', adminAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const tenantId = parseInt(req.params.tenantId);
+      const userId = parseInt(req.params.userId);
+      
+      console.log('🗑️ DELETING_USER', { tenantId, userId, adminId: req.admin?.id, timestamp: new Date() });
+
+      // Verify tenant exists
+      const [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, tenantId));
+
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Delete user
+      const [deletedUser] = await db
+        .delete(users)
+        .where(and(
+          eq(users.id, userId),
+          eq(users.tenant_id, tenant.subdomain)
+        ))
+        .returning();
+
+      if (!deletedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      console.log('✅ USER_DELETED', { tenantId, userId, timestamp: new Date() });
+      
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('❌ USER_DELETE_ERROR', error);
+      res.status(500).json({ message: 'Failed to delete user' });
     }
   });
 }

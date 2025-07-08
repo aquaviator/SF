@@ -44,8 +44,11 @@ import {
   Edit,
   Trash2,
   DollarSign,
-  Activity
+  Activity,
+  UserCog
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TenantUserManagement from "./TenantUserManagement";
 
 // Validation schema for tenant editing
 const tenantEditSchema = z.object({
@@ -474,9 +477,18 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
               ))}
             </div>
           ) : tenantDetails ? (
-            <div className="space-y-6">
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <UserCog className="h-4 w-4" />
+                  Manage Users
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6">
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2">
@@ -588,7 +600,17 @@ export function TenantManagement({ onUpdate }: TenantManagementProps) {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              </TabsContent>
+
+              <TabsContent value="users">
+                {selectedTenant && (
+                  <TenantUserManagement 
+                    tenantId={selectedTenant.id} 
+                    tenantName={selectedTenant.name} 
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               Failed to load tenant details.
