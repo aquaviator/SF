@@ -52,7 +52,8 @@ export default function AdminLogin() {
             title: "Login Successful",
             description: "Welcome to ShiftFlo Site Admin Portal",
           });
-          setLocation('/site-admin');
+          // Force page reload to ensure proper authentication context
+          window.location.href = '/site-admin';
         }
       } else {
         console.log('❌ ADMIN_LOGIN_FAILED', { username, error: data.message });
