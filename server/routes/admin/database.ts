@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { adminAuth } from '../../middleware/adminAuth';
 import { db } from '../../db';
 import { sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 const router = Router();
 
@@ -90,6 +91,11 @@ router.post('/query', adminAuth, async (req, res) => {
       });
     }
     
+    console.log('🔍 EXECUTING_CUSTOM_QUERY', { 
+      query, 
+      timestamp: new Date() 
+    });
+
     const startTime = Date.now();
     const result = await db.execute(sql.raw(query));
     const executionTime = (Date.now() - startTime) / 1000;
@@ -113,7 +119,7 @@ router.post('/query', adminAuth, async (req, res) => {
       executionTime
     });
   } catch (error) {
-    console.error('Error executing query:', error);
+    console.error('❌ CUSTOM_QUERY_ERROR', { error: error.message || 'Query execution failed' });
     res.status(500).json({ error: `Query execution failed: ${error.message}` });
   }
 });
