@@ -4722,28 +4722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/tenants - List all tenants with filtering
-  app.get('/api/admin/tenants', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
-    try {
-      const { search, status } = req.query;
-      
-      let query = db.select().from(tenants);
-      
-      if (search) {
-        query = query.where(or(
-          sql`${tenants.name} ILIKE ${`%${search}%`}`,
-          sql`${tenants.id} ILIKE ${`%${search}%`}`
-        ));
-      }
-
-      const tenantList = await query.orderBy(sql`created_at DESC`);
-
-      res.json(tenantList);
-    } catch (error) {
-      console.error('❌ ADMIN_TENANTS_ERROR', { error: error.message });
-      res.status(500).json({ message: 'Failed to fetch tenants' });
-    }
-  });
+  // REMOVED: Duplicate tenant route - moved to setupAdminTenantRoutes() in routes/admin/tenants.ts
 
   // GET /api/admin/landing-pages - Page Builder system
   app.get('/api/admin/landing-pages', adminAuth, requireRole(['super_admin', 'marketing']), async (req, res) => {
@@ -5330,7 +5309,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAdminAuthRoutes(app);
   setup2FARoutes(app);
   setupAdminSeatPricingRoutes(app);
-  setupAdminTenantRoutes(app);
+  
+  try {
+    console.log('🔧 REGISTERING_TENANT_ROUTES', { timestamp: new Date() });
+    setupAdminTenantRoutes(app);
+    console.log('✅ TENANT_ROUTES_REGISTERED', { timestamp: new Date() });
+  } catch (error) {
+    console.error('❌ TENANT_ROUTE_REGISTRATION_ERROR', { error: error.message, timestamp: new Date() });
+  }
+  
   setupAdminPricingRoutes(app);
   setupAdminDomainRoutes(app);
   setupSeatPricingRoutes(app);

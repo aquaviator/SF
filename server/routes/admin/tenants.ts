@@ -19,9 +19,19 @@ import { eq, sql, and, desc, lt } from "drizzle-orm";
 import { adminAuth, requireRole } from "../../middleware/adminAuth";
 
 export function setupAdminTenantRoutes(app: Express) {
+  // Test endpoint to verify route loading
+  app.get('/api/admin/test-route', (req, res) => {
+    console.log('🧪 TEST_ROUTE_HIT');
+    res.json({ message: 'Route file loaded successfully' });
+  });
+
   // GET /api/admin/tenants - List all tenants with filtering and search
-  app.get('/api/admin/tenants', adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
+  app.get('/api/admin/tenants', (req, res, next) => {
+    console.log('🚀 ADMIN_TENANTS_ROUTE_HIT_BEFORE_AUTH', { timestamp: new Date() });
+    next();
+  }, adminAuth, requireRole(['super_admin', 'support']), async (req, res) => {
     try {
+      console.log('🚀 ADMIN_TENANTS_ROUTE_HIT_AFTER_AUTH', { timestamp: new Date() });
       const { search, status } = req.query;
       
       console.log('🏢 FETCHING_TENANTS', { 
@@ -31,33 +41,46 @@ export function setupAdminTenantRoutes(app: Express) {
         timestamp: new Date() 
       });
 
-      let whereConditions = [];
+      // Build filtering conditions for raw SQL
+      let whereClause = '';
+      const conditions = [];
+      
+      if (status && status !== 'all') {
+        conditions.push(`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = t.subdomain), 'inactive') = '${status}'`);
+      }
       
       if (search) {
-        whereConditions.push(sql`(${tenants.name} ILIKE ${`%${search}%`} OR ${tenants.subdomain} ILIKE ${`%${search}%`})`);
+        conditions.push(`(t.name ILIKE '%${search}%' OR t.subdomain ILIKE '%${search}%')`);
       }
-
-      // Fetch tenants with comprehensive metrics
-      let query = db
-        .select({
-          id: tenants.id,
-          name: tenants.name,
-          subdomain: tenants.subdomain,
-          createdAt: tenants.created_at,
-          userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
-          subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
-          seatsUsed: sql<number>`COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
-          seatsIncluded: sql<number>`COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 5)`,
-        })
-        .from(tenants);
-
-      if (whereConditions.length > 0) {
-        query = query.where(sql.raw(whereConditions.join(' AND ')));
+      
+      if (conditions.length > 0) {
+        whereClause = `WHERE ${conditions.join(' AND ')}`;
       }
-
-      const tenantsData = await query.orderBy(desc(tenants.created_at));
+      
+      // Execute direct SQL query to ensure all fields are included
+      const tenantsQuery = `
+        SELECT 
+          t.id,
+          t.name,
+          t.subdomain,
+          t.created_at as "createdAt",
+          COALESCE((SELECT COUNT(*) FROM users WHERE tenant_id = t.subdomain), 0) as "userCount",
+          COALESCE((SELECT status FROM subscriptions WHERE tenant_id = t.subdomain), 'inactive') as "subscriptionStatus",
+          COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = t.subdomain), 0) as "seatsUsed",
+          COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = t.subdomain), 5) as "seatsIncluded"
+        FROM tenants t
+        ${whereClause}
+        ORDER BY t.created_at DESC
+      `;
+      
+      console.log('🔍 EXECUTING_TENANTS_QUERY', { query: tenantsQuery, timestamp: new Date() });
+      
+      const result = await db.execute(sql.raw(tenantsQuery));
+      const tenantsData = result.rows;
 
       console.log('✅ TENANTS_FETCHED', { count: tenantsData.length, timestamp: new Date() });
+      console.log('🔍 SAMPLE_TENANT_DATA', { sample: tenantsData[0], timestamp: new Date() });
+      console.log('🔍 TENANT_KEYS', { keys: Object.keys(tenantsData[0] || {}), timestamp: new Date() });
 
       res.json(tenantsData);
     } catch (error) {
@@ -456,66 +479,7 @@ export function setupAdminTenantRoutes(app: Express) {
     }
   });
 
-  // GET /api/admin/tenants - List all tenants with filtering and search
-  app.get('/api/admin/tenants', adminAuth, requireRole(['super_admin', 'support', 'finance']), async (req, res) => {
-    try {
-      const { search, status, page = 1, limit = 50 } = req.query;
-      
-      console.log('🏢 FETCHING_ADMIN_TENANTS', { 
-        search, 
-        status, 
-        page, 
-        limit,
-        adminId: req.admin?.id,
-        timestamp: new Date() 
-      });
-
-      const offset = (Number(page) - 1) * Number(limit);
-
-      let query = db
-        .select({
-          id: tenants.id,
-          name: tenants.name,
-          subdomain: tenants.subdomain,
-          createdAt: tenants.created_at,
-          userCount: sql<number>`(SELECT COUNT(*) FROM users WHERE tenant_id = ${tenants.subdomain})`,
-          subscriptionStatus: sql<string>`COALESCE((SELECT status FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 'inactive')`,
-          seatsUsed: sql<number>`COALESCE((SELECT seats_used FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
-          seatsIncluded: sql<number>`COALESCE((SELECT seats_included FROM subscriptions WHERE tenant_id = ${tenants.subdomain}), 0)`,
-        })
-        .from(tenants)
-        .orderBy(desc(tenants.created_at))
-        .limit(Number(limit))
-        .offset(offset);
-
-      const results = await query;
-
-      // Get total count for pagination
-      const [totalCount] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(tenants);
-
-      console.log('✅ ADMIN_TENANTS_FETCHED', { 
-        count: results.length,
-        total: totalCount.count,
-        timestamp: new Date() 
-      });
-
-      res.json({
-        tenants: results,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total: totalCount.count,
-          pages: Math.ceil(totalCount.count / Number(limit))
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ ADMIN_TENANTS_ERROR', { error: error.message, timestamp: new Date() });
-      res.status(500).json({ message: 'Failed to fetch tenants' });
-    }
-  });
+  // REMOVED: Duplicate route - using the first route definition above
 
   // PUT /api/admin/tenants/:id - Update tenant information
   app.put('/api/admin/tenants/:id', adminAuth, requireRole(['super_admin']), async (req, res) => {
@@ -546,22 +510,29 @@ export function setupAdminTenantRoutes(app: Express) {
 
       // Update subscription status if provided
       if (status || seatsIncluded) {
+        const currentDate = new Date();
+        const endDate = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+        
         await db
           .insert(subscriptions)
           .values({
             tenantId: updatedTenant.subdomain,
+            planId: 'seat_based',
             status: status || 'active',
+            startDate: currentDate,
+            endDate: endDate,
             seatsIncluded: seatsIncluded || 5,
-            planType: 'basic',
-            createdAt: new Date(),
-            updatedAt: new Date()
+            seatsUsed: 0,
+            pricePerSeat: 300, // £3.00 in pence
+            monthlyTotal: (seatsIncluded || 5) * 300, // Calculate based on seats
+            nextBillingDate: endDate
           })
           .onConflictDoUpdate({
             target: subscriptions.tenantId,
             set: {
               status: status || subscriptions.status,
               seatsIncluded: seatsIncluded || subscriptions.seatsIncluded,
-              updatedAt: new Date()
+              monthlyTotal: seatsIncluded ? seatsIncluded * 300 : sql`${subscriptions.monthlyTotal}`
             }
           });
       }
