@@ -48,8 +48,18 @@ export async function sendActivationEmail(email: string, activationToken: string
 
 export async function sendEmailChangeConfirmation(email: string, token: string, domain?: string) {
   const activeDomain = domain || await getDomainFromDatabase();
-  const protocol = activeDomain.includes('localhost') ? 'http' : 'https';
+  const isLocalhost = activeDomain.includes('localhost');
+  const protocol = isLocalhost ? 'http' : 'https';
   const confirmLink = `${protocol}://${activeDomain}/confirm-email?token=${token}`;
+  
+  console.log('📧 EMAIL_CHANGE_CONFIRMATION_DEBUG', {
+    email,
+    activeDomain,
+    isLocalhost,
+    protocol,
+    confirmLink,
+    timestamp: new Date()
+  });
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,
@@ -74,8 +84,18 @@ export async function sendEmailChangeConfirmation(email: string, token: string, 
 
 export async function sendPasswordResetEmail(email: string, token: string, domain?: string) {
   const activeDomain = domain || await getDomainFromDatabase();
-  const protocol = activeDomain.includes('localhost') ? 'http' : 'https';
+  const isLocalhost = activeDomain.includes('localhost');
+  const protocol = isLocalhost ? 'http' : 'https';
   const resetLink = `${protocol}://${activeDomain}/reset-password?token=${token}`;
+  
+  console.log('📧 PASSWORD_RESET_EMAIL_DEBUG', {
+    email,
+    activeDomain,
+    isLocalhost,
+    protocol,
+    resetLink,
+    timestamp: new Date()
+  });
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,

@@ -4300,7 +4300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const activeDomain = await getActiveDomain();
         const { sendActivationEmail } = await import('./utils/mailer.js');
         console.log(`📧 Attempting to send activation email to: ${ownerEmail}`);
-        await sendActivationEmail(ownerEmail, activationToken, activeDomain);
+        // Strip protocol from domain before passing to email function
+        const cleanDomain = activeDomain.replace(/^https?:\/\//, '');
+        await sendActivationEmail(ownerEmail, activationToken, cleanDomain);
         console.log(`✅ Activation email sent successfully to: ${ownerEmail}`);
       } catch (emailError) {
         console.error(`❌ Failed to send activation email to ${ownerEmail}:`, emailError);
@@ -5198,7 +5200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send confirmation email to new address
       const activeDomain = await getActiveDomain();
-      await sendEmailChangeConfirmation(newEmail, emailChangeToken, activeDomain);
+      // Strip protocol from domain before passing to email function
+      const cleanDomain = activeDomain.replace(/^https?:\/\//, '');
+      await sendEmailChangeConfirmation(newEmail, emailChangeToken, cleanDomain);
 
       console.log("✅ EMAIL_CHANGE_INITIATED", { userId, newEmail, timestamp: new Date() });
       res.json({ message: "Confirmation email sent to new address" });
@@ -5296,7 +5300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send reset email
         const activeDomain = await getActiveDomain();
-        await sendPasswordResetEmail(email, resetPasswordToken, activeDomain);
+        // Strip protocol from domain before passing to email function
+        const cleanDomain = activeDomain.replace(/^https?:\/\//, '');
+        await sendPasswordResetEmail(email, resetPasswordToken, cleanDomain);
 
         console.log("✅ PASSWORD_RESET_INITIATED", { userId: user.id, email, timestamp: new Date() });
       }
