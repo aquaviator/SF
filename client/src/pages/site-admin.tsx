@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { TenantManagement } from "@/components/site-admin/TenantManagement";
 import { PricingManagement } from "@/components/site-admin/PricingManagement";
+import { DatabaseManagement } from "@/components/site-admin/DatabaseManagement";
+import { SiteConfiguration } from "@/components/site-admin/SiteConfiguration";
 import { 
   Users, 
   DollarSign, 
@@ -253,7 +255,7 @@ export default function SiteAdminPortal() {
 
         {/* Main Management Interface */}
         <Tabs defaultValue="tenants" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="tenants" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Tenants</span>
@@ -261,6 +263,14 @@ export default function SiteAdminPortal() {
             <TabsTrigger value="pricing" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Pricing</span>
+            </TabsTrigger>
+            <TabsTrigger value="database" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Database</span>
+            </TabsTrigger>
+            <TabsTrigger value="config" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Config</span>
             </TabsTrigger>
             <TabsTrigger value="domains" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
@@ -275,7 +285,7 @@ export default function SiteAdminPortal() {
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
+              <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
@@ -286,6 +296,14 @@ export default function SiteAdminPortal() {
 
           <TabsContent value="pricing" className="mt-6">
             <PricingManagement onUpdate={handleDataUpdate} />
+          </TabsContent>
+
+          <TabsContent value="database" className="mt-6">
+            <DatabaseManagement />
+          </TabsContent>
+
+          <TabsContent value="config" className="mt-6">
+            <SiteConfiguration />
           </TabsContent>
 
           <TabsContent value="domains" className="mt-6">

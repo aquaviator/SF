@@ -19,6 +19,7 @@ import { setupAdminPricingRoutes } from "./routes/admin/pricing";
 import { setupAdminDomainRoutes } from "./routes/admin/domains";
 import { setupSeatPricingRoutes } from "./routes/seat-pricing";
 import { adminAuth, requireRole } from "./middleware/adminAuth";
+import adminDatabaseRoutes from "./routes/admin/database";
 
 declare module 'express-session' {
   interface SessionData {
@@ -136,6 +137,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup seat pricing routes
   setupAdminSeatPricingRoutes(app);
   setupSeatPricingRoutes(app);
+  
+  // Database management routes
+  app.use('/api/admin/database', adminDatabaseRoutes);
+  
+  // Database management routes
+  app.use('/api/admin/database', adminDatabaseRoutes);
 
   // Authentication endpoints
   app.post('/api/auth/login', async (req, res) => {
