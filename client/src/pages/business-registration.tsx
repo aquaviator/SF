@@ -182,14 +182,75 @@ export default function BusinessRegistration() {
                         <FormItem>
                           <FormLabel>Number of Staff Members *</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="1" 
-                              max="1000"
-                              placeholder="5" 
-                              {...field} 
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                            />
+                            <div className="space-y-4">
+                              {/* Mobile-friendly staff counter */}
+                              <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-10 h-10 p-0 text-lg font-bold"
+                                  onClick={() => {
+                                    const newValue = Math.max(1, field.value - 1);
+                                    field.onChange(newValue);
+                                  }}
+                                  disabled={field.value <= 1}
+                                >
+                                  -
+                                </Button>
+                                
+                                <div className="flex-1 text-center">
+                                  <div className="text-3xl font-bold text-blue-600">{field.value}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {field.value === 1 ? 'staff member' : 'staff members'}
+                                  </div>
+                                </div>
+                                
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-10 h-10 p-0 text-lg font-bold"
+                                  onClick={() => {
+                                    const newValue = Math.min(1000, field.value + 1);
+                                    field.onChange(newValue);
+                                  }}
+                                  disabled={field.value >= 1000}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                              
+                              {/* Quick select buttons for common sizes */}
+                              <div className="flex flex-wrap gap-2 justify-center">
+                                {[5, 10, 15, 25, 50].map((size) => (
+                                  <Button
+                                    key={size}
+                                    type="button"
+                                    variant={field.value === size ? "default" : "outline"}
+                                    size="sm"
+                                    className="text-xs"
+                                    onClick={() => field.onChange(size)}
+                                  >
+                                    {size}
+                                  </Button>
+                                ))}
+                              </div>
+                              
+                              {/* Manual input for exact numbers */}
+                              <div className="flex flex-col sm:flex-row items-center gap-2">
+                                <span className="text-sm text-gray-600">Or enter exact number:</span>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="1000"
+                                  value={field.value}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                  className="w-20 text-center"
+                                  placeholder="1-1000"
+                                />
+                              </div>
+                            </div>
                           </FormControl>
                           <FormMessage />
                           <p className="text-sm text-gray-500">
