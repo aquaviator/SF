@@ -59,7 +59,7 @@ async function sendEmail(options: {
   // Compile template with data
   const html = compileTemplate(templateContent, data);
   
-  // Get domain info
+  // Get domain info - use exact same pattern as existing emails
   const activeDomain = await getDomainFromDatabase();
   const isLocalhost = activeDomain.includes('localhost');
   const protocol = isLocalhost ? 'http' : 'https';
