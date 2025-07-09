@@ -11,8 +11,10 @@ import {
   isPushNotificationSupported,
   getNotificationPermission
 } from '@/utils/push-notifications';
+import { useRole } from '@/hooks/useRole';
 
 export default function PushNotificationSetup() {
+  const { role } = useRole();
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -209,11 +211,23 @@ export default function PushNotificationSetup() {
         <div className="text-sm text-gray-600">
           <p><strong>You'll receive notifications for:</strong></p>
           <ul className="list-disc list-inside mt-1 space-y-1">
-            <li>New shift assignments</li>
-            <li>Shift reminders (24 hours before)</li>
-            <li>Shift swap requests</li>
-            <li>Emergency shift coverage alerts</li>
-            <li>Holiday request status updates</li>
+            {role === 'owner' ? (
+              <>
+                <li>Staff holiday requests requiring approval</li>
+                <li>Emergency shift coverage alerts</li>
+                <li>Shift swap requests requiring approval</li>
+                <li>Staff attendance issues (no-shows, late arrivals)</li>
+                <li>System alerts and important business updates</li>
+              </>
+            ) : (
+              <>
+                <li>New shift assignments</li>
+                <li>Shift reminders (24 hours before)</li>
+                <li>Shift swap requests from colleagues</li>
+                <li>Holiday request status updates</li>
+                <li>Schedule changes and important updates</li>
+              </>
+            )}
           </ul>
         </div>
       </CardContent>

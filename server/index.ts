@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { cronScheduler } from "./cron-scheduler";
 import { reminderScheduler } from "./reminder-scheduler";
 import { setupDomainConfiguration } from "./setup/domainSetup";
+import path from "path";
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -44,6 +45,12 @@ app.use((req, res, next) => {
   await setupDomainConfiguration();
   
   const server = await registerRoutes(app);
+  
+  // Serve service worker with correct MIME type before Vite middleware
+  app.get('/sw.js', (req: Request, res: Response) => {
+    res.set('Content-Type', 'application/javascript');
+    res.sendFile(path.resolve('./public/sw.js'));
+  });
 
   // JSON-only catch for missing API endpoints
   app.use('/api/*', (req, res) => {

@@ -160,6 +160,22 @@ The application follows a clean architecture pattern with clear separation of co
 
 ## Recent Changes (July 2025)
 
+### Push Notification System Implementation (July 9, 2025)
+- **Complete Push Notification Infrastructure**: Implemented full push notification system with browser-based push messaging
+  - Created `push_subscriptions` and `notification_logs` database tables for tracking subscriptions and notifications
+  - Built comprehensive push notification API endpoints (`/api/notifications/subscribe`, `/api/notifications/test`, `/api/notifications/vapid-key`)
+  - Implemented service worker (`public/sw.js`) with proper MIME type handling for push notification management
+  - Added `PushNotificationSetup` React component integrated into user profile page as "Notifications" tab
+- **Role-Based Notification Preferences**: Different notification types for owners vs staff
+  - **Owner notifications**: Staff holiday requests, emergency coverage, swap approvals, attendance issues, system alerts
+  - **Staff notifications**: Shift assignments, reminders, swap requests, holiday status, schedule changes
+- **VAPID Key Management**: Automatic VAPID key generation with production environment variable support
+- **Service Worker Configuration**: Fixed service worker serving with correct `application/javascript` MIME type
+- **Real-time Testing**: Implemented test notification functionality for immediate verification
+- **Browser Compatibility**: Full support for modern browsers with push notification capabilities
+
+## Recent Changes (July 2025)
+
 ### Critical Subscription Governance Fix (July 9, 2025)
 - **Issue Identified**: Seat limit governance was bypassed during account activation, allowing 6 active staff members despite a 5-seat subscription limit (120% utilization)
 - **Root Cause**: The `/api/activate` and `/api/auth/activate` endpoints lacked seat limit validation, allowing users to activate accounts without checking subscription constraints
