@@ -68,17 +68,36 @@ export async function setupDomainConfiguration() {
       .where(eq(domainConfig.name, 'development'))
       .limit(1);
 
+    // Get current development domain
+    const currentDevDomain = getDomainForEnvironment();
+    const devUrl = currentDevDomain.includes('localhost') ? `http://${currentDevDomain}` : `https://${currentDevDomain}`;
+
     if (devConfig.length === 0) {
       await db
         .insert(domainConfig)
         .values({
           name: 'development',
-          baseUrl: 'http://localhost:5000',
+          baseUrl: devUrl,
           isActive: true
         });
 
       console.log('✅ DEV_DOMAIN_CREATED', { 
-        domain: 'http://localhost:5000',
+        domain: devUrl,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // Update existing development domain to current Replit domain
+      await db
+        .update(domainConfig)
+        .set({
+          baseUrl: devUrl,
+          isActive: true
+        })
+        .where(eq(domainConfig.name, 'development'));
+
+      console.log('✅ DEV_DOMAIN_UPDATED', { 
+        oldDomain: devConfig[0].baseUrl,
+        newDomain: devUrl,
         timestamp: new Date().toISOString()
       });
     }
@@ -95,6 +114,15 @@ export function getDomainForEnvironment(): string {
   // In production, use SITE_DOMAIN if available (format: site.com)
   if (process.env.NODE_ENV === 'production' && process.env.SITE_DOMAIN) {
     return process.env.SITE_DOMAIN.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  }
+  
+  // For development, detect current Replit domain or fallback to localhost
+  if (process.env.REPLIT_DOMAINS) {
+    // Use the first domain from REPLIT_DOMAINS
+    const domains = process.env.REPLIT_DOMAINS.split(',');
+    if (domains.length > 0) {
+      return domains[0].trim();
+    }
   }
   
   // Fallback to localhost for development
