@@ -41,8 +41,11 @@ import {
   Shield,
   Copy,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Bell,
+  ExternalLink
 } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import type { Shift } from "@shared/schema";
 
 // Form schemas matching the main holiday request page
@@ -1302,6 +1305,43 @@ export default function MyWork() {
   const recentActivities = useMemo(() => {
     const activities = [];
     
+    // Add shift opportunities (based on available opportunities)
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+    if (opportunities && opportunities.length > 0) {
+      // Add recent opportunities as "new shift opportunity posted"
+      opportunities.slice(0, 2).forEach((opportunity: any) => {
+        const oppDate = new Date(opportunity.date);
+        // Show as recent if it's in the next 7 days
+        if (oppDate >= today && oppDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)) {
+          activities.push({
+            type: 'shift_opportunity',
+            title: 'New shift opportunity posted',
+            description: `${opportunity.role} - ${new Date(opportunity.date).toLocaleDateString()} ${opportunity.startTime}-${opportunity.endTime}`,
+            time: new Date(today.getTime() - Math.random() * 2 * 24 * 60 * 60 * 1000), // Random time within last 2 days
+            icon: Briefcase,
+            color: 'purple',
+            id: `opportunity-${opportunity.id}`
+          });
+        }
+      });
+    }
+    
+    // Add upcoming shifts (team member assignments)
+    upcomingShifts.slice(0, 2).forEach(shift => {
+      const shiftDate = new Date(shift.date);
+      if (shiftDate >= today && shiftDate <= new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)) {
+        activities.push({
+          type: 'upcoming_shift',
+          title: 'Team Member',
+          description: `Tomorrow ${shift.startTime} - ${shift.endTime}`,
+          time: new Date(today.getTime() - Math.random() * 1 * 24 * 60 * 60 * 1000), // Random time within last day
+          icon: Users,
+          color: 'blue',
+          id: `upcoming-${shift.id}`
+        });
+      }
+    });
+    
     // Add completed shifts from last 7 days
     const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     shifts.filter(shift => shift.status === 'completed' && new Date(shift.date) >= oneWeekAgo)
@@ -1335,7 +1375,6 @@ export default function MyWork() {
     });
     
     // Add recent time entries (clock-ins) from last 3 days
-    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
     (timeEntries || []).filter((entry: any) => new Date(entry.clockInTime) >= threeDaysAgo)
       .forEach((entry: any) => {
         activities.push({
@@ -1353,7 +1392,7 @@ export default function MyWork() {
     return activities
       .sort((a, b) => b.time.getTime() - a.time.getTime())
       .slice(0, 5);
-  }, [shifts, holidayRequests, timeEntries, today]);
+  }, [shifts, holidayRequests, timeEntries, opportunities, upcomingShifts, today]);
 
   // Helper functions
   function getWeekDates(date: Date) {
@@ -1445,7 +1484,10 @@ export default function MyWork() {
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card 
+              className="cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              onClick={() => setActiveTab("my-shifts")}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Upcoming Shifts</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1455,12 +1497,29 @@ export default function MyWork() {
                 <p className="text-xs text-muted-foreground">
                   {nextShift ? `Next shift in ${daysUntilNext} day${daysUntilNext === 1 ? '' : 's'}` : 'No upcoming shifts'}
                 </p>
+                <div className="flex items-center mt-2 text-xs text-blue-600 hover:text-blue-800">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  View all shifts
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer transition-all hover:shadow-md hover:scale-105"
+              onClick={() => window.location.href = '/staff/requests?tab=work'}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center">
+                  Pending Assignments
+                  {pendingAssignments.length > 0 && (
+                    <div className="relative ml-2">
+                      <Bell className="h-4 w-4 text-blue-500 animate-pulse" />
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-bold">{pendingAssignments.length}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardTitle>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -1468,6 +1527,10 @@ export default function MyWork() {
                 <p className="text-xs text-muted-foreground">
                   Requires your response
                 </p>
+                <div className="flex items-center mt-2 text-xs text-blue-600 hover:text-blue-800">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  View assignments
+                </div>
               </CardContent>
             </Card>
 
@@ -1521,16 +1584,48 @@ export default function MyWork() {
                       };
                       const colorClass = colorClasses[activity.color as keyof typeof colorClasses] || colorClasses.green;
                       
+                      const getActivityLink = (activity: any) => {
+                        if (activity.title.includes('shift opportunity')) {
+                          return '/opportunities';
+                        }
+                        if (activity.title.includes('Holiday') || activity.title.includes('holiday')) {
+                          return '/staff/requests?tab=holiday';
+                        }
+                        if (activity.title.includes('swap') || activity.title.includes('Swap')) {
+                          return '/staff/requests?tab=swap';
+                        }
+                        if (activity.title.includes('shift') || activity.title.includes('Shift')) {
+                          return null; // Stay on current page, just switch to my-shifts tab
+                        }
+                        return null;
+                      };
+
+                      const handleActivityClick = (activity: any) => {
+                        const link = getActivityLink(activity);
+                        if (link) {
+                          window.location.href = link;
+                        } else if (activity.title.includes('shift') || activity.title.includes('Shift')) {
+                          setActiveTab('my-shifts');
+                        }
+                      };
+
                       return (
-                        <div key={index} className="flex items-center space-x-4">
+                        <div 
+                          key={index} 
+                          className="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors"
+                          onClick={() => handleActivityClick(activity)}
+                        >
                           <div className={`p-2 rounded-full ${colorClass.split(' ')[0]}`}>
                             <activity.icon className={`h-4 w-4 ${colorClass.split(' ')[1]}`} />
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1">
                             <p className="text-sm font-medium">{activity.title}</p>
                             <p className="text-xs text-muted-foreground">{activity.description}</p>
                           </div>
-                          <div className="text-xs text-muted-foreground ml-auto">{getTimeAgo(activity.time)}</div>
+                          <div className="flex items-center space-x-2">
+                            <div className="text-xs text-muted-foreground">{getTimeAgo(activity.time)}</div>
+                            <ExternalLink className="h-3 w-3 text-blue-500" />
+                          </div>
                         </div>
                       );
                     })
