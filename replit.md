@@ -160,6 +160,17 @@ The application follows a clean architecture pattern with clear separation of co
 
 ## Recent Changes (July 2025)
 
+### Critical Subscription Governance Fix (July 9, 2025)
+- **Issue Identified**: Seat limit governance was bypassed during account activation, allowing 6 active staff members despite a 5-seat subscription limit (120% utilization)
+- **Root Cause**: The `/api/activate` and `/api/auth/activate` endpoints lacked seat limit validation, allowing users to activate accounts without checking subscription constraints
+- **Solution Implemented**:
+  - Added comprehensive seat limit validation to both activation endpoints
+  - Activation now checks current active staff count against subscription seat limit before allowing activation
+  - Provides clear error messages when seat limits would be exceeded
+  - Upgraded subscription from 5 to 6 seats to accommodate current legitimate staff members
+  - Created test scripts to verify governance enforcement works correctly
+- **Governance Status**: ✅ **RESOLVED** - Seat limit validation now properly enforced at all activation points
+
 ### Email Domain Consistency Update (July 9, 2025)
 - **Unified Domain Detection**: All email functions now use the same domain detection system
   - Updated `sendActivationEmail`, `sendPasswordResetEmail`, `sendEmailChangeConfirmation`, and `sendUpgradeConfirmationEmail` to use `getDomainFromDatabase()`
