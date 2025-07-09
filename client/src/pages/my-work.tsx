@@ -2490,7 +2490,7 @@ export default function MyWork() {
               </p>
             </CardHeader>
             <CardContent>
-              {holidayRequestsLoading ? (
+              {holidayLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center space-x-4">
@@ -2665,7 +2665,7 @@ export default function MyWork() {
               </p>
             </CardHeader>
             <CardContent>
-              {swapRequestsLoading ? (
+              {swapLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center space-x-4">
