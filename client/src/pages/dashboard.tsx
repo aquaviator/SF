@@ -4,9 +4,10 @@ import { useRole } from "@/hooks/useRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Users, Clock, AlertTriangle, TrendingUp } from "lucide-react";
+import { Calendar, Users, Clock, AlertTriangle, TrendingUp, User, Activity, BarChart } from "lucide-react";
+import { Link } from "wouter";
 import { format, isThisWeek, parseISO, isToday, isTomorrow, addDays } from "date-fns";
-import type { Shift, User, Opportunity, SwapRequest, Assignment } from "@shared/schema";
+import type { Shift, User as UserType, Opportunity, SwapRequest, Assignment } from "@shared/schema";
 
 interface DashboardStats {
   title: string;
@@ -51,7 +52,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: staff = [], isLoading: staffLoading } = useQuery<User[]>({
+  const { data: staff = [], isLoading: staffLoading } = useQuery<UserType[]>({
     queryKey: ["/api/staff", tenantId],
     queryFn: async () => {
       const response = await fetch(`/api/staff?tenantId=${tenantId}`);
@@ -361,6 +362,127 @@ export default function Dashboard() {
           );
         })}
       </div>
+
+      {/* Quick Links Section - Different for Owner vs Staff */}
+      {role === "staff" && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link href="/my-work">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-500 text-white rounded-lg">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">My Work</h3>
+                    <p className="text-xs text-gray-500">View shifts and tasks</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/staff/requests">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-green-500 text-white rounded-lg">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Requests</h3>
+                    <p className="text-xs text-gray-500">Holiday and swap requests</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/staff/profile">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-purple-500 text-white rounded-lg">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Profile</h3>
+                    <p className="text-xs text-gray-500">Manage your account</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      )}
+
+      {role === "owner" && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Link href="/owner/staff">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-500 text-white rounded-lg">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Staff</h3>
+                    <p className="text-xs text-gray-500">Manage team members</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/owner/scheduling">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-green-500 text-white rounded-lg">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Scheduling</h3>
+                    <p className="text-xs text-gray-500">Create and manage shifts</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/owner/operations">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-orange-500 text-white rounded-lg">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Operations</h3>
+                    <p className="text-xs text-gray-500">Live operations dashboard</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/owner/reports">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-purple-500 text-white rounded-lg">
+                    <BarChart className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Reports</h3>
+                    <p className="text-xs text-gray-500">Analytics and insights</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Real-time Activity Feed */}

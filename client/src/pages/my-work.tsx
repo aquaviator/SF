@@ -105,6 +105,62 @@ export default function MyWork() {
     },
   });
 
+  // Fetch opportunities
+  const { data: opportunities = [], isLoading: opportunitiesLoading } = useQuery({
+    queryKey: ["/api/opportunities", tenantId, user?.id],
+    queryFn: async () => {
+      console.log("🔍 FETCHING_OPPORTUNITIES", { tenantId, userId: user?.id, timestamp: new Date() });
+      const response = await fetch(`/api/opportunities?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) {
+        console.error("❌ OPPORTUNITIES_ERROR", { status: response.status, statusText: response.statusText });
+        return [];
+      }
+      const data = await response.json();
+      console.log("✅ OPPORTUNITIES_RECEIVED", { opportunities: data, timestamp: new Date() });
+      return data;
+    }
+  });
+
+  // Fetch holiday requests
+  const { data: holidayRequests = [], isLoading: holidayLoading } = useQuery({
+    queryKey: ["/api/holiday-requests", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch holiday requests");
+      return response.json();
+    },
+  });
+
+  // Fetch swap requests
+  const { data: swapRequests = [], isLoading: swapLoading } = useQuery({
+    queryKey: ["/api/swap-requests", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/swap-requests?tenantId=${tenantId}&userId=${user?.id}&userRole=staff`);
+      if (!response.ok) throw new Error("Failed to fetch swap requests");
+      return response.json();
+    },
+  });
+
+  // Fetch pending assignments
+  const { data: pendingAssignments = [], isLoading: pendingLoading } = useQuery({
+    queryKey: ["/api/pending-assignments", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch pending assignments");
+      return response.json();
+    },
+  });
+
+  // Fetch time entries
+  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
+    queryKey: ["/api/time-entries", tenantId, user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch time entries");
+      return response.json();
+    },
+  });
+
   // Shift grouping and pagination state
   const [upcomingPage, setUpcomingPage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
@@ -765,37 +821,6 @@ export default function MyWork() {
     );
   };
 
-  // Fetch pending shift assignments (shifts with "assigned" status requiring confirmation)
-  const { data: pendingAssignments = [], isLoading: assignmentsLoading } = useQuery({
-    queryKey: ["/api/pending-assignments", tenantId, user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/pending-assignments?tenantId=${tenantId}&userId=${user?.id}`);
-      if (!response.ok) throw new Error("Failed to fetch pending assignments");
-      return response.json();
-    },
-  });
-
-  // Fetch time entries for metrics
-  const { data: timeEntries = [], isLoading: timeEntriesLoading } = useQuery({
-    queryKey: ["/api/time-entries", tenantId, user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/time-entries?tenantId=${tenantId}&userId=${user?.id}`);
-      if (!response.ok) return []; // Return empty array if no data
-      return response.json();
-    },
-    enabled: !!user?.id && !!tenantId, // Only run when user is loaded
-  });
-
-  // Fetch holiday requests for activity feed
-  const { data: holidayRequests = [], isLoading: holidayRequestsLoading } = useQuery({
-    queryKey: ["/api/holiday-requests", tenantId, user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/holiday-requests?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
-      if (!response.ok) return [];
-      return response.json();
-    },
-  });
-
   // Fetch all shifts for swap functionality
   const { data: allShifts = [] } = useQuery({
     queryKey: ["/api/shifts", tenantId],
@@ -805,17 +830,6 @@ export default function MyWork() {
       return response.json();
     },
     enabled: !!tenantId,
-  });
-
-  // Fetch swap requests for activity feed
-  const { data: swapRequests = [], isLoading: swapRequestsLoading } = useQuery({
-    queryKey: ["/api/swap-requests", tenantId, user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/swap-requests?tenantId=${tenantId}&userId=${user?.id}&userRole=${role}`);
-      if (!response.ok) return [];
-      return response.json();
-    },
-    enabled: !!user?.id && !!tenantId,
   });
 
   // Fetch strike data
