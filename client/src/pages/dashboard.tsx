@@ -130,7 +130,8 @@ export default function Dashboard() {
 
   // Calculate staff dashboard statistics
   const calculateStaffStats = (): DashboardStats[] => {
-    const userId = parseInt(user?.id || "1");
+    const userId = user?.id || 1;
+    console.log('📊 STAFF_DASHBOARD_DEBUG:', { userId, userRole: user?.role, totalShifts: shifts.length });
     // Only count confirmed shifts, not pending assignments
     const myShifts = shifts.filter(shift => shift.assignedTo === userId && shift.status === "confirmed");
     const thisWeekMyShifts = myShifts.filter(shift => isThisWeek(parseISO(shift.date)));
@@ -249,6 +250,7 @@ export default function Dashboard() {
     return upcoming;
   };
 
+  console.log('🔍 DASHBOARD_ROLE_CHECK:', { role, userRole: user?.role, condition: role === "owner" });
   const stats = role === "owner" ? calculateOwnerStats() : calculateStaffStats();
   const recentActivity = generateRecentActivity();
   const upcomingShifts = generateUpcomingShifts();
