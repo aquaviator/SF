@@ -4585,6 +4585,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resend Activation Email API
+  app.post("/api/resend-activation", async (req, res) => {
+    try {
+      const { userId, tenantId } = req.body;
+
+      if (!userId || !tenantId) {
+        return res.status(400).json({ message: "User ID and tenant ID are required" });
+      }
+
+      // Find inactive user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.id, userId),
+            eq(users.tenant_id, tenantId),
+            eq(users.isActive, false)
+          )
+        );
+
+      if (!user) {
+        return res.status(404).json({ message: "Inactive user not found" });
+      }
+
+      // Generate new activation token
+      const newToken = crypto.randomBytes(32).toString('hex');
+      const newTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+      // Update user with new activation token
+      await db
+        .update(users)
+        .set({
+          activationToken: newToken,
+          tokenExpiresAt: newTokenExpiry,
+        })
+        .where(eq(users.id, user.id));
+
+      // Send activation email
+      await sendActivationEmail(user.email, newToken);
+
+      console.log(`📧 ACTIVATION_EMAIL_RESENT`, { 
+        userId: user.id,
+        email: user.email,
+        token: newToken.substring(0, 8) + '...',
+        timestamp: new Date() 
+      });
+
+      res.json({ 
+        message: "Activation email sent successfully",
+        email: user.email
+      });
+    } catch (error) {
+      console.error('❌ RESEND_ACTIVATION_ERROR', { error: error.message, timestamp: new Date() });
+      res.status(500).json({ message: "Failed to resend activation email" });
+    }
+  });
+
   // Login API
   app.post("/api/auth/login", async (req, res) => {
     try {

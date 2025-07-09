@@ -28,7 +28,8 @@ import {
   Edit,
   Trash2,
   UserCheck,
-  Upload
+  Upload,
+  Mail
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import type { User } from "@shared/schema";
@@ -111,6 +112,9 @@ export default function Workforce() {
   const [reinstatingUser, setReinstatingUser] = React.useState<User | null>(null);
   const [isReinstateModalOpen, setIsReinstateModalOpen] = React.useState(false);
 
+  // Resend activation email state
+  const [resendingEmail, setResendingEmail] = React.useState<number | null>(null);
+
   const openOffboardModal = (user: User) => {
     setOffboardingUser(user);
     setIsOffboardModalOpen(true);
@@ -160,6 +164,48 @@ export default function Workforce() {
     queryClient.invalidateQueries({ queryKey: ["/api/staff", tenantId] });
     setIsReinstateModalOpen(false);
     setReinstatingUser(null);
+  };
+
+  // Resend activation email handler
+  const handleResendActivationEmail = async (user: User) => {
+    if (resendingEmail) return; // Prevent multiple simultaneous requests
+    
+    try {
+      setResendingEmail(user.id);
+      
+      const response = await fetch("/api/resend-activation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          tenantId: tenantId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Failed to resend activation email" }));
+        throw new Error(errorData.message || "Failed to resend activation email");
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Activation email sent",
+        description: `Activation email has been sent to ${user.email}`,
+      });
+      
+    } catch (error) {
+      console.error("❌ RESEND_ACTIVATION_ERROR", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend activation email",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingEmail(null);
+    }
   };
 
   // Custom submit handler for invitations
@@ -525,6 +571,16 @@ export default function Workforce() {
       header: "Actions",
       cell: (staff) => (
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleResendActivationEmail(staff)}
+            disabled={resendingEmail === staff.id}
+            className="min-h-[44px] min-w-[44px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            title="Resend activation email"
+          >
+            <Mail className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
