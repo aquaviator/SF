@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -49,8 +49,27 @@ import ForgotPassword from "@/pages/forgot-password";
 import Admin2FASetup from "@/pages/admin-2fa-setup";
 import Admin2FAVerify from "@/pages/admin-2fa-verify";
 import NotFound from "@/pages/not-found";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+
+// Component to handle dashboard redirection based on user role
+function DashboardRedirect({ user }: { user: any }) {
+  const [, setLocation] = useLocation();
+  
+  useEffect(() => {
+    const targetRoute = user.role === 'owner' ? '/owner/dashboard' : '/dashboard';
+    setLocation(targetRoute);
+  }, [user.role, setLocation]);
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <p className="text-gray-600">Loading dashboard...</p>
+      </div>
+    </div>
+  );
+}
 
 // Protected routes component that wraps the main app layout
 function ProtectedRoutes() {
@@ -165,7 +184,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/">
-          {user.role === 'owner' ? <OwnerDashboard /> : <Dashboard />}
+          <DashboardRedirect user={user} />
         </Route>
         <Route>
           <ProtectedRoutes />
