@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Reminder - ShiftFlo</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+        <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h1 style="color: #2563eb; text-align: center; margin-bottom: 30px;">Shift Reminder</h1>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi {{staffName}},
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                This is a friendly reminder that your shift is starting in {{hoursUntilStart}} hours.
+            </p>
+            
+            <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+                <h3 style="color: #92400e; margin-top: 0; margin-bottom: 15px;">Upcoming Shift</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-weight: 500;">Date:</td>
+                        <td style="padding: 8px 0; color: #451a03; font-weight: 600;">{{shiftDate}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-weight: 500;">Start Time:</td>
+                        <td style="padding: 8px 0; color: #451a03; font-weight: 600;">{{startTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-weight: 500;">End Time:</td>
+                        <td style="padding: 8px 0; color: #451a03; font-weight: 600;">{{endTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-weight: 500;">Position:</td>
+                        <td style="padding: 8px 0; color: #451a03; font-weight: 600;">{{role}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-weight: 500;">Location:</td>
+                        <td style="padding: 8px 0; color: #451a03; font-weight: 600;">{{location}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{clockInLink}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">Clock In Now</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                Need to make changes? Visit your <a href="{{shiftsLink}}" style="color: #2563eb;">shifts page</a> or contact your manager.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                This email was sent by ShiftFlo. If you no longer wish to receive shift reminders, you can <a href="{{unsubscribeLink}}" style="color: #6b7280;">update your preferences</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

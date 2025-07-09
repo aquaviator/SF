@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URGENT: Emergency Shift Coverage Needed - ShiftFlo</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+        <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #ef4444;">
+            <h1 style="color: #ef4444; text-align: center; margin-bottom: 30px;">🚨 URGENT: Emergency Coverage Needed</h1>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi {{staffName}},
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                We need immediate coverage for a shift that has become available. This is an urgent request - please respond as soon as possible.
+            </p>
+            
+            <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #ef4444;">
+                <h3 style="color: #dc2626; margin-top: 0; margin-bottom: 15px;">Emergency Shift Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">Date:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{shiftDate}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">Start Time:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{startTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">End Time:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{endTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">Position:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{role}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">Location:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{location}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #991b1b; font-weight: 500;">Reason:</td>
+                        <td style="padding: 8px 0; color: #7f1d1d; font-weight: 600;">{{reason}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                <h4 style="color: #92400e; margin-top: 0; margin-bottom: 10px;">⏰ Time Sensitive:</h4>
+                <p style="color: #451a03; margin: 0;">
+                    This shift {{#if isStartingSoon}}is starting in {{timeUntilStart}}{{else}}needs immediate coverage{{/if}}. 
+                    Please respond urgently if you can help.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{claimLink}}" style="background-color: #ef4444; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px;">CLAIM SHIFT NOW</a>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{contactLink}}" style="background-color: #6b7280; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: 500;">Contact Manager</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                If you can't help, please let us know immediately so we can find alternative coverage.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                This is an emergency notification from ShiftFlo. If you no longer wish to receive urgent alerts, you can <a href="{{unsubscribeLink}}" style="color: #6b7280;">update your preferences</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

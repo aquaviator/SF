@@ -4,6 +4,8 @@
 
 ShiftFlo is a comprehensive multi-tenant shift management SaaS application built with modern web technologies. The system enables businesses to manage staff scheduling, time tracking, holiday requests, and workforce analytics through a mobile-first interface.
 
+**Recent Update (July 2025)**: Completed Phase 1 operational email notifications system with comprehensive shift-related email workflows including assignment notifications, reminders, swap requests, holiday requests, and emergency alerts.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -39,6 +41,15 @@ Preferred communication style: Simple, everyday language.
 - **Role System**: Owner and staff roles with different permissions
 - **Profile Management**: Comprehensive user profiles with emergency contacts
 - **Account Activation**: Token-based email verification system
+
+### Operational Email Notifications (Phase 1 - July 2025)
+- **Shift Assignment Emails**: Automated notifications when shifts are assigned to staff
+- **Shift Reminders**: 24-hour advance reminders for upcoming confirmed shifts
+- **Swap Request Notifications**: Email alerts for shift swap requests between staff
+- **Holiday Request Workflow**: Owner notifications for new requests, staff notifications for status updates
+- **Emergency Shift Alerts**: Urgent notifications for last-minute coverage needs (within 4 hours)
+- **Template System**: Professional HTML email templates with responsive design
+- **Smart Scheduling**: Automated reminder and alert scheduling with node-cron
 
 ### Shift Management
 - **Scheduling**: Create, assign, and manage shifts with multiple assignment types
@@ -108,8 +119,9 @@ Preferred communication style: Simple, everyday language.
 
 ### External Services
 - **Stripe**: Payment processing for subscriptions
-- **Nodemailer**: Email sending via Gmail SMTP
+- **Nodemailer**: Email sending via Gmail SMTP with operational notifications
 - **Neon**: Serverless PostgreSQL hosting
+- **Gmail SMTP**: Transactional and operational email delivery
 
 ### Development Tools
 - **TypeScript**: Static type checking
@@ -145,3 +157,45 @@ Preferred communication style: Simple, everyday language.
 - **Environment Variables**: Sensitive data in environment variables only
 
 The application follows a clean architecture pattern with clear separation of concerns, making it maintainable and scalable for multi-tenant SaaS operations.
+
+## Recent Changes (July 2025)
+
+### Phase 1 Operational Email Notifications Implementation
+- **Email Templates**: Created professional HTML email templates for all shift-related workflows
+  - `shift-assigned.hbs` - New shift assignments with accept/decline links
+  - `shift-reminder.hbs` - 24-hour advance shift reminders
+  - `swap-request.hbs` - Shift swap requests between staff
+  - `holiday-request.hbs` - Holiday request notifications to owners
+  - `holiday-status.hbs` - Holiday request status updates to staff
+  - `emergency-alert.hbs` - Urgent shift coverage alerts
+
+- **Email Service Layer**: Built comprehensive email utility system
+  - `server/utils/email.ts` - Core email sending functions with template compilation
+  - Handlebars-like template engine for dynamic content
+  - Smart link generation with domain detection
+  - Error handling and fallback mechanisms
+
+- **Automated Scheduling**: Implemented reminder and alert scheduling
+  - `server/reminder-scheduler.ts` - Node-cron based job scheduling
+  - Hourly shift reminder checks (24-hour advance)
+  - 15-minute emergency shift alert monitoring
+  - Manual trigger capabilities for testing
+
+- **Integration Points**: Email triggers added to all relevant workflows
+  - Shift creation/assignment routes
+  - Swap request creation
+  - Holiday request submission and approval
+  - Emergency shift coverage scenarios
+
+- **Testing Framework**: Created comprehensive email testing system
+  - `scripts/test-email-basic.ts` - Basic email functionality verification
+  - `scripts/test-email-notifications.ts` - Complete workflow testing
+  - Configuration validation and error diagnostics
+
+### Technical Implementation Details
+- **Template Engine**: Custom Handlebars-like engine for email templates
+- **SMTP Configuration**: Gmail SMTP with app-specific passwords
+- **Error Handling**: Graceful degradation when email fails
+- **Activity Logging**: Optional activity log integration with foreign key safety
+- **Domain Detection**: Automatic domain detection for email links
+- **Security**: Secure template compilation and data sanitization

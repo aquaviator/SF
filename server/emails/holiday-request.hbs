@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Request - ShiftFlo</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+        <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h1 style="color: #2563eb; text-align: center; margin-bottom: 30px;">New Holiday Request</h1>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi {{ownerName}},
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+                {{staffName}} has submitted a new holiday request that requires your approval.
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 15px;">Request Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Staff Member:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{staffName}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Request Type:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{requestType}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Start Date:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{startDate}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">End Date:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{endDate}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Days Requested:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{daysRequested}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-weight: 500;">Submitted:</td>
+                        <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">{{submittedDate}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            {{#if reason}}
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                <h4 style="color: #92400e; margin-top: 0; margin-bottom: 10px;">Reason:</h4>
+                <p style="color: #451a03; margin: 0;">{{reason}}</p>
+            </div>
+            {{/if}}
+            
+            <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                <h4 style="color: #047857; margin-top: 0; margin-bottom: 10px;">Leave Balance:</h4>
+                <p style="color: #064e3b; margin: 0;">
+                    Remaining entitlement: {{remainingEntitlement}} days
+                    {{#if carryOver}}
+                    <br>Carry over from previous year: {{carryOver}} days
+                    {{/if}}
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{approveLink}}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-right: 10px; font-weight: 500;">Approve Request</a>
+                <a href="{{declineLink}}" style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">Decline Request</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                You can also manage holiday requests in your <a href="{{requestsLink}}" style="color: #2563eb;">ShiftFlo dashboard</a>.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                This email was sent by ShiftFlo. If you no longer wish to receive these notifications, you can <a href="{{unsubscribeLink}}" style="color: #6b7280;">update your preferences</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

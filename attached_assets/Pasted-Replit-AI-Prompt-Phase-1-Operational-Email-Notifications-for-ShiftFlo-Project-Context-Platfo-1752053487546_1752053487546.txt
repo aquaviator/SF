@@ -1,0 +1,162 @@
+Replit AI Prompt — Phase 1: Operational Email Notifications for ShiftFlo
+🗂️ Project Context:
+Platform: ShiftFlo (multi-tenant workforce scheduling system)
+
+Stack: TypeScript, Node.js (Express), Firestore + SQL hybrid, Tailwind/DaisyUI frontend
+
+Email system: Nodemailer (Gmail SMTP) already working
+
+Existing email functions: Activation, password reset, staff invites
+
+Database: Shifts stored in shifts table/collection with status, assignmentType, assignedTo, etc.
+
+📌 Goal:
+Implement the first phase of shift-related operational email notifications. Add new server-side email functions using the existing Nodemailer infrastructure, triggered by events in the shift lifecycle.
+
+✅ Phase 1 Requirements
+✉️ 1. sendShiftAssignmentEmail
+Trigger: A shift is created or updated with status = assigned and assignedTo = <staff_id>
+
+Content: HTML email notifying the staff of a new shift assignment, including:
+
+Shift date/time
+
+Position
+
+Option to accept/decline (include link to system)
+
+Email Template Name: shift-assigned.hbs
+
+Recipient: staff.email
+
+✉️ 2. sendShiftReminderEmail
+Trigger: Scheduled task (e.g., via cron or Firestore scheduled function)
+
+Timing: 2–4 hours before a shift starts where status = confirmed
+
+Content:
+
+Reminder of upcoming shift
+
+Start time, role, and location
+
+Email Template: shift-reminder.hbs
+
+✉️ 3. sendSwapRequestEmail
+Trigger: Staff initiates a swap request (POST /api/swaps)
+
+Recipients:
+
+Staff member involved in the swap
+
+Owner (for escalated swaps)
+
+Email Template: swap-request.hbs
+
+Includes:
+
+Reason
+
+Proposed shift details
+
+Link to approve/decline
+
+✉️ 4. sendHolidayRequestEmail
+Trigger: Time-off request submitted or status changes
+
+Recipients:
+
+Owner on new request
+
+Staff on approval/rejection
+
+Template(s):
+
+holiday-request.hbs
+
+holiday-status.hbs
+
+✉️ 5. sendEmergencyShiftAlert
+Trigger: Shift is cancelled or no-show within 2 hours
+
+Recipients: All eligible staff for the role
+
+Template: emergency-alert.hbs
+
+Includes:
+
+Shift time and urgency message
+
+CTA to claim shift immediately
+
+🛠️ Tasks to Complete (Replit AI Agent Instructions):
+1. 📁 Create new files in /server/emails/
+shift-assigned.hbs
+
+shift-reminder.hbs
+
+swap-request.hbs
+
+holiday-request.hbs
+
+holiday-status.hbs
+
+emergency-alert.hbs
+
+2. 📦 In /server/utils/email.ts:
+Add new functions:
+
+ts
+Copy
+Edit
+export async function sendShiftAssignmentEmail(shift: Shift, staff: User): Promise<void>
+export async function sendShiftReminderEmail(shift: Shift, staff: User): Promise<void>
+export async function sendSwapRequestEmail(swap: SwapRequest, target: User): Promise<void>
+export async function sendHolidayRequestEmail(request: HolidayRequest, owner: User): Promise<void>
+export async function sendHolidayStatusUpdateEmail(request: HolidayRequest, staff: User): Promise<void>
+export async function sendEmergencyShiftAlert(shift: Shift, eligibleStaff: User[]): Promise<void>
+Use existing sendEmail({ to, subject, template, data }) utility
+
+3. 📲 Update existing routes/controllers:
+/api/shifts → trigger sendShiftAssignmentEmail when status = assigned
+
+cron-reminders.ts or equivalent → trigger sendShiftReminderEmail 2 hours before
+
+/api/swaps → trigger sendSwapRequestEmail to target and owner (if escalated)
+
+/api/timeoff → trigger sendHolidayRequestEmail on submit and sendHolidayStatusUpdateEmail on approval/decline
+
+/api/shifts/clock-in → if late or no-show, trigger sendEmergencyShiftAlert
+
+4. ✅ Validation & Logging
+Log each sent email to activity_logs table with:
+
+ts
+Copy
+Edit
+{
+  tenantId,
+  userId,
+  action: "email_sent",
+  metadata: {
+    type: "shift_assignment" | "reminder" | "swap_request" | "holiday_request" | "emergency_alert",
+    shiftId,
+    recipientEmail
+  },
+  timestamp: new Date()
+}
+⚠️ Considerations
+Only send emails if user has not disabled email notifications in their preferences (notificationPreferences.email = true)
+
+Avoid duplicate reminders (track sent reminders in a notifications table if needed)
+
+ShiftFlo is GDPR compliant: opt-out links should be present where applicable
+
+🎯 Output
+Fully functional shift-related email notification system
+
+All templates available and customizable
+
+Email triggers integrated into relevant backend routes
+
+All emails logged in the activity trail

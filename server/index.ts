@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { cronScheduler } from "./cron-scheduler";
+import { reminderScheduler } from "./reminder-scheduler";
 import { setupDomainConfiguration } from "./setup/domainSetup";
 
 const app = express();
@@ -79,5 +80,8 @@ app.use((req, res, next) => {
     
     // Start the cron scheduler for automated strike detection
     cronScheduler.start();
+    
+    // Start the reminder scheduler for shift reminders and emergency alerts
+    reminderScheduler.start();
   });
 })();

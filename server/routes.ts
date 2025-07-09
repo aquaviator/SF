@@ -10,6 +10,7 @@ import Stripe from "stripe";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { sendActivationEmail, sendEmailChangeConfirmation, sendPasswordResetEmail, sendUpgradeConfirmationEmail } from "./utils/mailer";
+import { sendShiftAssignmentEmail, sendShiftReminderEmail, sendSwapRequestEmail, sendHolidayRequestEmail, sendHolidayStatusUpdateEmail, sendEmergencyShiftAlert } from "./utils/email";
 import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
@@ -343,6 +344,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const shift = await storage.createShift(validatedData);
+      
+      // Send email notification if shift is assigned to a specific user
+      if (shift.assignedTo && shift.status === 'assigned') {
+        try {
+          const staff = await storage.getUser(shift.assignedTo);
+          if (staff) {
+            await sendShiftAssignmentEmail(shift, staff);
+          }
+        } catch (emailError) {
+          console.error('❌ SHIFT_ASSIGNMENT_EMAIL_FAILED', {
+            shiftId: shift.id,
+            staffId: shift.assignedTo,
+            error: emailError.message,
+            timestamp: new Date()
+          });
+          // Don't fail the request if email fails
+        }
+      }
+      
       res.status(201).json(shift);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -388,10 +408,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      const originalShift = await storage.getShift(id);
       const shift = await storage.updateShift(id, validatedData);
       
       if (!shift) {
         return res.status(404).json({ message: "Shift not found" });
+      }
+      
+      // Send email notification if shift is newly assigned to a user
+      if (shift.assignedTo && shift.status === 'assigned' && 
+          (!originalShift || originalShift.assignedTo !== shift.assignedTo || originalShift.status !== 'assigned')) {
+        try {
+          const staff = await storage.getUser(shift.assignedTo);
+          if (staff) {
+            await sendShiftAssignmentEmail(shift, staff);
+          }
+        } catch (emailError) {
+          console.error('❌ SHIFT_ASSIGNMENT_EMAIL_FAILED', {
+            shiftId: shift.id,
+            staffId: shift.assignedTo,
+            error: emailError.message,
+            timestamp: new Date()
+          });
+          // Don't fail the request if email fails
+        }
       }
       
       res.json(shift);
@@ -863,6 +903,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertSwapRequestSchema.parse(req.body);
       const swapRequest = await storage.createSwapRequest(validatedData);
+      
+      // Send email notification for swap request
+      try {
+        const requester = await storage.getUser(swapRequest.requesterId);
+        const originalShift = await storage.getShift(swapRequest.originalShiftId);
+        const targetShift = swapRequest.targetShiftId ? await storage.getShift(swapRequest.targetShiftId) : null;
+        
+        if (requester && originalShift) {
+          // Find target user or owner to notify
+          let targetUser = null;
+          if (targetShift && targetShift.assignedTo) {
+            targetUser = await storage.getUser(targetShift.assignedTo);
+          }
+          
+          // If no specific target, notify owner
+          if (!targetUser) {
+            const tenantUsers = await storage.getUsersByTenant(swapRequest.tenantId);
+            const owner = tenantUsers.find(u => u.role === 'owner');
+            if (owner) {
+              targetUser = owner;
+            }
+          }
+          
+          if (targetUser) {
+            const swapData = {
+              id: swapRequest.id,
+              originalShift,
+              targetShift: targetShift || { date: 'Any', startTime: 'Any', endTime: 'Any', role: 'Any', location: 'Any' },
+              reason: swapRequest.reason
+            };
+            
+            await sendSwapRequestEmail(swapData, targetUser, requester);
+          }
+        }
+      } catch (emailError) {
+        console.error('❌ SWAP_REQUEST_EMAIL_FAILED', {
+          swapRequestId: swapRequest.id,
+          error: emailError.message,
+          timestamp: new Date()
+        });
+        // Don't fail the request if email fails
+      }
+      
       res.status(201).json(swapRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1232,6 +1315,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedData = normalizeHolidayRequestData(req.body);
       const validatedData = insertHolidayRequestSchema.parse(normalizedData);
       const holidayRequest = await storage.createHolidayRequest(validatedData);
+      
+      // Send email notification to owner for new holiday request
+      try {
+        const staff = await storage.getUser(holidayRequest.requesterId);
+        const tenantUsers = await storage.getUsersByTenant(holidayRequest.tenantId);
+        const owner = tenantUsers.find(u => u.role === 'owner');
+        
+        if (staff && owner) {
+          const requestData = {
+            ...holidayRequest,
+            daysRequested: calculateRequestDays(holidayRequest.startDate, holidayRequest.endDate),
+            requestType: holidayRequest.type || 'Holiday',
+            createdAt: new Date().toISOString()
+          };
+          
+          await sendHolidayRequestEmail(requestData, owner, staff);
+        }
+      } catch (emailError) {
+        console.error('❌ HOLIDAY_REQUEST_EMAIL_FAILED', {
+          requestId: holidayRequest.id,
+          error: emailError.message,
+          timestamp: new Date()
+        });
+        // Don't fail the request if email fails
+      }
+      
       res.status(201).json(holidayRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1261,6 +1370,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update holiday entitlements if status changed
       if (originalRequest.status !== validatedData.status) {
         await updateHolidayEntitlements(originalRequest, validatedData, storage);
+      }
+      
+      // Send email notification to staff for holiday request status update
+      if (originalRequest.status !== validatedData.status && validatedData.status !== 'pending') {
+        try {
+          const staff = await storage.getUser(holidayRequest.requesterId);
+          const tenantUsers = await storage.getUsersByTenant(holidayRequest.tenantId);
+          const owner = tenantUsers.find(u => u.role === 'owner');
+          
+          if (staff && owner) {
+            const requestData = {
+              ...holidayRequest,
+              daysRequested: calculateRequestDays(holidayRequest.startDate, holidayRequest.endDate),
+              requestType: holidayRequest.type || 'Holiday',
+              updatedAt: new Date().toISOString()
+            };
+            
+            await sendHolidayStatusUpdateEmail(requestData, staff, owner);
+          }
+        } catch (emailError) {
+          console.error('❌ HOLIDAY_STATUS_EMAIL_FAILED', {
+            requestId: holidayRequest.id,
+            error: emailError.message,
+            timestamp: new Date()
+          });
+          // Don't fail the request if email fails
+        }
       }
       
       res.json(holidayRequest);
