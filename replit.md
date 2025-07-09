@@ -160,6 +160,14 @@ The application follows a clean architecture pattern with clear separation of co
 
 ## Recent Changes (July 2025)
 
+### Email Domain Consistency Update (July 9, 2025)
+- **Unified Domain Detection**: All email functions now use the same domain detection system
+  - Updated `sendActivationEmail`, `sendPasswordResetEmail`, `sendEmailChangeConfirmation`, and `sendUpgradeConfirmationEmail` to use `getDomainFromDatabase()`
+  - Removed manual domain parameter passing in favor of consistent automatic detection
+  - All emails now properly use current Replit domain for testing (`https://8a4d39e3-b50b-47e6-9729-d9e2707f8b3f-00-3boxlm5e6m1id.janeway.replit.dev`)
+  - Production deployment will automatically use `task-master-leatfield.replit.app` domain
+  - Enhanced debug logging for all email functions with domain detection details
+
 ### Phase 1 Operational Email Notifications Implementation
 - **Email Templates**: Created professional HTML email templates for all shift-related workflows
   - `shift-assigned.hbs` - New shift assignments with accept/decline links

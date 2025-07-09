@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendActivationEmail(email: string, activationToken: string, domain?: string) {
-  const activeDomain = domain || await getDomainFromDatabase();
-  // Always use HTTPS for deployment domains, HTTP only for localhost
+  // Use the same domain detection system as operational emails
+  const activeDomain = await getDomainFromDatabase();
   const isLocalhost = activeDomain.includes('localhost');
   const protocol = isLocalhost ? 'http' : 'https';
   const activationLink = `${protocol}://${activeDomain}/activate?token=${activationToken}`;
@@ -47,7 +47,8 @@ export async function sendActivationEmail(email: string, activationToken: string
 }
 
 export async function sendEmailChangeConfirmation(email: string, token: string, domain?: string) {
-  const activeDomain = domain || await getDomainFromDatabase();
+  // Use the same domain detection system as operational emails
+  const activeDomain = await getDomainFromDatabase();
   const isLocalhost = activeDomain.includes('localhost');
   const protocol = isLocalhost ? 'http' : 'https';
   const confirmLink = `${protocol}://${activeDomain}/confirm-email?token=${token}`;
@@ -83,7 +84,8 @@ export async function sendEmailChangeConfirmation(email: string, token: string, 
 }
 
 export async function sendPasswordResetEmail(email: string, token: string, domain?: string) {
-  const activeDomain = domain || await getDomainFromDatabase();
+  // Use the same domain detection system as operational emails
+  const activeDomain = await getDomainFromDatabase();
   const isLocalhost = activeDomain.includes('localhost');
   const protocol = isLocalhost ? 'http' : 'https';
   const resetLink = `${protocol}://${activeDomain}/reset-password?token=${token}`;
@@ -120,6 +122,21 @@ export async function sendPasswordResetEmail(email: string, token: string, domai
 
 export async function sendUpgradeConfirmationEmail(user: any, upgradeDetails: any) {
   const { seatsAdded, newSeatCount, newMonthlyTotal, invoice, paymentDetails } = upgradeDetails;
+  
+  // Use the same domain detection system as operational emails
+  const activeDomain = await getDomainFromDatabase();
+  const isLocalhost = activeDomain.includes('localhost');
+  const protocol = isLocalhost ? 'http' : 'https';
+  const dashboardLink = `${protocol}://${activeDomain}/dashboard`;
+  
+  console.log('📧 UPGRADE_CONFIRMATION_EMAIL_DEBUG', {
+    email: user.email,
+    activeDomain,
+    isLocalhost,
+    protocol,
+    dashboardLink,
+    timestamp: new Date()
+  });
   
   const mailOptions = {
     from: process.env.GOOGLE_DELEGATED_EMAIL,
@@ -161,6 +178,10 @@ export async function sendUpgradeConfirmationEmail(user: any, upgradeDetails: an
         ` : ''}
 
         <p>Your new billing cycle will reflect the updated seat count starting from your next billing date.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${dashboardLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dashboard</a>
+        </div>
         
         <div style="text-align: center; margin: 30px 0;">
           <p style="color: #64748b;">Thank you for choosing ShiftFlo!</p>
