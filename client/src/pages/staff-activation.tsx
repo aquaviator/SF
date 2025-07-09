@@ -72,9 +72,15 @@ export default function StaffActivation() {
     if (!token) return;
 
     try {
-      const response = await apiRequest('POST', '/api/auth/activate', {
-        token,
-        password: data.password,
+      const response = await fetch('/api/auth/activate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          password: data.password,
+        }),
       });
 
       if (response.ok) {
