@@ -40,7 +40,7 @@ interface UpcomingShift {
 export default function Dashboard() {
   const { role, tenantId, user } = useRole();
   
-
+  console.log('🔍 DASHBOARD_ROLE_DEBUG:', { role, userRole: user?.role, user, tenantId });
 
   // Fetch all required data for dashboard calculations
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
