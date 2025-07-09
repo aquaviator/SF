@@ -821,6 +821,52 @@ export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
   createdAt: true,
 });
 
+// Push notification tables
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  tenantId: text("tenant_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email: boolean("email").notNull().default(true),
+  push: boolean("push").notNull().default(true),
+  sms: boolean("sms").notNull().default(false),
+  shiftAssignments: boolean("shift_assignments").notNull().default(true),
+  reminders: boolean("reminders").notNull().default(true),
+  swaps: boolean("swaps").notNull().default(true),
+  emergencies: boolean("emergencies").notNull().default(true),
+  workHoursOnly: boolean("work_hours_only").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+
 export type SiteAdmin = typeof siteAdmins.$inferSelect;
 export type InsertSiteAdmin = z.infer<typeof insertSiteAdminSchema>;
 export type LandingPage = typeof landingPages.$inferSelect;

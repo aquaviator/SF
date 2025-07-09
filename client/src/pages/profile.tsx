@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Building, Shield, Mail, Lock } from "lucide-react";
+import { Loader2, User, Building, Shield, Mail, Lock, Bell } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import PushNotificationSetup from "@/components/PushNotificationSetup";
 
 // Validation schemas
 const personalDetailsSchema = z.object({
@@ -542,7 +543,7 @@ export default function Profile() {
 
       {role === 'owner' ? (
         <Tabs defaultValue="business" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="business" className="flex items-center space-x-2">
               <Building className="h-4 w-4" />
               <span>Business</span>
@@ -554,6 +555,10 @@ export default function Profile() {
             <TabsTrigger value="security" className="flex items-center space-x-2">
               <Shield className="h-4 w-4" />
               <span>Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center space-x-2">
+              <Bell className="h-4 w-4" />
+              <span>Notifications</span>
             </TabsTrigger>
           </TabsList>
 
@@ -925,11 +930,15 @@ export default function Profile() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="notifications">
+          <PushNotificationSetup />
+        </TabsContent>
         </Tabs>
       ) : (
         /* Staff Profile - Personal Details and Security */
         <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personal" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
               <span>Personal</span>
@@ -937,6 +946,10 @@ export default function Profile() {
             <TabsTrigger value="security" className="flex items-center space-x-2">
               <Shield className="h-4 w-4" />
               <span>Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center space-x-2">
+              <Bell className="h-4 w-4" />
+              <span>Notifications</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1177,6 +1190,10 @@ export default function Profile() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <PushNotificationSetup />
           </TabsContent>
         </Tabs>
       )}

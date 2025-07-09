@@ -1,0 +1,186 @@
+Project Context
+Platform: ShiftFlo (multi-tenant workforce scheduling SaaS)
+
+Stack: TypeScript, React (client), Express backend, Firebase/SQL hybrid
+
+Users: Owners, Staff
+
+Current System:
+
+Nodemailer email system fully working
+
+NotificationBell for owners (desktop only, not real-time)
+
+Goal: Add Push Notification capability using service workers and web push APIs to alert users in real time
+
+📌 Goal:
+Implement real-time browser and PWA push notifications for staff and owners on shift lifecycle events, swaps, time-off updates, and emergencies.
+
+✅ Phase 2 Requirements
+1. Enable Push Notification Opt-In (Frontend)
+Ask user permission via Notification.requestPermission()
+
+On approval, register a Service Worker at /sw.js
+
+Capture and store PushSubscription (via registration.pushManager.subscribe)
+
+Send the subscription to backend (POST /api/notifications/subscribe)
+
+2. Backend Push Notification Infrastructure
+Add /api/notifications/subscribe
+
+Stores { userId, tenantId, subscription: PushSubscriptionObject } in notificationSubscriptions collection/table
+
+Add sendPushNotification(payload, subscription) util using web-push Node library
+
+Payload Example:
+
+json
+Copy
+Edit
+{
+  "title": "ShiftFlo Alert",
+  "body": "You've been assigned a new shift at 4PM",
+  "url": "/staff/shifts"
+}
+3. Service Worker Setup (/public/sw.js)
+Listen for push events:
+
+js
+Copy
+Edit
+self.addEventListener("push", event => {
+  const { title, body, url } = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      data: { url }
+    })
+  );
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  clients.openWindow(event.notification.data.url);
+});
+4. Triggers for Notifications
+Event Type	Sender	Recipient	Message Example
+New Shift Assigned	Owner	Assigned Staff	“You’ve been assigned a new shift on Thursday”
+Swap Request	Staff	Target/Owner	“New swap request submitted for your shift”
+Time-Off Request	Staff	Owner	“Alex has submitted a time-off request”
+Emergency Shift Open	System	Eligible Staff	“Shift just opened for tonight — claim now”
+Reminder (2hr before)	System	Confirmed Staff	“Reminder: Your shift starts at 4PM”
+Shift Cancelled by Owner	Owner	Assigned Staff	“Your assigned shift has been cancelled”
+
+5. Build Backend Notification Dispatcher
+Utility: notifyUser(userId, payload)
+
+Looks up all subscriptions for that user
+
+Sends via web-push (if active)
+
+Add calls to notifyUser() at the same trigger points as Phase 1 email system
+
+6. Notification Management API
+GET /api/notifications/preferences — returns user's current settings
+
+PATCH /api/notifications/preferences — allows toggling:
+
+ts
+Copy
+Edit
+{
+  email: true,
+  push: true,
+  sms: false,
+  categories: {
+    shiftAssignments: true,
+    reminders: true,
+    swaps: true,
+    emergencies: true
+  }
+}
+Preferences are stored in notificationPreferences (user-scoped)
+
+7. UI Considerations
+Show “Enable Push Notifications” modal on login (if not already subscribed)
+
+Add toggle in Profile Settings:
+
+🔘 “Enable browser notifications”
+
+🔘 “Only during work hours” (7 AM – 9 PM)
+
+🧩 Tasks for Replit AI Agent
+✅ Setup web-push in backend
+
+Add VAPID keys (store in .env)
+
+Initialize web-push module with keys
+
+📁 Create /public/sw.js and register in main layout
+
+ts
+Copy
+Edit
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: '<VAPID_PUBLIC_KEY>' })
+          .then(subscription => {
+            fetch('/api/notifications/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(subscription)
+            });
+          });
+      }
+    });
+  });
+}
+📬 Create backend subscription endpoint:
+
+POST /api/notifications/subscribe
+
+Stores { userId, tenantId, subscription }
+
+🔔 Create notifyUser(userId, payload) utility
+
+Loads active subscriptions
+
+Sends via web-push.sendNotification()
+
+📤 Update notification triggers:
+
+On shift assignment, swap, cancellation, etc. → call notifyUser(...)
+
+⚙️ Add Notification Preferences UI + API endpoints
+
+🔐 Respect user settings before sending any push notifications
+
+⚠️ Considerations
+Ask permission once, fallback to email if denied
+
+Fallback strategy: if push fails, auto-send via email
+
+Service Worker limitations:
+
+Only works on HTTPS or localhost
+
+PWA push requires homescreen install on mobile
+
+GDPR: include opt-out & privacy language
+
+🎯 Final Output
+Full push notification infrastructure:
+
+Service worker
+
+Frontend registration + opt-in
+
+Backend delivery logic
+
+Real-time alerts for shift-related events
+
+Respectful of user preferences and privacy

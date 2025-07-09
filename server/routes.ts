@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, promoCodes } from "../shared/schema";
+import { insertShiftSchema, insertUserSchema, updateUserSchema, insertOpportunitySchema, insertSwapRequestSchema, insertScheduleTemplateSchema, insertAssignmentSchema, insertHolidayRequestSchema, insertBusinessProfileSchema, insertJobRoleSchema, insertLocationSchema, insertDepartmentSchema, insertOperatingHoursSchema, insertHolidayEntitlementSchema, insertStaffStrikeSchema, insertPushSubscriptionSchema, insertNotificationPreferencesSchema, type HolidayRequest, type InsertHolidayRequest, shifts, users, tenants, businessProfiles, subscriptions, seatPricing, campaigns, locations, jobRoles, shiftPolicies, departments, operatingHours, domainConfig, mailingList, siteAdmins, landingPages, platformSettings, supportTickets, promoCodes, pushSubscriptions, notificationPreferences } from "../shared/schema";
 import { z } from "zod";
 import { strikeService } from "./strike-service";
 import { db } from "./db";
@@ -11,6 +11,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { sendActivationEmail, sendEmailChangeConfirmation, sendPasswordResetEmail, sendUpgradeConfirmationEmail } from "./utils/mailer";
 import { sendShiftAssignmentEmail, sendShiftReminderEmail, sendSwapRequestEmail, sendHolidayRequestEmail, sendHolidayStatusUpdateEmail, sendEmergencyShiftAlert } from "./utils/email";
+import { notifyUser, notifyUsers, getVapidPublicKey, notificationTemplates } from "./utils/push-notifications";
 import session from "express-session";
 import { setupAdminAuthRoutes } from "./routes/admin/auth";
 import { setup2FARoutes } from "./routes/admin/2fa";
@@ -5790,6 +5791,253 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Staff bulk import routes
   app.use('/api/staff', staffBulkImportRoutes);
+
+  // Push notification routes
+  app.post("/api/notifications/subscribe", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { endpoint, p256dh, auth } = req.body;
+      
+      if (!endpoint || !p256dh || !auth) {
+        return res.status(400).json({ message: "Missing required subscription data" });
+      }
+
+      const tenantId = req.session.tenantId;
+      const userId = req.session.userId;
+
+      // Check if subscription already exists
+      const existingSubscription = await db
+        .select()
+        .from(pushSubscriptions)
+        .where(and(
+          eq(pushSubscriptions.userId, userId),
+          eq(pushSubscriptions.tenantId, tenantId),
+          eq(pushSubscriptions.endpoint, endpoint)
+        ));
+
+      if (existingSubscription.length > 0) {
+        // Update existing subscription
+        await db
+          .update(pushSubscriptions)
+          .set({ p256dh, auth, isActive: true })
+          .where(eq(pushSubscriptions.id, existingSubscription[0].id));
+        
+        console.log('📱 PUSH_SUBSCRIPTION_UPDATED', {
+          userId,
+          tenantId,
+          subscriptionId: existingSubscription[0].id,
+          timestamp: new Date()
+        });
+      } else {
+        // Create new subscription
+        await db.insert(pushSubscriptions).values({
+          tenantId,
+          userId,
+          endpoint,
+          p256dh,
+          auth,
+          isActive: true
+        });
+
+        console.log('📱 PUSH_SUBSCRIPTION_CREATED', {
+          userId,
+          tenantId,
+          endpoint: endpoint.substring(0, 50) + '...',
+          timestamp: new Date()
+        });
+      }
+
+      // Create default notification preferences if they don't exist
+      const existingPrefs = await db
+        .select()
+        .from(notificationPreferences)
+        .where(and(
+          eq(notificationPreferences.userId, userId),
+          eq(notificationPreferences.tenantId, tenantId)
+        ));
+
+      if (existingPrefs.length === 0) {
+        await db.insert(notificationPreferences).values({
+          tenantId,
+          userId,
+          email: true,
+          push: true,
+          sms: false,
+          shiftAssignments: true,
+          reminders: true,
+          swaps: true,
+          emergencies: true,
+          workHoursOnly: false
+        });
+      }
+
+      res.json({ success: true, message: "Push subscription saved" });
+    } catch (error) {
+      console.error('❌ PUSH_SUBSCRIPTION_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to save push subscription" });
+    }
+  });
+
+  app.delete("/api/notifications/unsubscribe", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const tenantId = req.session.tenantId;
+      const userId = req.session.userId;
+
+      // Deactivate all push subscriptions for this user
+      await db
+        .update(pushSubscriptions)
+        .set({ isActive: false })
+        .where(and(
+          eq(pushSubscriptions.userId, userId),
+          eq(pushSubscriptions.tenantId, tenantId)
+        ));
+
+      console.log('📱 PUSH_SUBSCRIPTION_DEACTIVATED', {
+        userId,
+        tenantId,
+        timestamp: new Date()
+      });
+
+      res.json({ success: true, message: "Push subscription removed" });
+    } catch (error) {
+      console.error('❌ PUSH_UNSUBSCRIBE_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to remove push subscription" });
+    }
+  });
+
+  app.get("/api/notifications/preferences", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const tenantId = req.session.tenantId;
+      const userId = req.session.userId;
+
+      const preferences = await db
+        .select()
+        .from(notificationPreferences)
+        .where(and(
+          eq(notificationPreferences.userId, userId),
+          eq(notificationPreferences.tenantId, tenantId)
+        ));
+
+      if (preferences.length === 0) {
+        // Return default preferences
+        const defaultPrefs = {
+          email: true,
+          push: true,
+          sms: false,
+          shiftAssignments: true,
+          reminders: true,
+          swaps: true,
+          emergencies: true,
+          workHoursOnly: false
+        };
+        return res.json(defaultPrefs);
+      }
+
+      res.json(preferences[0]);
+    } catch (error) {
+      console.error('❌ NOTIFICATION_PREFERENCES_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  app.patch("/api/notifications/preferences", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const tenantId = req.session.tenantId;
+      const userId = req.session.userId;
+
+      const updateData = insertNotificationPreferencesSchema.parse({
+        tenantId,
+        userId,
+        ...req.body
+      });
+
+      // Check if preferences exist
+      const existingPrefs = await db
+        .select()
+        .from(notificationPreferences)
+        .where(and(
+          eq(notificationPreferences.userId, userId),
+          eq(notificationPreferences.tenantId, tenantId)
+        ));
+
+      if (existingPrefs.length === 0) {
+        // Create new preferences
+        await db.insert(notificationPreferences).values(updateData);
+      } else {
+        // Update existing preferences
+        await db
+          .update(notificationPreferences)
+          .set(updateData)
+          .where(eq(notificationPreferences.id, existingPrefs[0].id));
+      }
+
+      console.log('📱 NOTIFICATION_PREFERENCES_UPDATED', {
+        userId,
+        tenantId,
+        preferences: updateData,
+        timestamp: new Date()
+      });
+
+      res.json({ success: true, message: "Notification preferences updated" });
+    } catch (error) {
+      console.error('❌ NOTIFICATION_PREFERENCES_UPDATE_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to update notification preferences" });
+    }
+  });
+
+  app.get("/api/notifications/vapid-public-key", async (req, res) => {
+    try {
+      res.json({ publicKey: getVapidPublicKey() });
+    } catch (error) {
+      console.error('❌ VAPID_KEY_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to get VAPID public key" });
+    }
+  });
+
+  // Test endpoint for sending push notifications
+  app.post("/api/notifications/test", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const tenantId = req.session.tenantId;
+      const userId = req.session.userId;
+
+      const testPayload = {
+        title: "Test Notification",
+        body: "This is a test push notification from ShiftFlo",
+        url: "/staff/shifts",
+        icon: "/icon-192x192.png"
+      };
+
+      const result = await notifyUser(userId, tenantId, testPayload);
+
+      res.json({
+        success: result.success,
+        message: result.message,
+        sentCount: result.sentCount
+      });
+    } catch (error) {
+      console.error('❌ TEST_NOTIFICATION_ERROR', { error: error.message });
+      res.status(500).json({ message: "Failed to send test notification" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
