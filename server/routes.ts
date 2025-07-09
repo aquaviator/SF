@@ -4600,8 +4600,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(users)
         .where(
           and(
-            eq(users.id, userId),
-            eq(users.tenant_id, tenantId),
+            eq(users.id, parseInt(userId)),
+            eq(users.tenantId, tenantId),
             eq(users.isActive, false)
           )
         );
@@ -4638,7 +4638,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email
       });
     } catch (error) {
-      console.error('❌ RESEND_ACTIVATION_ERROR', { error: error.message, timestamp: new Date() });
+      console.error('❌ RESEND_ACTIVATION_ERROR', { 
+        error: error.message, 
+        timestamp: new Date() 
+      });
       res.status(500).json({ message: "Failed to resend activation email" });
     }
   });
