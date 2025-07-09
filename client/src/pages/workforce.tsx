@@ -90,6 +90,20 @@ export default function Workforce() {
     endpoint: `/api/staff?tenantId=${tenantId}`,
   });
 
+  // Get subscription data for seat limits
+  const { data: subscription } = useQuery({
+    queryKey: ["/api/subscription", tenantId],
+    queryFn: () => fetch(`/api/subscription?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
+
+  // Get seat usage data
+  const { data: seatUsage } = useQuery({
+    queryKey: ["/api/subscription/seat-usage", tenantId],
+    queryFn: () => fetch(`/api/subscription/seat-usage?tenantId=${tenantId}`).then(res => res.json()),
+    enabled: !!tenantId,
+  });
+
   const form = useForm<StaffFormData>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
@@ -331,9 +345,37 @@ export default function Workforce() {
     enabled: !!tenantId,
   });
 
+  // Calculate seat limit restrictions
+  const seatLimitInfo = React.useMemo(() => {
+    if (!subscription || !seatUsage) return null;
+    
+    const activeStaff = staff.filter(s => s.isActive);
+    const totalSeats = subscription.seatsIncluded || 0;
+    const isOverLimit = activeStaff.length > totalSeats;
+    const availableSeats = Math.max(0, totalSeats - activeStaff.length);
+    
+    return {
+      totalSeats,
+      activeStaff: activeStaff.length,
+      availableSeats,
+      isOverLimit,
+      canActivateMore: availableSeats > 0,
+      excessUsers: Math.max(0, activeStaff.length - totalSeats)
+    };
+  }, [staff, subscription, seatUsage]);
+
+  // Filter active staff based on seat limits - only show up to seat limit
+  const visibleActiveStaff = React.useMemo(() => {
+    const activeStaff = staff.filter(s => s.isActive);
+    if (!seatLimitInfo) return activeStaff;
+    
+    // If over limit, show warning but display all (they need to manage the excess)
+    return activeStaff;
+  }, [staff, seatLimitInfo]);
+
   // Calculate performance metrics from real data
   const performanceData: PerformanceMetric[] = React.useMemo(() => {
-    return staff.filter(member => member.role === 'staff').map(member => {
+    return visibleActiveStaff.filter(member => member.role === 'staff').map(member => {
       // Get member's shifts in last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -585,8 +627,12 @@ export default function Workforce() {
             variant="ghost"
             size="sm"
             onClick={() => openReinstateModal(staff)}
-            className="min-h-[44px] min-w-[44px] text-green-600 hover:text-green-700 hover:bg-green-50"
-            title="Reinstate user"
+            disabled={seatLimitInfo && !seatLimitInfo.canActivateMore}
+            className="min-h-[44px] min-w-[44px] text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
+            title={seatLimitInfo && !seatLimitInfo.canActivateMore ? 
+              `Cannot reinstate. At capacity (${seatLimitInfo.activeStaff}/${seatLimitInfo.totalSeats} seats used)` : 
+              'Reinstate user'
+            }
           >
             <UserCheck className="w-4 h-4" />
           </Button>
@@ -702,7 +748,14 @@ export default function Workforce() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Workforce Management</h2>
           <p className="text-gray-600">Manage staff, roles, and performance metrics</p>
         </div>
-        <Button onClick={openCreateModal}>
+        <Button 
+          onClick={openCreateModal}
+          disabled={seatLimitInfo && !seatLimitInfo.canActivateMore}
+          title={seatLimitInfo && !seatLimitInfo.canActivateMore ? 
+            `Cannot add more staff. You are at capacity (${seatLimitInfo.activeStaff}/${seatLimitInfo.totalSeats} seats used)` : 
+            'Add Staff Member'
+          }
+        >
           <UserPlus className="w-4 h-4 mr-2" />
           Add Staff Member
         </Button>
@@ -733,6 +786,29 @@ export default function Workforce() {
         </TabsList>
 
         <TabsContent value="staff" className="space-y-6">
+          {/* Seat Limit Warning */}
+          {seatLimitInfo && seatLimitInfo.isOverLimit && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <UserX className="w-5 h-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Seat Limit Exceeded
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>
+                      You have {seatLimitInfo.activeStaff} active staff members but your subscription 
+                      only includes {seatLimitInfo.totalSeats} seats. 
+                      You need to either upgrade your subscription or deactivate {seatLimitInfo.excessUsers} staff member(s).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -746,16 +822,28 @@ export default function Workforce() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={seatLimitInfo?.isOverLimit ? "border-red-300 bg-red-50" : ""}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Staff</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {staff.filter(s => s.isActive).length}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`text-2xl font-bold ${seatLimitInfo?.isOverLimit ? 'text-red-600' : 'text-green-600'}`}>
+                        {staff.filter(s => s.isActive).length}
+                      </p>
+                      {seatLimitInfo && (
+                        <p className="text-sm text-gray-500">
+                          / {seatLimitInfo.totalSeats} seats
+                        </p>
+                      )}
+                    </div>
+                    {seatLimitInfo && seatLimitInfo.isOverLimit && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {seatLimitInfo.excessUsers} over limit
+                      </p>
+                    )}
                   </div>
-                  <Award className="w-8 h-8 text-green-600" />
+                  <Award className={`w-8 h-8 ${seatLimitInfo?.isOverLimit ? 'text-red-600' : 'text-green-600'}`} />
                 </div>
               </CardContent>
             </Card>
@@ -764,17 +852,19 @@ export default function Workforce() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">New This Month</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {staff.filter(s => {
-                        const hireDate = s.hireDate ? new Date(s.hireDate) : new Date(s.createdAt || Date.now());
-                        const now = new Date();
-                        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                        return hireDate >= thisMonth;
-                      }).length}
-                    </p>
+                    <p className="text-sm font-medium text-gray-600">Seat Utilization</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {seatLimitInfo ? Math.round((seatLimitInfo.activeStaff / seatLimitInfo.totalSeats) * 100) : 0}%
+                      </p>
+                    </div>
+                    {seatLimitInfo && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {seatLimitInfo.availableSeats} seats available
+                      </p>
+                    )}
                   </div>
-                  <UserPlus className="w-8 h-8 text-purple-600" />
+                  <Target className="w-8 h-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
