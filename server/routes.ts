@@ -4086,10 +4086,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const subscription = await storage.getSubscriptionByTenantId(user.tenantId);
         
         if (subscription) {
-          // Get current active staff count
-          const allUsers = await storage.getAllUsers();
-          const tenantUsers = allUsers.filter(u => u.tenantId === user.tenantId);
-          const currentActiveStaff = tenantUsers.filter(u => u.role === 'staff' && u.isActive).length;
+          // Get current active staff count using the correct storage method
+          const tenantUsers = await storage.getStaffByTenant(user.tenantId);
+          const currentActiveStaff = tenantUsers.filter(u => u.isActive).length;
           const totalSeatsIncluded = subscription.seatsIncluded;
           const wouldExceedLimit = (currentActiveStaff + 1) > totalSeatsIncluded;
 

@@ -171,6 +171,16 @@ The application follows a clean architecture pattern with clear separation of co
   - Created test scripts to verify governance enforcement works correctly
 - **Governance Status**: ✅ **RESOLVED** - Seat limit validation now properly enforced at all activation points
 
+### Account Activation Seat Limit Enforcement (July 9, 2025)
+- **Fixed Critical Bug**: Corrected storage method call in `/api/auth/activate` endpoint that was causing server errors
+  - Changed from non-existent `storage.getAllUsers()` to correct `storage.getStaffByTenant()` method
+  - Added proper seat limit validation during email-based account activation process
+- **Enhanced Error Messages**: Account activation now provides clear error messages when seat limits would be exceeded:
+  - "Account activation failed: Your organization has reached the maximum number of active staff members allowed by your subscription."
+  - Includes current active staff count and maximum seats allowed
+  - Returns proper error code `SEAT_LIMIT_EXCEEDED` for API integration
+- **Comprehensive Testing**: Verified that both staff invitation and account activation processes properly enforce seat limits at capacity
+
 ### Email Domain Consistency Update (July 9, 2025)
 - **Unified Domain Detection**: All email functions now use the same domain detection system
   - Updated `sendActivationEmail`, `sendPasswordResetEmail`, `sendEmailChangeConfirmation`, and `sendUpgradeConfirmationEmail` to use `getDomainFromDatabase()`
