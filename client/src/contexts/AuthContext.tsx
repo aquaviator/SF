@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: any }> => {
     try {
       setIsLoading(true);
       const response = await apiRequest('POST', '/api/auth/login', {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        return { success: true };
+        return { success: true, user: userData };
       } else {
         const errorData = await response.json();
         return { success: false, error: errorData.message || 'Login failed' };

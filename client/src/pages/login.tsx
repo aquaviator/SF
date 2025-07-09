@@ -37,9 +37,10 @@ export default function Login() {
       const result = await login(email, password);
       
       if (result.success) {
-        // Login successful, redirect to appropriate dashboard
-        // The AuthContext will handle setting the user state
-        setLocation('/owner/dashboard'); // Default redirect, AuthContext will handle role-based routing
+        // Login successful, redirect to appropriate dashboard based on user role
+        const userRole = result.user?.role || 'staff';
+        const targetRoute = userRole === 'owner' ? '/owner/dashboard' : '/dashboard';
+        setLocation(targetRoute);
       } else {
         setError(result.error || "Login failed");
       }
