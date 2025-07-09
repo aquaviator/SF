@@ -4110,7 +4110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             return res.status(400).json({ 
-              message: "Account activation failed: Your organization has reached the maximum number of active staff members allowed by your subscription. Please contact your administrator to upgrade your subscription or deactivate unused accounts.",
+              message: "Hi there! Your account setup is almost complete, but we need to wait for your administrator to make space for you on the team. Please contact your team lead or manager for assistance.",
               code: "SEAT_LIMIT_EXCEEDED",
               currentActiveStaff,
               maxSeats: totalSeatsIncluded
@@ -4713,6 +4713,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!user) {
         return res.status(404).json({ message: "Inactive user not found" });
+      }
+
+      // SEAT LIMIT VALIDATION - Check if organization is at capacity before sending activation email
+      if (user.role === 'staff') {
+        console.log(`🔍 SEAT_LIMIT_CHECK_ON_RESEND_ACTIVATION`, { 
+          userId: user.id,
+          email: user.email,
+          tenantId: user.tenantId,
+          timestamp: new Date() 
+        });
+
+        // Get subscription to check seat limit
+        const subscription = await storage.getSubscriptionByTenantId(user.tenantId);
+        
+        if (subscription) {
+          // Get current active staff count
+          const tenantUsers = await storage.getStaffByTenant(user.tenantId);
+          const currentActiveStaff = tenantUsers.filter(u => u.isActive).length;
+          const totalSeatsIncluded = subscription.seatsIncluded;
+          const wouldExceedLimit = (currentActiveStaff + 1) > totalSeatsIncluded;
+
+          console.log(`📊 SEAT_LIMIT_CHECK_RESULT_RESEND`, { 
+            currentActiveStaff,
+            totalSeatsIncluded,
+            wouldExceedLimit,
+            userEmail: user.email,
+            timestamp: new Date() 
+          });
+
+          if (wouldExceedLimit) {
+            console.log(`🚫 RESEND_ACTIVATION_BLOCKED_SEAT_LIMIT`, { 
+              userId: user.id,
+              email: user.email,
+              currentActiveStaff,
+              totalSeatsIncluded,
+              timestamp: new Date() 
+            });
+
+            return res.status(400).json({ 
+              message: `Cannot send activation email: You have reached your seat limit (${currentActiveStaff}/${totalSeatsIncluded} active staff). Please upgrade your subscription or deactivate an existing staff member before sending activation emails.`,
+              code: "SEAT_LIMIT_EXCEEDED",
+              currentActiveStaff,
+              maxSeats: totalSeatsIncluded
+            });
+          }
+        }
       }
 
       // Generate new activation token

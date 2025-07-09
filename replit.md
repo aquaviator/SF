@@ -175,10 +175,12 @@ The application follows a clean architecture pattern with clear separation of co
 - **Fixed Critical Bug**: Corrected storage method call in `/api/auth/activate` endpoint that was causing server errors
   - Changed from non-existent `storage.getAllUsers()` to correct `storage.getStaffByTenant()` method
   - Added proper seat limit validation during email-based account activation process
-- **Enhanced Error Messages**: Account activation now provides clear error messages when seat limits would be exceeded:
-  - "Account activation failed: Your organization has reached the maximum number of active staff members allowed by your subscription."
-  - Includes current active staff count and maximum seats allowed
-  - Returns proper error code `SEAT_LIMIT_EXCEEDED` for API integration
+- **Dual-Level Protection**: Implemented seat limit validation at both invitation and activation stages
+  - **Owner Level**: Prevents activation emails from being sent when at capacity with admin-focused error messages
+  - **Staff Level**: Provides friendly error messages if staff try to activate when organization is at capacity
+- **User-Appropriate Error Messages**: 
+  - **For Owners**: "Cannot send activation email: You have reached your seat limit (6/6 active staff). Please upgrade your subscription or deactivate an existing staff member."
+  - **For Staff**: "Hi there! Your account setup is almost complete, but we need to wait for your administrator to make space for you on the team. Please contact your team lead or manager for assistance."
 - **Comprehensive Testing**: Verified that both staff invitation and account activation processes properly enforce seat limits at capacity
 
 ### Email Domain Consistency Update (July 9, 2025)
