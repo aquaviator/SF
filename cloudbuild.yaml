@@ -32,6 +32,3 @@ steps:
 substitutions:
   _SERVICE: "sf-test"
   _REGION:  "europe-west1"
-
-options:
-  defaultLogsBucketBehavior: CLOUD_LOGGING_ONLY
