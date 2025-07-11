@@ -1,153 +1,169 @@
 import { db } from "../db";
 import { domainConfig } from "../../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
+const DEPLOYMENT_NAME =
+  process.env.DEPLOYMENT_NAME ??
+  (process.env.NODE_ENV === "production" ? "production" : "development");
+
+/**
+ * Reads REPLIT_DOMAINS or falls back to localhost for development
+ * or SITE_DOMAIN for production.
+ */
+export function getDomainForEnvironment(): string {
+  if (process.env.NODE_ENV === "production" && process.env.SITE_DOMAIN) {
+    return process.env.SITE_DOMAIN.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  }
+
+  if (process.env.REPLIT_DOMAINS) {
+    const domains = process.env.REPLIT_DOMAINS.split(",").map(d => d.trim());
+    if (domains.length > 0) return domains[0];
+  }
+
+  return "localhost:5000";
+}
+
+/**
+ * Ensures that exactly one active record exists for each of:
+ *  - the current deployment (production or staging, etc)
+ *  - development (always points at local or Replit)
+ */
 export async function setupDomainConfiguration() {
   try {
-    const siteDomain = process.env.SITE_DOMAIN;
-    
-    if (!siteDomain) {
-      console.log('🌐 DOMAIN_SETUP_SKIPPED', { 
-        reason: 'SITE_DOMAIN environment variable not set',
-        timestamp: new Date().toISOString()
+    // 1) PRODUCTION / DEPLOYMENT ROW
+    if (process.env.SITE_DOMAIN) {
+      const cleanProd = process.env.SITE_DOMAIN.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const prodUrl   = `https://${cleanProd}`;
+
+      console.log("🌐 DOMAIN_SETUP_START", {
+        deployment: DEPLOYMENT_NAME,
+        raw:        process.env.SITE_DOMAIN,
+        normalized: prodUrl,
+        timestamp:  new Date().toISOString(),
       });
-      return;
+
+      // deactivate any old rows for this deployment
+      await db
+        .update(domainConfig)
+        .set({ isActive: false })
+        .where(eq(domainConfig.name, DEPLOYMENT_NAME));
+
+      // upsert the row
+      const existing = await db
+        .select()
+        .from(domainConfig)
+        .where(eq(domainConfig.name, DEPLOYMENT_NAME))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db
+          .update(domainConfig)
+          .set({ baseUrl: prodUrl, isActive: true })
+          .where(eq(domainConfig.name, DEPLOYMENT_NAME));
+
+        console.log("✅ DOMAIN_UPDATED", {
+          deployment: DEPLOYMENT_NAME,
+          newDomain:  prodUrl,
+          timestamp:  new Date().toISOString(),
+        });
+      } else {
+        await db
+          .insert(domainConfig)
+          .values({ name: DEPLOYMENT_NAME, baseUrl: prodUrl, isActive: true });
+
+        console.log("✅ DOMAIN_CREATED", {
+          deployment: DEPLOYMENT_NAME,
+          domain:     prodUrl,
+          timestamp:  new Date().toISOString(),
+        });
+      }
+    } else {
+      console.log("🌐 DOMAIN_SETUP_SKIPPED", {
+        deployment: DEPLOYMENT_NAME,
+        reason:     "SITE_DOMAIN not set",
+        timestamp:  new Date().toISOString(),
+      });
     }
 
-    // Clean domain format (remove protocol and trailing slash)
-    const cleanDomain = siteDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // 2) DEVELOPMENT ROW (always present)
+    const devHost = getDomainForEnvironment();
+    const devUrl  = devHost.includes("localhost") ? `http://${devHost}` : `https://${devHost}`;
 
-    console.log('🌐 DOMAIN_SETUP_START', { 
-      rawDomain: siteDomain,
-      cleanDomain: cleanDomain,
-      timestamp: new Date().toISOString()
+    console.log("🌐 DEV_DOMAIN_SETUP_START", {
+      host:      devHost,
+      normalized: devUrl,
+      timestamp: new Date().toISOString(),
     });
 
-    // Check if domain configuration already exists
-    const existingConfig = await db
+    await db
+      .update(domainConfig)
+      .set({ isActive: false })
+      .where(eq(domainConfig.name, "development"));
+
+    const existingDev = await db
       .select()
       .from(domainConfig)
-      .where(eq(domainConfig.name, 'production'))
+      .where(eq(domainConfig.name, "development"))
       .limit(1);
 
-    if (existingConfig.length > 0) {
-      // Update existing domain configuration
+    if (existingDev.length > 0) {
       await db
         .update(domainConfig)
-        .set({
-          baseUrl: `https://${cleanDomain}`,
-          isActive: true
-        })
-        .where(eq(domainConfig.name, 'production'));
+        .set({ baseUrl: devUrl, isActive: true })
+        .where(eq(domainConfig.name, "development"));
 
-      console.log('✅ DOMAIN_UPDATED', { 
-        oldDomain: existingConfig[0].baseUrl,
-        newDomain: `https://${cleanDomain}`,
-        timestamp: new Date().toISOString()
+      console.log("✅ DEV_DOMAIN_UPDATED", {
+        old:       existingDev[0].baseUrl,
+        new:       devUrl,
+        timestamp: new Date().toISOString(),
       });
     } else {
-      // Create new domain configuration
       await db
         .insert(domainConfig)
-        .values({
-          name: 'production',
-          baseUrl: `https://${cleanDomain}`,
-          isActive: true
-        });
+        .values({ name: "development", baseUrl: devUrl, isActive: true });
 
-      console.log('✅ DOMAIN_CREATED', { 
-        domain: `https://${cleanDomain}`,
-        timestamp: new Date().toISOString()
+      console.log("✅ DEV_DOMAIN_CREATED", {
+        domain:    devUrl,
+        timestamp: new Date().toISOString(),
       });
     }
-
-    // Also ensure development domain exists for local testing
-    const devConfig = await db
-      .select()
-      .from(domainConfig)
-      .where(eq(domainConfig.name, 'development'))
-      .limit(1);
-
-    // Get current development domain
-    const currentDevDomain = getDomainForEnvironment();
-    const devUrl = currentDevDomain.includes('localhost') ? `http://${currentDevDomain}` : `https://${currentDevDomain}`;
-
-    if (devConfig.length === 0) {
-      await db
-        .insert(domainConfig)
-        .values({
-          name: 'development',
-          baseUrl: devUrl,
-          isActive: true
-        });
-
-      console.log('✅ DEV_DOMAIN_CREATED', { 
-        domain: devUrl,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      // Update existing development domain to current Replit domain
-      await db
-        .update(domainConfig)
-        .set({
-          baseUrl: devUrl,
-          isActive: true
-        })
-        .where(eq(domainConfig.name, 'development'));
-
-      console.log('✅ DEV_DOMAIN_UPDATED', { 
-        oldDomain: devConfig[0].baseUrl,
-        newDomain: devUrl,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ DOMAIN_SETUP_ERROR', { 
-      error: error.message,
-      timestamp: new Date().toISOString()
+  } catch (err: any) {
+    console.error("❌ DOMAIN_SETUP_ERROR", {
+      error:     err.message,
+      timestamp: new Date().toISOString(),
     });
   }
 }
 
-export function getDomainForEnvironment(): string {
-  // In production, use SITE_DOMAIN if available (format: site.com)
-  if (process.env.NODE_ENV === 'production' && process.env.SITE_DOMAIN) {
-    return process.env.SITE_DOMAIN.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  }
-  
-  // For development, detect current Replit domain or fallback to localhost
-  if (process.env.REPLIT_DOMAINS) {
-    // Use the first domain from REPLIT_DOMAINS
-    const domains = process.env.REPLIT_DOMAINS.split(',');
-    if (domains.length > 0) {
-      return domains[0].trim();
-    }
-  }
-  
-  // Fallback to localhost for development
-  return 'localhost:5000';
-}
-
+/**
+ * Fetches the active baseUrl from the database for the current deployment.
+ * Falls back to getDomainForEnvironment() if no active row is found.
+ */
 export async function getDomainFromDatabase(): Promise<string> {
   try {
-    const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
-    
-    const config = await db
-      .select()
+    const [cfg] = await db
+      .select({ baseUrl: domainConfig.baseUrl })
       .from(domainConfig)
-      .where(eq(domainConfig.name, environment))
+      .where(
+        and(
+          eq(domainConfig.name, DEPLOYMENT_NAME),
+          eq(domainConfig.isActive, true),
+        )
+      )
       .limit(1);
 
-    if (config.length > 0) {
-      // Remove protocol from baseUrl for consistency
-      return config[0].baseUrl.replace(/^https?:\/\//, '');
+    if (cfg) {
+      // return without protocol
+      return cfg.baseUrl.replace(/^https?:\/\//, "");
     }
-
-    // Fallback to environment-based domain
-    return getDomainForEnvironment();
-  } catch (error) {
-    console.error('❌ DOMAIN_FETCH_ERROR', { error: error.message });
-    return getDomainForEnvironment();
+  } catch (err: any) {
+    console.error("❌ DOMAIN_FETCH_ERROR", {
+      error:     err.message,
+      deployment: DEPLOYMENT_NAME,
+      timestamp: new Date().toISOString(),
+    });
   }
+
+  // fallback to environment-based domain
+  return getDomainForEnvironment();
 }
