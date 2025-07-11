@@ -1,11 +1,7 @@
 import 'dotenv/config';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
-
-// Ensure the Neon websocket constructor is set
-neonConfig.webSocketConstructor = ws;
 
 // Pull discrete DB connection settings from environment
 const {
@@ -23,14 +19,14 @@ if (!DB_USER || !DB_PASS || !DB_NAME || !INSTANCE_CONNECTION_NAME) {
 }
 
 // Create a connection pool using the UNIX socket provided by Cloud Run
-export const pool = new Pool({
-  user: DB_USER,
+const pool = new Pool({
+  user:     DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  host: `/cloudsql/${INSTANCE_CONNECTION_NAME}`,
-  port: 5432,
-  ssl: false,
+  host:     `/cloudsql/${INSTANCE_CONNECTION_NAME}`,
+  port:     5432,
+  ssl:      false,
 });
 
-// Wrap the pool with Drizzle ORM
-export const db = drizzle({ client: pool, schema });
+// Initialize Drizzle ORM with the Postgres pool
+export const db = drizzle(pool, { schema });
