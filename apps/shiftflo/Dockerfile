@@ -2,14 +2,18 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy only package manifests, install dependencies
+# Install only production deps
 COPY package*.json ./
-
-# Use npm install (omit dev deps), since we don’t have a lockfile
 RUN npm install --omit=dev
 
-# Copy the rest of your app
+# Copy app sources
 COPY . .
 
-EXPOSE 8080
+# Default to port 5000 locally, but overridden by the PLATFORM via $PORT
+ENV PORT=5000
+
+# Document the port your app listens on by default
+EXPOSE 5000
+
+# Start your app; it will read PORT from env
 CMD ["npm", "start"]

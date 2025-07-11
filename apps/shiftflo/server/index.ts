@@ -7,88 +7,76 @@ import { setupDomainConfiguration } from "./setup/domainSetup";
 import path from "path";
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
+// simple request logger for /api routes
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  const reqPath = req.path;
+  let capturedJson: Record<string, any> | undefined;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  const originalJson = res.json.bind(res);
+  res.json = (body, ...args) => {
+    capturedJson = body;
+    return originalJson(body, ...args);
   };
 
   res.on("finish", () => {
+    if (!reqPath.startsWith("/api")) return;
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
+    let line = `${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`;
+    if (capturedJson) line += ` :: ${JSON.stringify(capturedJson)}`;
+    if (line.length > 80) line = line.slice(0, 79) + "…";
+    log(line);
   });
 
   next();
 });
 
 (async () => {
-  // Setup domain configuration on startup
+  // 1) Domain setup
   await setupDomainConfiguration();
-  
+
+  // 2) Register API & other routes
   const server = await registerRoutes(app);
-  
-  // Serve service worker with correct MIME type before Vite middleware
-  app.get('/sw.js', (req: Request, res: Response) => {
-    res.set('Content-Type', 'application/javascript');
-    res.sendFile(path.resolve('./public/sw.js'));
+
+  // 3) Serve service worker before Vite/static
+  app.get("/sw.js", (_req: Request, res: Response) => {
+    res.type("application/javascript").sendFile(path.resolve("./public/sw.js"));
   });
 
-  // JSON-only catch for missing API endpoints
-  app.use('/api/*', (req, res) => {
-    res.status(404).json({ message: 'API route not found' });
+  // 4) 404 for missing API endpoints
+  app.use("/api/*", (_req, res) => {
+    res.status(404).json({ message: "API route not found" });
   });
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  // 5) Error handler
+  app.use(
+    (err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      res.status(status).json({ message: err.message || "Internal Server Error" });
+      throw err;
+    }
+  );
 
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // 6) Frontend/middleware setup
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Start the cron scheduler for automated strike detection
-    cronScheduler.start();
-    
-    // Start the reminder scheduler for shift reminders and emergency alerts
-    reminderScheduler.start();
-  });
+  // 7) Dynamic port binding: use $PORT (e.g. Cloud Run), otherwise 5000
+  const port = parseInt(process.env.PORT ?? "5000", 10);
+  server.listen(
+    { port, host: "0.0.0.0", reusePort: true },
+    () => {
+      log(`🚀 Server listening on port ${port}`);
+
+      // start background jobs after server is up
+      cronScheduler.start();
+      reminderScheduler.start();
+    }
+  );
 })();
