@@ -1,4 +1,5 @@
 # apps/hello-world/Dockerfile
+
 FROM node:20-alpine
 WORKDIR /app
 
@@ -6,14 +7,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy app sources
+# Copy your source
 COPY . .
 
-# Default to port 5000 locally, but overridden by the PLATFORM via $PORT
+# Default port for local/docker run
 ENV PORT=5000
 
-# Document the port your app listens on by default
+# Document your default listen port
 EXPOSE 5000
 
-# Start your app; it will read PORT from env
+# When Cloud Run (or similar) injects its own PORT (e.g. 8080),
+# your app (using process.env.PORT) will pick that up instead.
 CMD ["npm", "start"]
