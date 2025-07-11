@@ -3,18 +3,14 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Install only production deps
-# Copy package.json and package-lock.json (or yarn.lock) first for caching
+# Install all dependencies (dev and production) because the 'build' step needs dev dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
-# Copy your source (all your .ts files, etc.)
+# Copy your source
 COPY . .
 
-# *** IMPORTANT: ADD THIS BUILD STEP ***
-# This assumes you have a 'build' script defined in your package.json
-# e.g., "build": "tsc" or "build": "webpack" or "build": "next build" etc.
-# Make sure your build script outputs to a 'dist' directory.
+# Run your build script
 RUN npm run build
 
 # Default port for local/docker run
