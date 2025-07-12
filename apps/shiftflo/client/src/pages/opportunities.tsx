@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRole } from "@/hooks/useRole";
 import { DataTable, Column } from "@/components/DataTable";
@@ -14,247 +14,200 @@ export default function Opportunities() {
   const { tenantId, user } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const { data: opportunities, isLoading } = useQuery<Shift[]>({
+
+  const { data: opportunities = [], isLoading } = useQuery<Shift[]>({
     queryKey: ["/api/opportunities", tenantId],
     queryFn: async () => {
-      const response = await fetch(`/api/opportunities?tenantId=${tenantId}`);
-      if (!response.ok) throw new Error("Failed to fetch opportunities");
-      return response.json();
+      const res = await fetch(`/api/opportunities?tenantId=${tenantId}`);
+      if (!res.ok) throw new Error("Failed to fetch opportunities");
+      return res.json();
     },
   });
+
+  // only keep “open” shifts on or after today
+  const upcomingOpportunities = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return opportunities.filter(opp => {
+      if (opp.status !== "open") return false;
+      // parse YYYY-MM-DD into a Date at midnight
+      const [y, m, d] = opp.date.split("-").map(Number);
+      const shiftDate = new Date(y, m - 1, d);
+      return shiftDate >= today;
+    });
+  }, [opportunities]);
 
   const [claimingIds, setClaimingIds] = useState<Set<number>>(new Set());
 
   const claimMutation = useMutation({
-    mutationFn: async (opportunityId: number) => {
-      setClaimingIds(prev => new Set(prev).add(opportunityId));
-      return apiRequest("POST", `/api/opportunities/${opportunityId}/claim`, {
+    mutationFn: async (id: number) => {
+      setClaimingIds(s => new Set(s).add(id));
+      return apiRequest("POST", `/api/opportunities/${id}/claim`, {
         tenantId,
-        userId: user?.id || 1,
+        userId: user?.id!,
       });
     },
-    onSuccess: (_, opportunityId) => {
-      setClaimingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(opportunityId);
-        return newSet;
+    onSuccess: (_, id) => {
+      setClaimingIds(s => {
+        const n = new Set(s); n.delete(id); return n;
       });
-      toast({
-        title: "Success",
-        description: "Opportunity claimed successfully!",
-      });
+      toast({ title: "Success", description: "Opportunity claimed!" });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["/api/shifts", tenantId] });
     },
-    onError: (error: Error, opportunityId) => {
-      setClaimingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(opportunityId);
-        return newSet;
+    onError: (err: Error, id) => {
+      setClaimingIds(s => {
+        const n = new Set(s); n.delete(id); return n;
       });
-      toast({
-        title: "Error",
-        description: error.message || "Failed to claim opportunity",
-        variant: "destructive",
-      });
-    },
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   });
 
-  const handleClaim = (opportunity: Shift) => {
-    claimMutation.mutate(opportunity.id);
-  };
+  const handleClaim = (opp: Shift) => claimMutation.mutate(opp.id);
 
   const columns: Column<Shift>[] = [
     {
-      key: "datetime",
-      header: "Date & Time",
-      cell: (opportunity) => (
+      key: "datetime", header: "Date & Time", cell: o => (
         <div className="text-xs space-y-1">
-          <div className="font-medium">{new Date(opportunity.date).toLocaleDateString()}</div>
-          <div className="text-gray-500">{opportunity.startTime}-{opportunity.endTime}</div>
+          <div className="font-medium">{new Date(o.date).toLocaleDateString()}</div>
+          <div className="text-gray-500">{o.startTime}–{o.endTime}</div>
         </div>
-      ),
+      )
     },
     {
-      key: "role",
-      header: "Position",
-      cell: (opportunity) => (
-        <div className="text-sm font-medium max-w-[120px] truncate">{opportunity.role}</div>
-      ),
+      key: "role", header: "Position", cell: o => (
+        <div className="text-sm font-medium truncate max-w-[120px]">{o.role}</div>
+      )
     },
     {
-      key: "location",
-      header: "Location",
-      cell: (opportunity) => (
-        <div className="text-xs text-gray-600 max-w-[100px] truncate">{opportunity.location}</div>
-      ),
+      key: "location", header: "Location", cell: o => (
+        <div className="text-xs text-gray-600 truncate max-w-[100px]">{o.location}</div>
+      )
     },
     {
-      key: "status",
-      header: "Status",
-      cell: (opportunity) => (
-        <Badge variant={opportunity.status === "open" ? "default" : "secondary"} className="text-xs px-2 py-1">
-          {opportunity.status === "open" ? "Available" : "Closed"}
+      key: "status", header: "Status", cell: o => (
+        <Badge variant="default" className="text-xs px-2 py-1">
+          Available
         </Badge>
-      ),
+      )
     },
     {
-      key: "actions",
-      header: "Actions",
-      cell: (opportunity) => (
+      key: "actions", header: "Actions", cell: o => (
         <Button
           size="sm"
-          onClick={() => handleClaim(opportunity)}
-          disabled={opportunity.status !== "open" || claimingIds.has(opportunity.id)}
+          disabled={claimingIds.has(o.id)}
+          onClick={() => handleClaim(o)}
           className="text-xs px-3 py-1 h-8"
         >
-          {claimingIds.has(opportunity.id) ? "Claiming..." : "Claim"}
+          {claimingIds.has(o.id) ? "Claiming…" : "Claim"}
         </Button>
-      ),
+      )
     },
   ];
 
-  const activeOpportunities = opportunities?.filter(opp => opp.status === "open") || [];
-
   return (
     <div className="space-y-6">
+      {/* header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Shift Opportunities</h2>
-        <p className="text-gray-600">Find and claim available shift opportunities</p>
+        <p className="text-gray-600">Find and claim upcoming shifts</p>
       </div>
 
+      {/* stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Search className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Available</p>
-                <p className="text-lg font-semibold text-gray-900">{activeOpportunities.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Open shifts you can claim</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-4 flex items-center">
+          <Search className="w-5 h-5 text-blue-600 bg-blue-100 p-2 rounded-lg"/>
+          <div className="ml-3">
+            <p className="text-sm text-gray-600">Available</p>
+            <p className="text-lg font-semibold text-gray-900">{upcomingOpportunities.length}</p>
+            <p className="text-xs text-gray-500 mt-1">Open shifts you can claim</p>
+          </div>
+        </CardContent></Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Clock className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">This Week</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {activeOpportunities.filter(opp => {
-                    // This would need actual shift data to filter by date
-                    return true;
-                  }).length}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Opportunities available this week</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-4 flex items-center">
+          <Clock className="w-5 h-5 text-green-600 bg-green-100 p-2 rounded-lg"/>
+          <div className="ml-3">
+            <p className="text-sm text-gray-600">This Week</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {upcomingOpportunities.filter(o => {
+                const d = new Date(o.date);
+                const now = new Date();
+                const weekAhead = new Date();
+                weekAhead.setDate(now.getDate() + 7);
+                return d >= now && d <= weekAhead;
+              }).length}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Within next 7 days</p>
+          </div>
+        </CardContent></Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <DollarSign className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Applications</p>
-                <p className="text-lg font-semibold text-gray-900">0</p>
-                <p className="text-xs text-gray-500 mt-1">Your pending applications</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-4 flex items-center">
+          <DollarSign className="w-5 h-5 text-yellow-600 bg-yellow-100 p-2 rounded-lg"/>
+          <div className="ml-3">
+            <p className="text-sm text-gray-600">Applications</p>
+            <p className="text-lg font-semibold text-gray-900">0</p>
+            <p className="text-xs text-gray-500 mt-1">Your pending applications</p>
+          </div>
+        </CardContent></Card>
       </div>
 
-      {/* Desktop Table View */}
+      {/* desktop table */}
       <div className="hidden md:block">
         <DataTable
-          data={opportunities || []}
+          data={upcomingOpportunities}
           columns={columns}
           title="Available Opportunities"
           isLoading={isLoading}
           emptyState={
             <div className="text-center py-8">
               <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No opportunities available</p>
-              <p className="text-sm text-gray-400">Check back later for new openings</p>
+              <p className="text-gray-500">No upcoming opportunities</p>
             </div>
           }
         />
       </div>
 
-      {/* Mobile Card View */}
+      {/* mobile cards */}
       <div className="md:hidden space-y-4">
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="border border-gray-200">
-                <CardContent className="p-4">
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-8 bg-gray-200 rounded w-full"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : activeOpportunities.length === 0 ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="border-gray-200 animate-pulse">
+              <CardContent className="p-4 space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div className="h-8 bg-gray-200 rounded w-full" />
+              </CardContent>
+            </Card>
+          ))
+        ) : upcomingOpportunities.length === 0 ? (
           <div className="text-center py-8">
             <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No opportunities available</p>
-            <p className="text-sm text-gray-400">Check back later for new openings</p>
+            <p className="text-gray-500">No upcoming opportunities</p>
           </div>
         ) : (
-          activeOpportunities.map((opportunity) => (
-            <Card key={opportunity.id} className="border border-gray-200">
+          upcomingOpportunities.map(o => (
+            <Card key={o.id} className="border-gray-200">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{opportunity.role}</h3>
-                    <p className="text-sm text-gray-600">{opportunity.location}</p>
+                    <h3 className="font-semibold text-gray-900">{o.role}</h3>
+                    <p className="text-sm text-gray-600">{o.location}</p>
                   </div>
-                  <Badge 
-                    variant={opportunity.status === "open" ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {opportunity.status === "open" ? "Available" : "Closed"}
-                  </Badge>
+                  <Badge className="text-xs">Available</Badge>
                 </div>
-                
                 <div className="text-sm text-gray-600">
-                  <div className="flex items-center gap-4 mb-2">
-                    <span>📅 {new Date(opportunity.date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span>🕐 {opportunity.startTime} - {opportunity.endTime}</span>
-                  </div>
+                  <div>📅 {new Date(o.date).toLocaleDateString()}</div>
+                  <div>🕐 {o.startTime} – {o.endTime}</div>
                 </div>
-                
-                {opportunity.description && (
-                  <p className="text-sm text-gray-600">{opportunity.description}</p>
-                )}
-                
-                <div className="pt-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleClaim(opportunity)}
-                    disabled={opportunity.status !== "open" || claimingIds.has(opportunity.id)}
-                    className="w-full min-h-[44px]" // Ensure minimum touch target size
-                  >
-                    {claimingIds.has(opportunity.id) ? "Claiming..." : "Claim"}
-                  </Button>
-                </div>
+                {o.description && <p className="text-sm text-gray-600">{o.description}</p>}
+                <Button
+                  size="sm"
+                  onClick={() => handleClaim(o)}
+                  disabled={claimingIds.has(o.id)}
+                  className="w-full min-h-[44px]"
+                >
+                  {claimingIds.has(o.id) ? "Claiming…" : "Claim"}
+                </Button>
               </CardContent>
             </Card>
           ))
