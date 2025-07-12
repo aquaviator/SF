@@ -1,34 +1,33 @@
-# Stage 1: build
-FROM node:18-alpine AS builder
+# 1) Builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# install deps & build
-COPY package*.json ./
+# Copy lockfiles & configs
+COPY package.json package-lock.json tsconfig.json vite.config.ts ./
+
+# Copy source
+COPY client client
+COPY server server
+COPY shared shared
+
+# Install & build
 RUN npm ci
-COPY . .
 RUN npm run build
 
-# Stage 2: production image
-FROM node:18-alpine AS production
+# 2) Production image
+FROM node:20-alpine AS production
 WORKDIR /app
 
-# only prod deps
-COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts
+# Install only prod deps
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# copy over the built output
+# Copy built artifacts
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/shared ./shared
 
-# drop source & TS—runtime only needs dist
-# create a non-root user
-RUN addgroup -g 1001 -S nodejs \
- && adduser -S shiftflo -u 1001 \
- && chown -R shiftflo:nodejs /app
-USER shiftflo
-
+ENV NODE_ENV=production
 EXPOSE 5000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/api/health',res=>process.exit(res.statusCode===200?0:1))"
 
-# run the compiled server
-CMD ["node", "dist/index.js"]
+CMD ["node", "server/index.js"]
