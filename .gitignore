@@ -66,5 +66,6 @@ drizzle/
 # Misc
 *.swp
 
-apps/shiftflo/.env.*
-
+# Environment files (all variants)
+.env*
+!.env.example
