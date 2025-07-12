@@ -5,8 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "local": "cross-env NODE_ENV=local tsx server/index.ts",
     "start": "NODE_ENV=production node dist/index.js",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
@@ -139,7 +140,7 @@
     "postcss": "^8.4.47",
     "serve": "^14.2.4",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.1",
+    "tsx": "^4.20.3",
     "typescript": "5.6.3",
     "vite": "^5.4.19"
   },

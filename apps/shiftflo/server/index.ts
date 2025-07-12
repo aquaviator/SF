@@ -1,3 +1,4 @@
+import 'dotenv/config'; // will load .env, or .env.${NODE_ENV} if you install dotenv-flow or dotenv-cli
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
