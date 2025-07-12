@@ -30,7 +30,6 @@ steps:
 
 substitutions:
   _SERVICE: "sf-test"
-  _REGION:  "europe-west1"
+  _REGION: "europe-west1"
 
-options:
-  logsBucket: "gs://shiftflow-build-logs"
+logsBucket: "gs://shiftflow-build-logs" # <--- THIS IS THE CORRECT PLACEMENT
