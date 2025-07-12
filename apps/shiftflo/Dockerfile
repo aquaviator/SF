@@ -1,24 +1,53 @@
-# apps/hello-world/Dockerfile
+# ShiftFlo Production Dockerfile
+FROM node:18-alpine AS builder
 
-FROM node:20-alpine
+# Set working directory
 WORKDIR /app
 
-# Install all dependencies (dev and production) because the 'build' step needs dev dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
-# Copy your source
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
 
-# Run your build script
+# Build the application
 RUN npm run build
 
-# Default port for local/docker run
-ENV PORT=5000
+# Production image
+FROM node:18-alpine AS production
 
-# Document your default listen port
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production --ignore-scripts
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/drizzle.config.ts ./
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S shiftflo -u 1001
+
+# Change ownership
+RUN chown -R shiftflo:nodejs /app
+USER shiftflo
+
+# Expose port
 EXPOSE 5000
 
-# When Cloud Run (or similar) injects its own PORT (e.g. 8080),
-# your app (using process.env.PORT) will pick that up instead.
-CMD ["npm", "start"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Start the application
+CMD ["node", "server/index.js"]

@@ -1,5 +1,5 @@
 steps:
-  # 1) Build the Docker image from apps/shiftflo
+  # 1) Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - build
@@ -9,13 +9,13 @@ steps:
       - apps/shiftflo/Dockerfile
       - apps/shiftflo
 
-  # 2) Push the image
+  # 2) Push image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - push
       - gcr.io/$PROJECT_ID/${_SERVICE}:$BUILD_ID
 
-  # 3) Deploy to Cloud Run, injecting secrets at runtime
+  # 3) Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
@@ -26,11 +26,11 @@ steps:
           --region ${_REGION} \
           --platform managed \
           --allow-unauthenticated \
-          --update-secrets \
-            DATABASE_URL=DATABASE_URL:latest,DB_PASSWORD=DB_PASSWORD:latest
+          --update-secrets DATABASE_URL=DATABASE_URL:latest,DB_PASSWORD=DB_PASSWORD:latest
 
 substitutions:
   _SERVICE: "sf-test"
-  _REGION: "europe-west1"
+  _REGION:  "europe-west1"
 
-logsBucket: "gs://shiftflow-build-logs" # <--- CORRECTED PLACEMENT
+options:
+  logsBucket: "gs://shiftflow-build-logs"
