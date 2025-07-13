@@ -1590,7 +1590,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/time-entries", async (req, res) => {
     try {
-      const validatedData = req.body; // Using any for now until we fix schema
+      const validatedData = {
+        ...req.body,
+        // Convert string timestamps to Date objects
+        clockInTime: req.body.clockInTime ? new Date(req.body.clockInTime) : null,
+        clockOutTime: req.body.clockOutTime ? new Date(req.body.clockOutTime) : null,
+        // Set default status if not provided
+        status: req.body.status || "clocked_in",
+      };
+      
       console.log("🕒 TIME_ENTRY_CREATE_REQUEST", {
         data: validatedData,
         timestamp: new Date()
@@ -1601,7 +1609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ TIME_ENTRY_CREATED", {
         entryId: entry.id,
         userId: entry.userId,
-        action: entry.clockIn ? "clock_in" : "clock_out",
+        action: entry.clockInTime ? "clock_in" : "clock_out",
         timestamp: new Date()
       });
       
@@ -1619,13 +1627,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/time-entries/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = req.body; // Using any for now
+      const validatedData = {
+        ...req.body,
+        // Convert string timestamps to Date objects
+        clockInTime: req.body.clockInTime ? new Date(req.body.clockInTime) : null,
+        clockOutTime: req.body.clockOutTime ? new Date(req.body.clockOutTime) : null,
+      };
+      
       const entry = await storage.updateTimeEntry(id, validatedData);
       if (!entry) {
         return res.status(404).json({ message: "Time entry not found" });
       }
       res.json(entry);
     } catch (error) {
+      console.error("❌ TIME_ENTRY_UPDATE_ERROR", { error: error.message, id });
       res.status(500).json({ message: "Failed to update time entry" });
     }
   });
@@ -1679,6 +1694,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Override time entry error:", error);
       res.status(500).json({ message: "Failed to override time entry" });
+    }
+  });
+
+  // Work History routes
+  app.get("/api/work-history", async (req, res) => {
+    try {
+      const tenantId = req.query.tenantId as string;
+      const userId = req.query.userId as string;
+      
+      if (!tenantId || !userId) {
+        return res.status(400).json({ message: "Tenant ID and User ID are required" });
+      }
+      
+      const workHistory = await storage.getWorkHistoryByUser(tenantId, parseInt(userId));
+      res.json(workHistory);
+    } catch (error) {
+      console.error("Work history error:", error);
+      res.status(500).json({ message: "Failed to fetch work history" });
+    }
+  });
+
+  // Update time entry notes (for staff personal notes)
+  app.put("/api/time-entries/:id/notes", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { notes } = req.body;
+      
+      const updatedEntry = await storage.updateTimeEntryNotes(id, notes);
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Update notes error:", error);
+      res.status(500).json({ message: "Failed to update notes" });
     }
   });
 

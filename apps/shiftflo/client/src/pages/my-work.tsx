@@ -1031,61 +1031,35 @@ export default function MyWork() {
     };
   };
 
-  // Working time tracking state
-  const [localTimeEntries, setLocalTimeEntries] = useState<any[]>([]);
-  const [isClocked, setIsClocked] = useState(false);
-  const [clockInTime, setClockInTime] = useState<Date | null>(null);
-
-  // Handle clock in/out functionality
-  const handleClockIn = () => {
-    const now = new Date();
-    setIsClocked(true);
-    setClockInTime(now);
-    toast({
-      title: "Clocked In",
-      description: `Clocked in at ${now.toLocaleTimeString()}`,
+  // Check if user is currently clocked in from time entries
+  const isCurrentlyClockedIn = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntries = (timeEntries || []).filter((entry: any) => {
+      if (!entry.clockInTime) return false;
+      const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+      return entryDate === today;
     });
+    
+    // A person is currently clocked in if they have a clock-in time but no clock-out time
+    // Status can be 'clocked_in', 'late', 'on_break', etc.
+    return todayEntries.some((entry: any) => entry.clockInTime && !entry.clockOutTime);
   };
 
-  const handleClockOut = () => {
-    if (!clockInTime) return;
-    
-    const now = new Date();
-    const clockOutTime = now;
-    const totalMinutes = Math.floor((now.getTime() - clockInTime.getTime()) / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    
-    // Add to time entries for display before clearing state
-    setLocalTimeEntries((prev: any[]) => [...prev, {
-      id: Date.now(),
-      date: now.toISOString().split('T')[0],
-      clockInTime: clockInTime.toLocaleTimeString(),
-      clockOutTime: clockOutTime.toLocaleTimeString(),
-      totalTime: `${hours}h ${minutes}m`,
-      status: 'completed'
-    }]);
-    
-    setIsClocked(false);
-    setClockInTime(null);
-    
-    toast({
-      title: "Clocked Out",
-      description: `Worked ${hours}h ${minutes}m`,
-    });
-  };
-
-  // Current clock status
-  const isClockedIn = isClocked;
+  // Current clock status based on actual time entries
+  const isClockedIn = isCurrentlyClockedIn();
 
   // Clock In Mutation
   const clockInMutation = useMutation({
     mutationFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const todayShift = shifts.find(shift => shift.date === today);
+      
       const response = await apiRequest("POST", "/api/time-entries", {
         tenantId,
         userId: user?.id,
         clockInTime: new Date().toISOString(),
-        date: new Date().toISOString().split('T')[0],
+        date: today,
+        shiftId: todayShift?.id || null,
       });
       return response.json();
     },
@@ -1098,12 +1072,26 @@ export default function MyWork() {
     },
   });
 
-  // Clock Out Mutation - now uses local state
+  // Clock Out Mutation - uses proper API call
   const clockOutMutation = useMutation({
     mutationFn: async () => {
-      if (!isClocked) throw new Error("No active clock-in session found");
-      // This would call the API in a real implementation
-      return Promise.resolve({ success: true });
+      // Find the active time entry for today
+      const today = new Date().toISOString().split('T')[0];
+      const activeEntry = (timeEntries || []).find((entry: any) => {
+        if (!entry.clockInTime) return false;
+        const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
+        return entryDate === today && entry.clockInTime && !entry.clockOutTime;
+      });
+      
+      if (!activeEntry) {
+        throw new Error("No active clock-in session found");
+      }
+      
+      const response = await apiRequest("PATCH", `/api/time-entries/${activeEntry.id}`, {
+        clockOutTime: new Date().toISOString(),
+        status: "clocked_out",
+      });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
@@ -1116,25 +1104,30 @@ export default function MyWork() {
 
   // Calculate if clock-in is allowed based on policy
   const canClockIn = () => {
-    if (!timePolicy || isClockedIn) return false;
+    if (isClockedIn) return false;
     
     // Check if there's a shift today that allows clock-in
     const today = new Date().toISOString().split('T')[0];
     const todayShifts = shifts.filter(shift => shift.date === today);
     
-    if (todayShifts.length === 0) return false;
+    // If no shifts today, still allow clock-in for flexible work
+    if (todayShifts.length === 0) return true;
     
-    // Check if we're within the clock-in buffer window
+    // If there are shifts today, check if we're within reasonable hours
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
     
     return todayShifts.some(shift => {
       const [shiftHour, shiftMinute] = shift.startTime.split(':').map(Number);
+      const [endHour, endMinute] = shift.endTime.split(':').map(Number);
       const shiftStartMinutes = shiftHour * 60 + shiftMinute;
-      const bufferMinutes = timePolicy.clockInBufferMinutes || 30;
+      const shiftEndMinutes = endHour * 60 + endMinute;
+      const bufferMinutes = timePolicy?.clockInBufferMinutes || 60;
       
-      // Can clock in up to bufferMinutes before shift starts
-      return currentTime >= (shiftStartMinutes - bufferMinutes) && currentTime <= shiftStartMinutes + 15;
+      // Allow clock-in from 1 hour before shift start until shift end
+      const startWindow = shiftStartMinutes - bufferMinutes;
+      const endWindow = shiftEndMinutes; // Allow until shift ends
+      return currentTime >= startWindow && currentTime <= endWindow;
     });
   };
 
@@ -1165,20 +1158,6 @@ export default function MyWork() {
     }, 0);
     
     return `${totalHours.toFixed(1)}h (completed)`;
-  };
-
-  // Check if user is currently clocked in from time entries
-  const isCurrentlyClockedIn = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayEntries = (timeEntries || []).filter((entry: any) => {
-      if (!entry.clockInTime) return false;
-      const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
-      return entryDate === today;
-    });
-    
-    // A person is currently clocked in if they have a clock-in time but no clock-out time
-    // Status can be 'clocked_in', 'late', 'on_break', etc.
-    return todayEntries.some((entry: any) => entry.clockInTime && !entry.clockOutTime);
   };
 
   // Quick actions that staff can perform
