@@ -84,24 +84,21 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // 6. Attach dev middleware or static middleware depending on environment
+// 6. Attach dev middleware or static middleware depending on environment
   if (isDev) {
-    // Wait for our dynamic import (setupVite)
-    while (!setupVite) await new Promise(res => setTimeout(res, 10));
+    while (!setupVite) await new Promise(r => setTimeout(r, 10));
     await setupVite(app, server);
   } else {
-    // Wait for dynamic import (serveStatic)
-    while (!serveStatic) await new Promise(res => setTimeout(res, 10));
+    while (!serveStatic) await new Promise(r => setTimeout(r, 10));
     serveStatic(app);
   }
 
-  // 7. PORT: environment variable or fallback (5000 local, 8080 prod)
-  const port =
-    parseInt(
-      process.env.PORT ??
-        (isDev ? "5000" : "8080"),
-      10
-    );
+  // 7. PORT: environment variable first, then dev/local (5000), else prod (8080)
+  const port = process.env.PORT
+    ? Number(process.env.PORT)
+    : isDev
+    ? 5000
+    : 8080;
 
   server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
     log(`🚀 listening on port ${port}`);
