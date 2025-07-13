@@ -13,6 +13,7 @@ import Dashboard from "@/pages/dashboard";
 import Shifts from "@/pages/shifts";
 import Staff from "@/pages/staff";
 import MyWork from "@/pages/my-work";
+import WorkHistory from "@/pages/work-history";
 import Opportunities from "@/pages/opportunities";
 import SwapRequests from "@/pages/swap-requests";
 import HolidayRequests from "@/pages/holiday-requests";
@@ -91,6 +92,7 @@ function ProtectedRoutes() {
               <Route path="/shifts" component={Shifts} />
               <Route path="/staff" component={Staff} />
               <Route path="/my-work" component={MyWork} />
+              <Route path="/work-history" component={WorkHistory} />
               <Route path="/opportunities" component={Opportunities} />
               <Route path="/swap-requests" component={SwapRequests} />
               <Route path="/holiday-requests" component={HolidayRequests} />

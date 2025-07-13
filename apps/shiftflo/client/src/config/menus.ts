@@ -15,7 +15,8 @@ import {
   Bell,
   AlertTriangle,
   MonitorSpeaker,
-  HelpCircle
+  HelpCircle,
+  History
 } from "lucide-react";
 import { ComponentType } from "react";
 
@@ -67,6 +68,12 @@ export const staffMenu: MenuItem[] = [
     route: "/my-work",
     icon: Calendar,
     description: "Comprehensive work hub with schedule, assignments, time tracking, and requests"
+  },
+  {
+    label: "My Work History",
+    route: "/work-history",
+    icon: History,
+    description: "View all your completed shifts with details, earnings, and notes"
   },
   {
     label: "Requests",

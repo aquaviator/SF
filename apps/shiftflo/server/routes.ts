@@ -126,9 +126,19 @@ async function getActiveDomain(): Promise<string> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // CORS configuration for deployment
+  // CORS configuration for deployment with proper credentials support
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    const host = req.get('host');
+    
+    // Allow requests from same origin or localhost for development
+    if (origin && (origin.includes(host) || origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else {
+      // For same-origin requests (direct domain access), allow credentials
+      res.header('Access-Control-Allow-Origin', req.headers.origin || `https://${host}`);
+    }
+    
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -144,13 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-key',
     resave: false,
-    saveUninitialized: false, // Back to false to prevent unnecessary sessions
+    saveUninitialized: false, // Don't create sessions until needed
     name: 'connect.sid', // Use standard session name
     cookie: {
-      secure: false, // Keep false for both development and Replit deployment
-      httpOnly: false, // Set to false for debugging deployment cookie issues
+      secure: false, // Keep false for Replit deployment (uses HTTPS proxy)
+      httpOnly: false, // Temporarily set to false for debugging session issues
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax', // Changed back to 'lax' for better compatibility
+      sameSite: 'lax', // 'lax' works well for cross-origin requests
       domain: undefined, // Let cookies work with any domain
       path: '/' // Ensure cookies are sent for all paths
     },
@@ -756,6 +766,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch all shifts with assignmentType="opportunity"
       const allOpportunityShifts = await storage.getShiftsByTenantAndType(tenantId, "opportunity");
       
+      // Filter to only include present day and future shifts
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+      const todayString = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      
+      const futureOpportunityShifts = allOpportunityShifts.filter(shift => {
+        return shift.date >= todayString;
+      });
+      
       // If userId provided, filter out opportunities on dates when user already has shifts
       if (userId && !isNaN(parseInt(userId))) {
         const userShifts = await storage.getShiftsByUser(tenantId, parseInt(userId));
@@ -766,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Filter out opportunities on dates where user already has shifts
-        const availableOpportunities = allOpportunityShifts.filter(opportunity => {
+        const availableOpportunities = futureOpportunityShifts.filter(opportunity => {
           const hasConflict = userShiftDates.has(opportunity.date);
           if (hasConflict) {
             console.log("🚫 OPPORTUNITY_FILTERED", {
@@ -783,15 +802,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("✅ OPPORTUNITIES_FILTERED", {
           userId: parseInt(userId),
           totalOpportunities: allOpportunityShifts.length,
+          futureOpportunities: futureOpportunityShifts.length,
           availableOpportunities: availableOpportunities.length,
-          filteredOut: allOpportunityShifts.length - availableOpportunities.length,
+          filteredOutByDate: allOpportunityShifts.length - futureOpportunityShifts.length,
+          filteredOutByConflict: futureOpportunityShifts.length - availableOpportunities.length,
           timestamp: new Date()
         });
         
         res.json(availableOpportunities);
       } else {
-        // Return all opportunities if no userId specified
-        res.json(allOpportunityShifts);
+        // Return future opportunities if no userId specified
+        res.json(futureOpportunityShifts);
       }
     } catch (error) {
       console.error("Opportunities API error:", error);
@@ -6036,6 +6057,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ TEST_NOTIFICATION_ERROR', { error: error.message });
       res.status(500).json({ message: "Failed to send test notification" });
+    }
+  });
+
+  // Simple health check endpoint for deployment
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Basic health check - just return success
+      res.json({ 
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        status: "error",
+        message: "Health check failed"
+      });
     }
   });
 

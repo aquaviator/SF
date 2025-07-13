@@ -88,6 +88,9 @@ export interface IStorage {
   createTimeEntry(entry: any): Promise<any>;
   updateTimeEntry(id: number, entry: any): Promise<any | undefined>;
   getTimeEntriesByUser(tenantId: string, userId: number): Promise<any[]>;
+  getTimeEntryById(id: number): Promise<any | undefined>;
+  getWorkHistoryByUser(tenantId: string, userId: number): Promise<any[]>;
+  updateTimeEntryNotes(id: number, notes: string): Promise<any | undefined>;
 
   // Business profile operations
   getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined>;
@@ -1038,6 +1041,54 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getTimeEntryById(id: number): Promise<any | undefined> {
+    return this.timeEntries.get(id);
+  }
+
+  async getWorkHistoryByUser(tenantId: string, userId: number): Promise<any[]> {
+    const entries = Array.from(this.timeEntries.values());
+    const userEntries = entries.filter(entry => 
+      entry.tenantId === tenantId && 
+      entry.userId === userId &&
+      entry.clockInTime // Only entries that have clock-in time
+    );
+
+    // Transform to match the expected structure from the frontend
+    return userEntries.map(entry => ({
+      id: entry.id,
+      date: entry.clockInTime ? new Date(entry.clockInTime).toISOString().split('T')[0] : null,
+      role: entry.role || 'General',
+      location: entry.location || 'Main Location',
+      scheduledStartTime: entry.scheduledStartTime,
+      scheduledEndTime: entry.scheduledEndTime,
+      clockInTime: entry.clockInTime,
+      clockOutTime: entry.clockOutTime,
+      totalHours: entry.totalHours,
+      status: entry.status,
+      notes: entry.notes,
+      shiftNotes: entry.shiftNotes,
+      lateByMinutes: entry.lateByMinutes,
+      earlyByMinutes: entry.earlyByMinutes,
+      overrideNote: entry.overrideNote,
+      adjustmentReason: entry.adjustmentReason,
+      hourlyRate: 10.00, // Default hourly rate
+      earnings: entry.totalHours ? parseFloat(entry.totalHours) * 10.00 : 0.00
+    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  async updateTimeEntryNotes(id: number, notes: string): Promise<any | undefined> {
+    const entry = this.timeEntries.get(id);
+    if (!entry) return undefined;
+    
+    const updatedEntry = { 
+      ...entry,
+      notes,
+      updatedAt: new Date()
+    };
+    this.timeEntries.set(id, updatedEntry);
+    return updatedEntry;
+  }
+
   // Business profile operations
   async getBusinessProfile(tenantId: string): Promise<BusinessProfile | undefined> {
     return this.businessProfiles.get(tenantId);
@@ -1916,6 +1967,62 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async getWorkHistoryByUser(tenantId: string, userId: number): Promise<any[]> {
+    const result = await database.select({
+      id: timeEntries.id,
+      date: sql`DATE(${timeEntries.clockInTime})`.as('date'),
+      role: shifts.role,
+      location: shifts.location,
+      scheduledStartTime: timeEntries.scheduledStartTime,
+      scheduledEndTime: timeEntries.scheduledEndTime,
+      clockInTime: timeEntries.clockInTime,
+      clockOutTime: timeEntries.clockOutTime,
+      totalHours: timeEntries.totalHours,
+      status: timeEntries.status,
+      notes: timeEntries.notes,
+      shiftNotes: shifts.notes,
+      lateByMinutes: timeEntries.lateByMinutes,
+      earlyByMinutes: timeEntries.earlyByMinutes,
+      overrideNote: timeEntries.overrideNote,
+      adjustmentReason: timeEntries.adjustmentReason,
+      hourlyRate: sql`CASE 
+        WHEN ${jobRoles.hourlyRate} IS NOT NULL 
+        THEN CAST(REPLACE(${jobRoles.hourlyRate}, '£', '') AS DECIMAL(10,2))
+        ELSE 10.00 
+      END`.as('hourlyRate'),
+      earnings: sql`CASE 
+        WHEN ${timeEntries.totalHours} IS NOT NULL AND ${jobRoles.hourlyRate} IS NOT NULL 
+        THEN CAST(${timeEntries.totalHours} AS DECIMAL(10,2)) * CAST(REPLACE(${jobRoles.hourlyRate}, '£', '') AS DECIMAL(10,2))
+        ELSE CASE 
+          WHEN ${timeEntries.totalHours} IS NOT NULL 
+          THEN CAST(${timeEntries.totalHours} AS DECIMAL(10,2)) * 10.00
+          ELSE 0.00 
+        END
+      END`.as('earnings')
+    })
+    .from(timeEntries)
+    .leftJoin(shifts, eq(timeEntries.shiftId, shifts.id))
+    .leftJoin(jobRoles, eq(shifts.role, jobRoles.title))
+    .where(
+      and(
+        eq(timeEntries.tenantId, tenantId),
+        eq(timeEntries.userId, userId),
+        sql`${timeEntries.clockInTime} IS NOT NULL`
+      )
+    )
+    .orderBy(sql`${timeEntries.clockInTime} DESC`);
+
+    return result;
+  }
+
+  async updateTimeEntryNotes(id: number, notes: string): Promise<TimeEntry | undefined> {
+    const result = await database.update(timeEntries)
+      .set({ notes })
+      .where(eq(timeEntries.id, id))
+      .returning();
+    return result[0];
+  }
+
   // Performance metrics operations
   async getPerformanceMetric(id: number): Promise<PerformanceMetric | undefined> {
     const result = await database.select().from(performanceMetrics).where(eq(performanceMetrics.id, id)).limit(1);
@@ -2435,14 +2542,12 @@ async function initializeDatabaseWithSampleData() {
   return dbStorage;
 }
 
-// ✅ Export initialized storage instance
+// Export initialized storage
 export const storage = new DatabaseStorage();
 
-// ✅ Initialize the database (e.g., seed sample data if needed)
-initializeDatabaseWithSampleData()
-  .then(() => {
-    console.log("Database storage initialized successfully");
-  })
-  .catch((error) => {
-    console.error("Failed to initialize database storage:", error);
-  });
+// Initialize database with sample data
+initializeDatabaseWithSampleData().then(() => {
+  console.log("Database storage initialized successfully");
+}).catch((error) => {
+  console.error("Failed to initialize database storage:", error);
+});
