@@ -1,34 +1,30 @@
-# 1) Build & bundle everything
+# 1) Builder stage: install & build everything
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# copy just what we need
-COPY package*.json tsconfig.json vite.config.ts ./
-COPY client client
-COPY server server
-COPY shared shared
-
-# full install (incl. devDeps for esbuild & Vite)
+# install all deps (dev+prod) so esbuild can bundle / resolve correctly
+COPY package*.json ./
 RUN npm ci
 
-# build client & bundle server into single dist/index.js
-RUN npm run build
+# copy your source & build
+COPY . .
+RUN npm run build   # => vite build && esbuild server/index.ts … --outdir=dist
 
-# 2) Production slice
+# 2) Production stage: only pull in the prod deps + your built output
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# install only prod-deps
+# install only prod deps (express, dotenv, etc)
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# copy our single-file server + public assets
+# pull in your compiled app
 COPY --from=builder /app/dist ./dist
 
-# cloud run uses PORT env var (defaults to 8080)
-ENV PORT=8080 NODE_ENV=production
-
+# runtime env
+ENV NODE_ENV=production
+ENV PORT=8080
 EXPOSE 8080
 
-# run the bundled server
-CMD ["node", "dist/index.js"]
+# use your start script (which does: cross-env NODE_ENV=production node dist/index.js)
+CMD ["npm","start"]
