@@ -1556,192 +1556,182 @@ export default function MyWork() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Work Request Assignments Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  Work Request Assignments
+                  {pendingAssignments.length > 0 && (
+                    <div className="relative ml-2">
+                      <Bell className="h-4 w-4 text-blue-500 animate-pulse" />
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-bold">{pendingAssignments.length}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentActivities.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No recent activity to display
-                    </p>
-                  ) : (
-                    recentActivities.map((activity, index) => {
-                      const colorClasses = {
-                        green: 'bg-green-100 text-green-600',
-                        blue: 'bg-blue-100 text-blue-600',
-                        orange: 'bg-orange-100 text-orange-600',
-                        purple: 'bg-purple-100 text-purple-600'
-                      };
-                      const colorClass = colorClasses[activity.color as keyof typeof colorClasses] || colorClasses.green;
-                      
-                      const getActivityLink = (activity: any) => {
-                        if (activity.title.includes('shift opportunity')) {
-                          return '/opportunities';
-                        }
-                        if (activity.title.includes('Holiday') || activity.title.includes('holiday')) {
-                          return '/staff/requests?tab=holiday';
-                        }
-                        if (activity.title.includes('swap') || activity.title.includes('Swap')) {
-                          return '/staff/requests?tab=swap';
-                        }
-                        if (activity.title.includes('shift') || activity.title.includes('Shift')) {
-                          return null; // Stay on current page, just switch to my-shifts tab
-                        }
-                        return null;
-                      };
-
-                      const handleActivityClick = (activity: any) => {
-                        const link = getActivityLink(activity);
-                        if (link) {
-                          window.location.href = link;
-                        } else if (activity.title.includes('shift') || activity.title.includes('Shift')) {
-                          setActiveTab('my-shifts');
-                        }
-                      };
-
-                      return (
-                        <div 
-                          key={index} 
-                          className="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors"
-                          onClick={() => handleActivityClick(activity)}
-                        >
-                          <div className={`p-2 rounded-full ${colorClass.split(' ')[0]}`}>
-                            <activity.icon className={`h-4 w-4 ${colorClass.split(' ')[1]}`} />
-                          </div>
-                          <div className="space-y-1 flex-1">
-                            <p className="text-sm font-medium">{activity.title}</p>
-                            <p className="text-xs text-muted-foreground">{activity.description}</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-xs text-muted-foreground">{getTimeAgo(activity.time)}</div>
-                            <ExternalLink className="h-3 w-3 text-blue-500" />
-                          </div>
+                <div className="space-y-3">
+                  {pendingAssignments.slice(0, 5).length > 0 ? (
+                    pendingAssignments.slice(0, 5).map((shift: any) => (
+                      <div 
+                        key={shift.id} 
+                        className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{shift.role}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(shift.date).toLocaleDateString()} • {shift.startTime} - {shift.endTime}
+                          </p>
+                          <p className="text-xs text-blue-600">{shift.location}</p>
                         </div>
-                      );
-                    })
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-xs">
+                            Pending
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Briefcase className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">No pending assignments</p>
+                      <p className="text-xs">New shift assignments will appear here</p>
+                    </div>
                   )}
                 </div>
+                {pendingAssignments.length > 0 && (
+                  <div className="mt-4 pt-3 border-t">
+                    <Link 
+                      href="/staff/requests?tab=work"
+                      className="flex items-center justify-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View all assignments ({pendingAssignments.length})
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
+            {/* Shift Opportunities Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Shift Opportunities</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Monthly Target */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Monthly Target</span>
-                      <span>{calculateMonthlyHours()}h / 160h</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="space-y-3">
+                  {opportunities.slice(0, 5).length > 0 ? (
+                    opportunities.slice(0, 5).map((opportunity: any) => (
                       <div 
-                        className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${Math.min((parseFloat(calculateMonthlyHours()) / 160) * 100, 100)}%` }}
-                      ></div>
+                        key={opportunity.id} 
+                        className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{opportunity.role}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(opportunity.date).toLocaleDateString()} • {opportunity.startTime} - {opportunity.endTime}
+                          </p>
+                          <p className="text-xs text-green-600">{opportunity.location}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700">
+                            Available
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Users className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">No opportunities available</p>
+                      <p className="text-xs">New shift opportunities will appear here</p>
                     </div>
+                  )}
+                </div>
+                {opportunities.length > 0 && (
+                  <div className="mt-4 pt-3 border-t">
+                    <Link 
+                      href="/opportunities"
+                      className="flex items-center justify-center text-sm text-green-600 hover:text-green-800 font-medium"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View all opportunities ({opportunities.length})
+                    </Link>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Time Tracking Panel */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Time Tracking
+                </CardTitle>
+                <Timer className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Current Status */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium">Current Status</p>
+                    <p className="text-sm font-bold text-green-600">
+                      {isCurrentlyClockedIn() ? "Clocked In" : "Not Clocked In"}
+                    </p>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-xs font-medium">Time Worked</p>
+                    <p className="text-sm font-bold">{calculateTimeWorked()}</p>
+                  </div>
+                </div>
+
+                {/* Clock In/Out Controls */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => clockInMutation.mutate()}
+                    disabled={!canClockIn() || clockInMutation.isPending || isCurrentlyClockedIn()}
+                    className="h-12 text-sm"
+                    variant={canClockIn() && !isCurrentlyClockedIn() ? "default" : "secondary"}
+                  >
+                    {clockInMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-1" />
+                    )}
+                    Clock In
+                  </Button>
                   
-                  {/* On-time Arrival */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>On-time Arrival</span>
-                      <span>{(() => {
-                        const today = new Date();
-                        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                        
-                        // Get time entries this month with shifts
-                        const monthlyTimeEntries = (timeEntries || []).filter((entry: any) => {
-                          const entryDate = new Date(entry.clockInTime);
-                          return entryDate >= startOfMonth && entryDate <= today;
-                        });
-                        
-                        if (monthlyTimeEntries.length === 0) return "N/A";
-                        
-                        // Count on-time entries (status !== 'late')
-                        const onTimeEntries = monthlyTimeEntries.filter((entry: any) => entry.status !== 'late');
-                        const onTimeRate = (onTimeEntries.length / monthlyTimeEntries.length) * 100;
-                        
-                        return `${onTimeRate.toFixed(0)}%`;
-                      })()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ width: `${(() => {
-                          const today = new Date();
-                          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                          const monthlyTimeEntries = (timeEntries || []).filter((entry: any) => {
-                            const entryDate = new Date(entry.clockInTime);
-                            return entryDate >= startOfMonth && entryDate <= today;
-                          });
-                          if (monthlyTimeEntries.length === 0) return 0;
-                          const onTimeEntries = monthlyTimeEntries.filter((entry: any) => entry.status !== 'late');
-                          return (onTimeEntries.length / monthlyTimeEntries.length) * 100;
-                        })()}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {/* Shift Completion */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Shift Completion</span>
-                      <span>{(() => {
-                        const today = new Date();
-                        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                        
-                        // Get past shifts this month (before today)
-                        const today_start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        const monthlyPastShifts = shifts.filter(shift => {
-                          const shiftDate = new Date(shift.date);
-                          return shiftDate >= startOfMonth && shiftDate < today_start;
-                        });
-                        
-                        if (monthlyPastShifts.length === 0) return "N/A";
-                        
-                        // Count completed shifts
-                        const completedShifts = monthlyPastShifts.filter(shift => 
-                          shift.status === "completed" || shift.status === "clocked_out" ||
-                          (timeEntries || []).some((entry: any) => {
-                            const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
-                            return entry.shiftId === shift.id || entryDate === shift.date;
-                          })
-                        );
-                        
-                        const completionRate = (completedShifts.length / monthlyPastShifts.length) * 100;
-                        return `${completionRate.toFixed(0)}%`;
-                      })()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ width: `${(() => {
-                          const today = new Date();
-                          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                          const today_start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                          const monthlyPastShifts = shifts.filter(shift => {
-                            const shiftDate = new Date(shift.date);
-                            return shiftDate >= startOfMonth && shiftDate < today_start;
-                          });
-                          if (monthlyPastShifts.length === 0) return 100;
-                          const completedShifts = monthlyPastShifts.filter(shift => 
-                            shift.status === "completed" || shift.status === "clocked_out" ||
-                            (timeEntries || []).some((entry: any) => {
-                              const entryDate = new Date(entry.clockInTime).toISOString().split('T')[0];
-                              return entry.shiftId === shift.id || entryDate === shift.date;
-                            })
-                          );
-                          return (completedShifts.length / monthlyPastShifts.length) * 100;
-                        })()}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                  <Button
+                    onClick={() => clockOutMutation.mutate()}
+                    disabled={!isCurrentlyClockedIn() || clockOutMutation.isPending}
+                    className="h-12 text-sm"
+                    variant={isCurrentlyClockedIn() ? "destructive" : "secondary"}
+                  >
+                    {clockOutMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Pause className="h-4 w-4 mr-1" />
+                    )}
+                    Clock Out
+                  </Button>
+                </div>
+
+                {/* Link to full Time Tracking */}
+                <div className="pt-2 border-t">
+                  <Button
+                    onClick={() => setActiveTab("time-tracking")}
+                    variant="outline"
+                    className="w-full text-sm"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Full Time Tracking
+                  </Button>
                 </div>
               </CardContent>
             </Card>
